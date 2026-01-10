@@ -53,8 +53,8 @@ The app supports reading and syncing the following health data types from Health
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/yourusername/HC-Webhook.git
-cd HC-Webhook
+git clone https://github.com/mcnaveen/health-connect-webhook
+cd health-connect-webhook
 ```
 
 2. Open the project in Android Studio (Arctic Fox or later recommended)
@@ -117,12 +117,19 @@ The app sends health data to your webhooks in JSON format. Each webhook request 
 - Health data records (filtered to only include new data since last sync)
 - Metadata about the sync operation
 
+> **⚠️ Warning**: Internet retry functionality is not implemented yet. If a webhook request fails due to network issues, the app will not automatically retry. Use at your own risk.
+
 ### Data Privacy
 
 - All health data remains on your device until explicitly sent to your configured webhooks
 - The app only reads data that you explicitly grant permission for
 - No data is sent to third-party services except your configured webhooks
 - You can revoke permissions at any time through Android settings
+
+## Known Limitations
+
+- ⚠️ **Internet Retry Not Implemented** - The app does not currently implement automatic retry logic for failed webhook requests due to network issues. If a sync fails due to internet connectivity problems, it will not be automatically retried. This feature may be added in future releases. **Use at your own risk.**
+- ⚠️ **No Day Limitation** - There is currently no limitation on the date range or number of days of historical data that can be synced. This may result in large data transfers for users with extensive health data history. **Use at your own risk.**
 
 ## Technical Details
 
