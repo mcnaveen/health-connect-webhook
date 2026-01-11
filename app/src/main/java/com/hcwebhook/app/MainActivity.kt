@@ -2,6 +2,7 @@ package com.hcwebhook.app
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -230,6 +231,14 @@ class MainActivity : ComponentActivity() {
                                 onClick = {
                                     showMenu = false
                                     val intent = Intent(context, LogsActivity::class.java)
+                                    context.startActivity(intent)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Feedback") },
+                                onClick = {
+                                    showMenu = false
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://hc-webhook.feedbackjar.com/"))
                                     context.startActivity(intent)
                                 }
                             )

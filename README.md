@@ -8,6 +8,12 @@ An Android application that seamlessly connects Health Connect data to your webh
 
 HC Webhook is a powerful Android app that bridges the gap between Google Health Connect and your webhook infrastructure. It automatically reads health data from Health Connect and sends it to your configured webhook URLs at customizable intervals, making it easy to integrate health data into your own systems, analytics platforms, or third-party services.
 
+## Screenshots
+
+| Homescreen | Data Types | Webhook Logs |
+|:---:|:---:|:---:|
+| <img src="screenshots/1.png" width="300" alt="Homescreen"> | <img src="screenshots/2.png" width="300" alt="Data Types"> | <img src="screenshots/3.png" width="300" alt="Webhook Logs"> |
+
 ## Features
 
 - 🔄 **Automated Background Sync** - Configurable sync intervals (minimum 15 minutes) using WorkManager
@@ -18,6 +24,7 @@ HC Webhook is a powerful Android app that bridges the gap between Google Health 
 - 🔐 **Permission Management** - Granular Health Connect permission handling
 - 🎨 **Modern UI** - Built with Jetpack Compose and Material 3 design
 - ⚡ **Real-time Status** - Visual indicators for permission status and sync state
+- 💬 **Feedback** - Easy access to provide feedback and suggestions through the app menu
 
 ## Supported Health Data Types
 
@@ -99,6 +106,11 @@ The APK will be generated at: `app/build/outputs/apk/debug/app-debug.apk`
 
 - Access webhook logs from the menu (⋮) → "Webhook Log"
 - View detailed information about each webhook request, including timestamps, status codes, and response data
+
+### Providing Feedback
+
+- Access the feedback form from the menu (⋮) → "Feedback"
+- Share your thoughts, suggestions, or report issues directly through the feedback portal
 
 ## Configuration
 
@@ -229,7 +241,9 @@ Any other use requires explicit written permission from the author.
 
 ## Support
 
-For issues, feature requests, or questions, please open an issue on GitHub.
+For issues, feature requests, or questions, you can:
+- Open an issue on GitHub
+- Provide feedback directly through the app: Menu (⋮) → "Feedback" or visit [https://hc-webhook.feedbackjar.com/](https://hc-webhook.feedbackjar.com/)
 
 ## Acknowledgments
 
