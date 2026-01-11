@@ -70,6 +70,19 @@ cd health-connect-webhook
 
 4. Build and run the app on your device or emulator
 
+### From GitHub Actions (Pre-built APK)
+
+You can download a pre-built debug APK from GitHub Actions:
+
+**Direct link to latest builds:** [View Latest CI Runs](https://github.com/mcnaveen/health-connect-webhook/actions/workflows/ci.yml)
+
+1. Click the link above or go to the [Actions](https://github.com/mcnaveen/health-connect-webhook/actions) tab
+2. Click on the latest successful workflow run (green checkmark ✓)
+3. Scroll down to the **Artifacts** section at the bottom
+4. Click on **app-debug** to download the APK
+5. Extract the ZIP file to get the `.apk` file
+6. Install the APK on your Android device (enable "Install from unknown sources" if needed)
+
 ### Building the APK
 
 ```bash
