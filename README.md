@@ -2,11 +2,37 @@
 
 ![HC Webhook](image.png)
 
-An Android application that seamlessly connects Health Connect data to your webhooks, enabling automated health data synchronization to your custom endpoints.
+An Android app that automatically syncs Health Connect data to your webhooks, enabling seamless integration with your custom endpoints and services.
 
 ## Overview
 
-HC Webhook is a powerful Android app that bridges the gap between Google Health Connect and your webhook infrastructure. It automatically reads health data from Health Connect and sends it to your configured webhook URLs at customizable intervals, making it easy to integrate health data into your own systems, analytics platforms, or third-party services.
+HC Webhook connects Google Health Connect to your webhook infrastructure. Health Connect aggregates health data from apps like Google Fit, Samsung Health, Fitbit, and more into a unified API. This app reads that aggregated data and sends it to your configured webhook URLs at customizable intervals, making it easy to integrate health data from multiple sources into your own systems, analytics platforms, or third-party services.
+
+## How It Works
+
+1. **Health Apps** (Google Fit, Samsung Health, Fitbit, etc.) sync data to **Health Connect**
+2. **Health Connect** aggregates all health data into a unified API
+3. **HC Webhook** reads data from Health Connect at configured intervals
+4. **HC Webhook** sends the data to your configured **webhook URLs**
+5. Your **custom services** receive and process the health data
+
+## Supported Health Apps
+
+Health Connect aggregates data from these popular health and fitness apps:
+
+- **Google Fit** - Activity tracking, workouts, and health metrics
+- **Samsung Health** - Comprehensive health and fitness tracking
+- **Fitbit** - Activity, sleep, and heart rate data
+- **MyFitnessPal** - Nutrition and calorie tracking
+- **Strava** - Running and cycling activities
+- **Nike Run Club** - Running activities and workouts
+- **Withings** - Weight, blood pressure, and activity tracking
+- **Garmin Connect** - Fitness and health data from Garmin devices
+- **Polar** - Heart rate and fitness tracking
+- **Oura** - Sleep, activity, and recovery data
+- **And many more...** - Any app that syncs to Health Connect
+
+> **Note**: You don't need to install all these apps. Just ensure the apps you use are syncing their data to Health Connect, and HC Webhook will automatically access that unified data.
 
 ## Screenshots
 
@@ -53,6 +79,8 @@ The app supports reading and syncing the following health data types from Health
 - **Android 8.0 (API 26)** or higher
 - **Google Health Connect** app installed and set up
 - **Internet connection** for webhook delivery
+
+> **Note**: Health Connect aggregates data from multiple health apps (Google Fit, Samsung Health, Fitbit, etc.). You don't need to directly connect to these apps - just ensure they're syncing to Health Connect, and this app will automatically access that unified data.
 
 ## Installation
 
