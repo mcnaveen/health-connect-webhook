@@ -2,7 +2,7 @@
 
 ![HC Webhook](image.png)
 
-An Android app that automatically syncs Health Connect data to your webhooks, enabling seamless integration with your custom endpoints and services.
+An Android app that bridges Google Fit, Samsung Health, Fitbit, and other health apps to your webhooks via Health Connect APIs, enabling seamless integration with your custom endpoints and services.
 
 ## Overview
 
