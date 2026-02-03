@@ -257,21 +257,12 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-**Source Code Only - All Rights Reserved**
+This project is shared under the **[Functional Source License, Version 1.1 (FSL-1.1-ALv2)](LICENSE)** — a [Fair Source](https://fair.io/) license.
 
-This project is provided as source code for personal use and educational purposes only. 
+- **Use, modify, and redistribute** for any purpose that is **not** a competing commercial product or service (e.g. you may not offer a commercial substitute for HC-Webhook). Permitted uses include internal use, non-commercial education and research, and professional services for other licensees.
+- **Two-year conversion** — Each version of the Software becomes available under the [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0) on the second anniversary of the date it was first made available.
 
-**Restrictions:**
-- ❌ **No Republishing** - You may not republish, redistribute, or share this code in any form
-- ❌ **No Monetization** - You may not use this code for commercial purposes or monetize any derivative works
-- ✅ **Source Code Only** - This repository contains source code only, not a published application
-
-You are permitted to:
-- View and study the source code
-- Build and use the application for personal use
-- Learn from the implementation
-
-Any other use requires explicit written permission from the author.
+See the [LICENSE](LICENSE) file for the full terms. Learn more at [fair.io](https://fair.io/) and [fsl.software](https://fsl.software/).
 
 ## Privacy & Security
 
