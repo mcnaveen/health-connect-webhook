@@ -25,6 +25,10 @@
     <!-- Network Permission -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Scheduled Sync Permissions -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
     <!-- Query for Health Connect -->
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
@@ -58,6 +62,16 @@
             android:name=".AboutActivity"
             android:exported="false"
             android:label="About" />
+
+        <!-- Scheduled Sync Receiver -->
+        <receiver
+            android:name=".ScheduledSyncReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <!-- Health Connect Permission Activity -->
         <activity-alias
