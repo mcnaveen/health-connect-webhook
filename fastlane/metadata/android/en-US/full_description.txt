@@ -1,0 +1,16 @@
+HC Webhook bridges Google Fit, Samsung Health, Fitbit, and other health apps to your webhooks via Health Connect APIs, enabling seamless integration with your custom endpoints and services.
+
+Features:
+- Automated Background Sync: Configurable sync intervals (minimum 15 minutes) using WorkManager
+- Selective Data Types: Choose which health data types to sync (Steps, Sleep, Heart Rate, etc.)
+- Multiple Webhooks: Send data to multiple webhook URLs simultaneously
+- Manual Sync: Trigger immediate data synchronization on demand
+- Webhook Logs: View detailed logs of all webhook requests and responses
+- Privacy Focused: No data is sent to third-party services except your configured webhooks
+
+Supported Data Types:
+Steps, Sleep, Heart Rate, Distance, Active Calories, Total Calories, Weight, Height, Blood Pressure, Blood Glucose, Oxygen Saturation, Body Temperature, Respiratory Rate, Resting Heart Rate, Exercise Sessions, Hydration, Nutrition.
+
+Requirements:
+- Android 8.0 (API 26) or higher
+- Google Health Connect app installed and set up
