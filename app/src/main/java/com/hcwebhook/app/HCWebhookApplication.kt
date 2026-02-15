@@ -14,11 +14,28 @@ class HCWebhookApplication : Application() {
         super.onCreate()
         preferencesManager = PreferencesManager(this)
 
-        // Schedule periodic sync work
-        scheduleSyncWork()
+        // Schedule syncs based on the selected sync mode
+        when (preferencesManager.getSyncMode()) {
+            SyncMode.INTERVAL -> {
+                scheduleSyncWork()
+                // Cancel scheduled alarms if they were previously set
+                ScheduledSyncManager(this).cancelAllAlarms()
+            }
+            SyncMode.SCHEDULED -> {
+                // Cancel WorkManager periodic sync if it was previously set
+                cancelSyncWork()
+                // Schedule guaranteed daily alarms (morning + evening)
+                ScheduledSyncManager(this).scheduleAllAlarms()
+            }
+        }
     }
 
     fun scheduleSyncWork() {
+        // Only schedule if sync mode is INTERVAL
+        if (preferencesManager.getSyncMode() != SyncMode.INTERVAL) {
+            return
+        }
+
         val syncIntervalMinutes = preferencesManager.getSyncIntervalMinutes()
 
         val syncWorkRequest = PeriodicWorkRequestBuilder<SyncWorker>(
@@ -31,6 +48,10 @@ class HCWebhookApplication : Application() {
             ExistingPeriodicWorkPolicy.UPDATE, // Update existing work with new configuration
             syncWorkRequest
         )
+    }
+
+    fun cancelSyncWork() {
+        WorkManager.getInstance(this).cancelUniqueWork(SYNC_WORK_NAME)
     }
 
     companion object {

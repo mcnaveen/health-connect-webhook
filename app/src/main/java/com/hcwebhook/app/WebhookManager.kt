@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.pow
 
 class WebhookManager(
-    private val webhookUrls: List<String>,
+    private val webhookConfigs: List<WebhookConfig>,
     private val context: Context? = null,
     private val dataType: String? = null,
     private val recordCount: Int? = null
@@ -26,15 +26,15 @@ class WebhookManager(
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
     suspend fun postData(jsonPayload: String): Result<Unit> {
-        if (webhookUrls.isEmpty()) {
+        if (webhookConfigs.isEmpty()) {
             return Result.failure(IllegalStateException("No webhook URLs configured"))
         }
 
         var lastFailure: Exception? = null
 
         // Try posting to all configured webhooks
-        for (url in webhookUrls) {
-            val result = postToUrl(url, jsonPayload)
+        for (config in webhookConfigs) {
+            val result = postToUrl(config, jsonPayload)
             if (result.isSuccess) {
                 return result // Success if at least one webhook succeeds
             } else {
@@ -45,7 +45,7 @@ class WebhookManager(
         return Result.failure(lastFailure ?: IOException("All webhook posts failed"))
     }
 
-    private suspend fun postToUrl(url: String, jsonPayload: String): Result<Unit> {
+    private suspend fun postToUrl(config: WebhookConfig, jsonPayload: String): Result<Unit> {
         val timestamp = System.currentTimeMillis()
         var statusCode: Int? = null
         var success = false
@@ -53,10 +53,16 @@ class WebhookManager(
 
         return try {
             val requestBody = jsonPayload.toRequestBody(jsonMediaType)
-            val request = Request.Builder()
-                .url(url)
+            val requestBuilder = Request.Builder()
+                .url(config.url)
                 .post(requestBody)
-                .build()
+            
+            // Add custom headers
+            config.headers.forEach { (key, value) ->
+                requestBuilder.addHeader(key, value)
+            }
+            
+            val request = requestBuilder.build()
 
             var lastException: Exception? = null
             for (attempt in 1..MAX_RETRIES) {
@@ -65,7 +71,7 @@ class WebhookManager(
                     statusCode = response.code
                     if (response.isSuccessful) {
                         success = true
-                        logWebhookCall(url, timestamp, statusCode, true, null)
+                        logWebhookCall(config.url, timestamp, statusCode, true, null)
                         return Result.success(Unit)
                     } else {
                         lastException = IOException("HTTP ${response.code}: ${response.message}")
@@ -83,10 +89,10 @@ class WebhookManager(
                 }
             }
 
-            logWebhookCall(url, timestamp, statusCode, false, errorMessage)
+            logWebhookCall(config.url, timestamp, statusCode, false, errorMessage)
             Result.failure(lastException ?: IOException("Max retries exceeded"))
         } catch (e: Exception) {
-            logWebhookCall(url, timestamp, null, false, e.message)
+            logWebhookCall(config.url, timestamp, null, false, e.message)
             Result.failure(e)
         }
     }
