@@ -35,6 +35,8 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import com.hcwebhook.app.*
 import com.hcwebhook.app.ui.theme.*
+import android.content.Intent
+import android.net.Uri
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -59,6 +61,9 @@ fun ConfigurationScreen(
     var showPermissionModal by remember { mutableStateOf(false) }
     var selectedDataTypeForPermission by remember { mutableStateOf<HealthDataType?>(null) }
     var isDataTypesExpanded by remember { mutableStateOf(false) }
+
+    // Health Connect Check
+    var sdkStatus by remember { mutableIntStateOf(HealthConnectClient.SDK_UNAVAILABLE) }
 
     // Last sync status
     var lastSyncTime by remember { mutableStateOf(preferencesManager.getLastSyncTime()) }
@@ -101,28 +106,30 @@ fun ConfigurationScreen(
             }
         }
 
+
         try {
-            val availability = HealthConnectClient.getSdkStatus(context)
-            if (availability != HealthConnectClient.SDK_AVAILABLE) {
-                hasPermissions = false
-                return@LaunchedEffect
-            }
-            val healthConnectManager = HealthConnectManager(context)
-            val grantedPermissions = healthConnectManager.getGrantedPermissions()
-            hasPermissions = grantedPermissions.isNotEmpty()
-            grantedPermissionsSet = grantedPermissions
-             // Auto-enable switches for granted permissions if none enabled yet
-            if (enabledDataTypes.isEmpty() && grantedPermissions.isNotEmpty()) {
-                val grantedTypes = HealthDataType.entries.filter { type ->
-                    HealthPermission.getReadPermission(type.recordClass) in grantedPermissions
-                }.toSet()
-                if (grantedTypes.isNotEmpty()) {
-                    enabledDataTypes = grantedTypes
-                    preferencesManager.setEnabledDataTypes(grantedTypes)
+            sdkStatus = HealthConnectClient.getSdkStatus(context)
+            if (sdkStatus == HealthConnectClient.SDK_AVAILABLE) {
+                val healthConnectManager = HealthConnectManager(context)
+                val grantedPermissions = healthConnectManager.getGrantedPermissions()
+                hasPermissions = grantedPermissions.isNotEmpty()
+                grantedPermissionsSet = grantedPermissions
+                 // Auto-enable switches for granted permissions if none enabled yet
+                if (enabledDataTypes.isEmpty() && grantedPermissions.isNotEmpty()) {
+                    val grantedTypes = HealthDataType.entries.filter { type ->
+                        HealthPermission.getReadPermission(type.recordClass) in grantedPermissions
+                    }.toSet()
+                    if (grantedTypes.isNotEmpty()) {
+                        enabledDataTypes = grantedTypes
+                        preferencesManager.setEnabledDataTypes(grantedTypes)
+                    }
                 }
+            } else {
+                hasPermissions = false
             }
         } catch (e: Exception) {
             hasPermissions = false
+            sdkStatus = HealthConnectClient.SDK_UNAVAILABLE
         }
     }
 
@@ -164,7 +171,56 @@ fun ConfigurationScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Permissions Card
-             if (hasPermissions == false) {
+             if (sdkStatus != HealthConnectClient.SDK_AVAILABLE) {
+                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+                     Column(modifier = Modifier.padding(16.dp)) {
+                         Row(
+                             modifier = Modifier.fillMaxWidth(),
+                             verticalAlignment = Alignment.CenterVertically,
+                             horizontalArrangement = Arrangement.spacedBy(16.dp)
+                         ) {
+                             Icon(
+                                 imageVector = Icons.Filled.Close,
+                                 contentDescription = null,
+                                 tint = MaterialTheme.colorScheme.onErrorContainer,
+                                 modifier = Modifier.size(32.dp)
+                             )
+                             Column {
+                                 Text(
+                                     text = "Health Connect Not Found",
+                                     style = MaterialTheme.typography.titleMedium,
+                                     color = MaterialTheme.colorScheme.onErrorContainer
+                                 )
+                                 Spacer(modifier = Modifier.height(4.dp))
+                                 Text(
+                                     text = "Health Connect is required to sync your health data with this app.",
+                                     style = MaterialTheme.typography.bodyMedium,
+                                     color = MaterialTheme.colorScheme.onErrorContainer
+                                 )
+                             }
+                         }
+                         Spacer(modifier = Modifier.height(16.dp))
+                         Button(onClick = {
+                             val intent = Intent(Intent.ACTION_VIEW).apply {
+                                 data = Uri.parse("market://details?id=com.google.android.apps.healthdata")
+                                 setPackage("com.android.vending")
+                             }
+                             // Fallback if Play Store is not installed
+                             if (intent.resolveActivity(context.packageManager) != null) {
+                                 context.startActivity(intent)
+                             } else {
+                                 val webIntent = Intent(Intent.ACTION_VIEW).apply {
+                                     data = Uri.parse("https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata")
+                                 }
+                                 context.startActivity(webIntent)
+                             }
+
+                         }, modifier = Modifier.fillMaxWidth()) {
+                             Text("Install Health Connect")
+                         }
+                     }
+                 }
+             } else if (hasPermissions == false) {
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(
@@ -316,7 +372,7 @@ fun ConfigurationScreen(
                                 ScheduledSyncManager(context).scheduleAllAlarms()
                             },
                             label = { Text("Scheduled") },
-                            leadingIcon = if (syncMode == SyncMode.SCHEDULED) {
+                            leadingIcon = if (syncMode == SyncMode.SCHEDULED) { 
                                 { Icon(Icons.Filled.CheckCircle, null, Modifier.size(18.dp)) }
                             } else null
                         )
