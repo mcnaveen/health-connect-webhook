@@ -36,9 +36,9 @@ Health Connect aggregates data from these popular health and fitness apps:
 
 ## Screenshots
 
-|                         Homescreen                         |                         Data Types                         |                         Webhook Logs                         |
-| :--------------------------------------------------------: | :--------------------------------------------------------: | :----------------------------------------------------------: |
-| <img src="screenshots/1.png" width="300" alt="Homescreen"> | <img src="screenshots/2.png" width="300" alt="Data Types"> | <img src="screenshots/3.png" width="300" alt="Webhook Logs"> |
+| Home screen | Data Types | Webhooks URLs | Webhook Logs |
+| :---------: | :--------: | :-----------: | :----------: |
+| <img src="screenshots/1.png" width="240" alt="Home screen"> | <img src="screenshots/2.png" width="240" alt="Data Types"> | <img src="screenshots/3.png" width="240" alt="Webhooks URLs"> | <img src="screenshots/4.png" width="240" alt="Webhook Logs"> |
 
 ## Features
 
