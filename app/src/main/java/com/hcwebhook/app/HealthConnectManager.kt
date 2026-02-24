@@ -16,6 +16,7 @@ enum class HealthDataType(val displayName: String, val recordClass: KClass<out R
     STEPS("Steps", StepsRecord::class),
     SLEEP("Sleep", SleepSessionRecord::class),
     HEART_RATE("Heart Rate", HeartRateRecord::class),
+    HEART_RATE_VARIABILITY("Heart Rate Variability", HeartRateVariabilityRmssdRecord::class),
     DISTANCE("Distance", DistanceRecord::class),
     ACTIVE_CALORIES("Active Calories", ActiveCaloriesBurnedRecord::class),
     TOTAL_CALORIES("Total Calories", TotalCaloriesBurnedRecord::class),
@@ -36,6 +37,7 @@ data class HealthData(
     val steps: List<StepsData>,
     val sleep: List<SleepData>,
     val heartRate: List<HeartRateData>,
+    val heartRateVariability: List<HeartRateVariabilityData>,
     val distance: List<DistanceData>,
     val activeCalories: List<ActiveCaloriesData>,
     val totalCalories: List<TotalCaloriesData>,
@@ -73,6 +75,11 @@ data class SleepStage(
 
 data class HeartRateData(
     val bpm: Long,
+    val time: Instant
+)
+
+data class HeartRateVariabilityData(
+    val rmssdMillis: Double,
     val time: Instant
 )
 
@@ -181,6 +188,8 @@ class HealthConnectManager(private val context: Context) {
                 readSleepData(startTime, endTime, lastSyncTimestamps[HealthDataType.SLEEP]) else emptyList()
             val heartRateData = if (HealthDataType.HEART_RATE in enabledTypes)
                 readHeartRateData(startTime, endTime, lastSyncTimestamps[HealthDataType.HEART_RATE]) else emptyList()
+            val heartRateVariabilityData = if (HealthDataType.HEART_RATE_VARIABILITY in enabledTypes)
+                readHeartRateVariabilityData(startTime, endTime, lastSyncTimestamps[HealthDataType.HEART_RATE_VARIABILITY]) else emptyList()
             val distanceData = if (HealthDataType.DISTANCE in enabledTypes)
                 readDistanceData(startTime, endTime, lastSyncTimestamps[HealthDataType.DISTANCE]) else emptyList()
             val activeCaloriesData = if (HealthDataType.ACTIVE_CALORIES in enabledTypes)
@@ -214,6 +223,7 @@ class HealthConnectManager(private val context: Context) {
                 steps = stepsData,
                 sleep = sleepData,
                 heartRate = heartRateData,
+                heartRateVariability = heartRateVariabilityData,
                 distance = distanceData,
                 activeCalories = activeCaloriesData,
                 totalCalories = totalCaloriesData,
@@ -327,6 +337,13 @@ class HealthConnectManager(private val context: Context) {
                     .filter { lastSync == null || it.time >= lastSync }
                     .map { HeartRateData(it.beatsPerMinute, it.time) }
             }
+    }
+
+    private suspend fun readHeartRateVariabilityData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<HeartRateVariabilityData> {
+        val request = ReadRecordsRequest(recordType = HeartRateVariabilityRmssdRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
+        val response = healthConnectClient.readRecords(request)
+        return response.records.filter { lastSync == null || it.time >= lastSync }
+            .map { HeartRateVariabilityData(it.heartRateVariabilityMillis, it.time) }
     }
 
     private suspend fun readDistanceData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<DistanceData> {
@@ -538,6 +555,7 @@ class HealthConnectManager(private val context: Context) {
             HealthPermission.getReadPermission(StepsRecord::class),
             HealthPermission.getReadPermission(SleepSessionRecord::class),
             HealthPermission.getReadPermission(HeartRateRecord::class),
+            HealthPermission.getReadPermission(HeartRateVariabilityRmssdRecord::class),
             HealthPermission.getReadPermission(DistanceRecord::class),
             HealthPermission.getReadPermission(ActiveCaloriesBurnedRecord::class),
             HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class),

@@ -51,6 +51,7 @@ class SyncManager(private val context: Context) {
 
             // Calculate total record count
             val totalRecords = healthData.steps.size + healthData.sleep.size + healthData.heartRate.size +
+                    healthData.heartRateVariability.size +
                     healthData.distance.size + healthData.activeCalories.size + healthData.totalCalories.size +
                     healthData.weight.size + healthData.height.size + healthData.bloodPressure.size +
                     healthData.bloodGlucose.size + healthData.oxygenSaturation.size + healthData.bodyTemperature.size +
@@ -90,6 +91,7 @@ class SyncManager(private val context: Context) {
 
     private fun isHealthDataEmpty(data: HealthData): Boolean {
         return data.steps.isEmpty() && data.sleep.isEmpty() && data.heartRate.isEmpty() &&
+                data.heartRateVariability.isEmpty() &&
                 data.distance.isEmpty() && data.activeCalories.isEmpty() && data.totalCalories.isEmpty() &&
                 data.weight.isEmpty() && data.height.isEmpty() && data.bloodPressure.isEmpty() &&
                 data.bloodGlucose.isEmpty() && data.oxygenSaturation.isEmpty() && data.bodyTemperature.isEmpty() &&
@@ -109,6 +111,10 @@ class SyncManager(private val context: Context) {
         if (data.heartRate.isNotEmpty()) {
             preferencesManager.setLastSyncTimestamp(HealthDataType.HEART_RATE, data.heartRate.maxOf { it.time }.toEpochMilli())
             syncCounts[HealthDataType.HEART_RATE] = data.heartRate.size
+        }
+        if (data.heartRateVariability.isNotEmpty()) {
+            preferencesManager.setLastSyncTimestamp(HealthDataType.HEART_RATE_VARIABILITY, data.heartRateVariability.maxOf { it.time }.toEpochMilli())
+            syncCounts[HealthDataType.HEART_RATE_VARIABILITY] = data.heartRateVariability.size
         }
         if (data.distance.isNotEmpty()) {
             preferencesManager.setLastSyncTimestamp(HealthDataType.DISTANCE, data.distance.maxOf { it.endTime }.toEpochMilli())
@@ -195,6 +201,9 @@ class SyncManager(private val context: Context) {
         if (data.heartRate.isNotEmpty()) {
             parts.add("${data.heartRate.size} HR")
         }
+        if (data.heartRateVariability.isNotEmpty()) {
+            parts.add("${data.heartRateVariability.size} HRV")
+        }
 
         return if (parts.isEmpty()) "No new data" else parts.joinToString(" · ")
     }
@@ -241,6 +250,15 @@ class SyncManager(private val context: Context) {
                 putJsonArray("heart_rate") {
                     healthData.heartRate.forEach { add(buildJsonObject {
                         put("bpm", it.bpm)
+                        put("time", it.time.toString())
+                    }) }
+                }
+            }
+
+            if (healthData.heartRateVariability.isNotEmpty()) {
+                putJsonArray("heart_rate_variability") {
+                    healthData.heartRateVariability.forEach { add(buildJsonObject {
+                        put("rmssd_millis", it.rmssdMillis)
                         put("time", it.time.toString())
                     }) }
                 }
