@@ -9,7 +9,7 @@ Features:
 - Privacy Focused: No data is sent to third-party services except your configured webhooks
 
 Supported Data Types:
-Steps, Sleep, Heart Rate, Distance, Active Calories, Total Calories, Weight, Height, Blood Pressure, Blood Glucose, Oxygen Saturation, Body Temperature, Respiratory Rate, Resting Heart Rate, Exercise Sessions, Hydration, Nutrition.
+Steps, Sleep, Heart Rate, Heart Rate Variability (RMSSD), Distance, Active Calories, Total Calories, Weight, Height, Blood Pressure, Blood Glucose, Oxygen Saturation, Body Temperature, Respiratory Rate, Resting Heart Rate, Exercise Sessions, Hydration, Nutrition.
 
 Requirements:
 - Android 8.0 (API 26) or higher

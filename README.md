@@ -43,7 +43,7 @@ Health Connect aggregates data from these popular health and fitness apps:
 ## Features
 
 - 🔄 **Automated Background Sync** - Configurable sync intervals (minimum 15 minutes) using WorkManager
-- 🎯 **Selective Data Types** - Choose which health data types to sync (17 supported types)
+- 🎯 **Selective Data Types** - Choose which health data types to sync (18 supported types)
 - 🔗 **Multiple Webhooks** - Send data to multiple webhook URLs simultaneously
 - 📊 **Manual Sync** - Trigger immediate data synchronization on demand
 - 📝 **Webhook Logs** - View detailed logs of all webhook requests and responses
@@ -59,20 +59,21 @@ The app supports reading and syncing the following health data types from Health
 1. **Steps** - Daily step count
 2. **Sleep** - Sleep sessions with stages
 3. **Heart Rate** - Heart rate measurements
-4. **Distance** - Distance traveled
-5. **Active Calories** - Calories burned during activity
-6. **Total Calories** - Total calories burned
-7. **Weight** - Body weight measurements
-8. **Height** - Height measurements
-9. **Blood Pressure** - Systolic and diastolic readings
-10. **Blood Glucose** - Blood glucose levels
-11. **Oxygen Saturation** - SpO2 measurements
-12. **Body Temperature** - Body temperature readings
-13. **Respiratory Rate** - Breathing rate measurements
-14. **Resting Heart Rate** - Resting heart rate data
-15. **Exercise Sessions** - Workout and exercise data
-16. **Hydration** - Water intake tracking
-17. **Nutrition** - Nutritional information (calories, protein, carbs, fat)
+4. **Heart Rate Variability (RMSSD)** - Heart rate variability in milliseconds
+5. **Distance** - Distance traveled
+6. **Active Calories** - Calories burned during activity
+7. **Total Calories** - Total calories burned
+8. **Weight** - Body weight measurements
+9. **Height** - Height measurements
+10. **Blood Pressure** - Systolic and diastolic readings
+11. **Blood Glucose** - Blood glucose levels
+12. **Oxygen Saturation** - SpO2 measurements
+13. **Body Temperature** - Body temperature readings
+14. **Respiratory Rate** - Breathing rate measurements
+15. **Resting Heart Rate** - Resting heart rate data
+16. **Exercise Sessions** - Workout and exercise data
+17. **Hydration** - Water intake tracking
+18. **Nutrition** - Nutritional information (calories, protein, carbs, fat)
 
 ## Requirements
 

@@ -11,7 +11,7 @@ Description: |-
 
   Features:
   * Automated Background Sync: Configurable sync intervals (minimum 15 minutes) using WorkManager
-  * Selective Data Types: Choose which health data types to sync (Steps, Sleep, Heart Rate, etc.)
+  * Selective Data Types: Choose which health data types to sync (Steps, Sleep, Heart Rate, Heart Rate Variability, etc.)
   * Multiple Webhooks: Send data to multiple webhook URLs simultaneously
   * Manual Sync: Trigger immediate data synchronization on demand
   * Webhook Logs: View detailed logs of all webhook requests and responses
