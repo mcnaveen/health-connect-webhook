@@ -3,8 +3,11 @@ package com.hcwebhook.app.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -14,12 +17,62 @@ import com.hcwebhook.app.WebhookLog
 import java.text.SimpleDateFormat
 import java.util.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LogsScreen() {
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context) }
-    // We should probably make logs observable or reload on resume, but for now simple state is fine
     var logs by remember { mutableStateOf(preferencesManager.getWebhookLogs()) }
+    var showClearSheet by remember { mutableStateOf(false) }
+
+    // ── Clear Logs Confirmation Bottom Sheet ──────────────────────────────────
+    if (showClearSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showClearSheet = false }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(40.dp)
+                )
+                Text("Clear All Logs?", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    "All webhook logs will be permanently deleted.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Button(
+                    onClick = {
+                        preferencesManager.clearWebhookLogs()
+                        logs = emptyList()
+                        showClearSheet = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Clear Logs")
+                }
+                OutlinedButton(
+                    onClick = { showClearSheet = false },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Cancel")
+                }
+            }
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Header with clear button
@@ -28,17 +81,14 @@ fun LogsScreen() {
                 .fillMaxWidth()
                 .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 "Webhook Logs",
                 style = MaterialTheme.typography.titleLarge
             )
             if (logs.isNotEmpty()) {
-                TextButton(onClick = {
-                    preferencesManager.clearWebhookLogs()
-                    logs = emptyList()
-                }) {
+                TextButton(onClick = { showClearSheet = true }) {
                     Text("Clear")
                 }
             }
@@ -49,7 +99,7 @@ fun LogsScreen() {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-                contentAlignment = androidx.compose.ui.Alignment.Center
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     "No logs yet",
@@ -86,7 +136,7 @@ private fun LogItem(log: WebhookLog) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                 Text(
@@ -97,7 +147,7 @@ private fun LogItem(log: WebhookLog) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(2.dp))
-                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         formatTimestamp(log.timestamp),
                         style = MaterialTheme.typography.labelSmall,

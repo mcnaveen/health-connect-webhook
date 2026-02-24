@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -14,6 +15,7 @@ import com.hcwebhook.app.SyncManager
 import com.hcwebhook.app.SyncResult
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
     val context = LocalContext.current
@@ -22,13 +24,101 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
     
     var isSyncing by remember { mutableStateOf(false) }
     var syncMessage by remember { mutableStateOf<String?>(null) }
+    var showConfirmSheet by remember { mutableStateOf(false) }
     
-    // We need to know if webhooks are configured to enable the button
-    // This might not be reactive if configs change elsewhere, but for now it's okay 
-    // or we can pass it in/observe it. 
-    // Given the simplicity, let's fetch it.
     val webhookConfigs = preferencesManager.getWebhookConfigs()
-    
+
+    // ── Confirmation Bottom Sheet ──────────────────────────────────────────────
+    if (showConfirmSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showConfirmSheet = false }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text("Sync Now?", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    "This will immediately send your health data to all configured webhooks.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Button(
+                    onClick = {
+                        showConfirmSheet = false
+                        if (isSyncing) return@Button
+
+                        scope.launch {
+                            isSyncing = true
+                            syncMessage = null
+
+                            try {
+                                val availability = HealthConnectClient.getSdkStatus(context)
+                                if (availability != HealthConnectClient.SDK_AVAILABLE) {
+                                    syncMessage = when (availability) {
+                                        HealthConnectClient.SDK_UNAVAILABLE -> "Health Connect is not installed"
+                                        HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED -> "Health Connect needs update"
+                                        else -> "Health Connect is not available"
+                                    }
+                                    isSyncing = false
+                                    return@launch
+                                }
+
+                                val healthConnectManager = HealthConnectManager(context)
+                                if (!healthConnectManager.hasPermissions()) {
+                                    syncMessage = "Permissions required for sync."
+                                    isSyncing = false
+                                    return@launch
+                                }
+
+                                val syncManager = SyncManager(context)
+                                val result = syncManager.performSync()
+
+                                when {
+                                    result.isSuccess -> {
+                                        val syncResult = result.getOrThrow()
+                                        syncMessage = when (syncResult) {
+                                            is SyncResult.NoData -> "No new data to sync"
+                                            is SyncResult.Success -> {
+                                                val parts = syncResult.syncCounts.map { (type, count) ->
+                                                    "$count ${type.displayName.lowercase()}"
+                                                }
+                                                if (parts.isEmpty()) "Sync completed successfully"
+                                                else "Synced ${parts.joinToString(", ")}"
+                                            }
+                                        }
+                                        onSyncCompleted()
+                                    }
+                                    result.isFailure -> {
+                                        syncMessage = "Sync failed: ${result.exceptionOrNull()?.message ?: "Unknown error"}"
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                syncMessage = "Sync failed: ${e.message}"
+                            } finally {
+                                isSyncing = false
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Sync Now")
+                }
+                OutlinedButton(
+                    onClick = { showConfirmSheet = false },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Cancel")
+                }
+            }
+        }
+    }
+
+    // ── Card UI ───────────────────────────────────────────────────────────────
     Card {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Manual Sync", style = MaterialTheme.typography.titleMedium)
@@ -40,65 +130,7 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = {
-                    if (isSyncing) return@Button
-
-                    scope.launch {
-                        isSyncing = true
-                        syncMessage = null
-
-                        try {
-                            // Check Health Connect SDK status
-                            val availability = HealthConnectClient.getSdkStatus(context)
-                            if (availability != HealthConnectClient.SDK_AVAILABLE) {
-                                syncMessage = when (availability) {
-                                    HealthConnectClient.SDK_UNAVAILABLE -> "Health Connect is not installed"
-                                    HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED -> "Health Connect needs update"
-                                    else -> "Health Connect is not available"
-                                }
-                                isSyncing = false
-                                return@launch
-                            }
-
-                            val healthConnectManager = HealthConnectManager(context)
-                            if (!healthConnectManager.hasPermissions()) {
-                                syncMessage = "Permissions required for sync."
-                                isSyncing = false
-                                return@launch
-                            }
-                            
-                            val syncManager = SyncManager(context)
-                            val result = syncManager.performSync()
-
-                            when {
-                                result.isSuccess -> {
-                                    val syncResult = result.getOrThrow()
-                                    syncMessage = when (syncResult) {
-                                        is SyncResult.NoData -> "No new data to sync"
-                                        is SyncResult.Success -> {
-                                            val parts = syncResult.syncCounts.map { (type, count) ->
-                                                "$count ${type.displayName.lowercase()}"
-                                            }
-                                            if (parts.isEmpty()) {
-                                                "Sync completed successfully"
-                                            } else {
-                                                "Synced ${parts.joinToString(", ")}"
-                                            }
-                                        }
-                                    }
-                                    onSyncCompleted()
-                                }
-                                result.isFailure -> {
-                                    syncMessage = "Sync failed: ${result.exceptionOrNull()?.message ?: "Unknown error"}"
-                                }
-                            }
-                        } catch (e: Exception) {
-                            syncMessage = "Sync failed: ${e.message}"
-                        } finally {
-                            isSyncing = false
-                        }
-                    }
-                },
+                onClick = { showConfirmSheet = true },
                 enabled = !isSyncing && webhookConfigs.isNotEmpty(),
                 modifier = Modifier.fillMaxWidth()
             ) {

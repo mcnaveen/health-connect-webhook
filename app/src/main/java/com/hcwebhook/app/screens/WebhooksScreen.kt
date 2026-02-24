@@ -7,6 +7,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,12 +32,72 @@ fun WebhooksScreen(
     var showHeaderDialog by remember { mutableStateOf(false) }
     var selectedConfigIndex by remember { mutableStateOf(-1) }
 
+    // Delete confirmation bottom sheet state
+    var showDeleteSheet by remember { mutableStateOf(false) }
+    var pendingDeleteIndex by remember { mutableStateOf(-1) }
+
     // Save changes when webhookConfigs changes
     LaunchedEffect(webhookConfigs) {
         preferencesManager.setWebhookConfigs(webhookConfigs)
     }
 
     val scrollState = rememberScrollState()
+
+    // ── Delete Confirmation Bottom Sheet ──────────────────────────────────────
+    if (showDeleteSheet && pendingDeleteIndex in webhookConfigs.indices) {
+        val urlToDelete = webhookConfigs[pendingDeleteIndex].url
+        ModalBottomSheet(
+            onDismissRequest = {
+                showDeleteSheet = false
+                pendingDeleteIndex = -1
+            }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(40.dp)
+                )
+                Text("Delete Webhook?", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    "\"$urlToDelete\" will be permanently removed.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Button(
+                    onClick = {
+                        webhookConfigs = webhookConfigs.toMutableList().apply { removeAt(pendingDeleteIndex) }
+                        showDeleteSheet = false
+                        pendingDeleteIndex = -1
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Delete")
+                }
+                OutlinedButton(
+                    onClick = {
+                        showDeleteSheet = false
+                        pendingDeleteIndex = -1
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Cancel")
+                }
+            }
+        }
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp)
@@ -95,9 +156,14 @@ fun WebhooksScreen(
                                         Icon(Icons.Filled.Edit, "Edit Headers")
                                     }
                                     IconButton(onClick = {
-                                        webhookConfigs = webhookConfigs.toMutableList().apply { removeAt(index) }
+                                        pendingDeleteIndex = index
+                                        showDeleteSheet = true
                                     }) {
-                                        Icon(Icons.Filled.Delete, "Delete")
+                                        Icon(
+                                            Icons.Filled.Delete,
+                                            "Delete",
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
                                     }
                                 }
                             }

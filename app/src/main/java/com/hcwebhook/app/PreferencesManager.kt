@@ -251,4 +251,40 @@ class PreferencesManager(context: Context) {
     fun setLastSyncSummary(summary: String) {
         prefs.edit().putString(KEY_LAST_SYNC_SUMMARY, summary).apply()
     }
+
+    // -------------------------------------------------------------------------
+    // Export / Import
+    // -------------------------------------------------------------------------
+
+    /**
+     * Builds a [SettingsExport] snapshot of all current user-configurable preferences.
+     */
+    fun exportSettings(): SettingsExport {
+        return SettingsExport(
+            exportedAt = System.currentTimeMillis(),
+            webhookConfigs = getWebhookConfigs(),
+            enabledDataTypes = getEnabledDataTypes().map { it.name },
+            syncMode = getSyncMode().name,
+            syncIntervalMinutes = getSyncIntervalMinutes(),
+            scheduledSyncs = getScheduledSyncs()
+        )
+    }
+
+    /**
+     * Restores all user-configurable preferences from a [SettingsExport].
+     */
+    fun importSettings(export: SettingsExport) {
+        setWebhookConfigs(export.webhookConfigs)
+
+        val dataTypes = export.enabledDataTypes.mapNotNull { name ->
+            try { HealthDataType.valueOf(name) } catch (e: Exception) { null }
+        }.toSet()
+        setEnabledDataTypes(dataTypes)
+
+        val mode = try { SyncMode.valueOf(export.syncMode) } catch (e: Exception) { SyncMode.INTERVAL }
+        setSyncMode(mode)
+
+        setSyncIntervalMinutes(export.syncIntervalMinutes)
+        setScheduledSyncs(export.scheduledSyncs)
+    }
 }

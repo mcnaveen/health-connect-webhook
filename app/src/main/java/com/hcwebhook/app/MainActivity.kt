@@ -93,7 +93,7 @@ class MainActivity : ComponentActivity() {
                     )
                     is NavigationScreen.Webhooks -> com.hcwebhook.app.screens.WebhooksScreen(activity = activity)
                     is NavigationScreen.Logs -> LogsScreen()
-                    is NavigationScreen.About -> AboutScreen()
+                    is NavigationScreen.About -> AboutScreen(activity = activity)
                 }
             }
         }
