@@ -16,7 +16,7 @@ class SyncManager(private val context: Context) {
     private val preferencesManager = PreferencesManager(context)
     private val healthConnectManager = HealthConnectManager(context)
 
-    suspend fun performSync(): Result<SyncResult> = withContext(Dispatchers.IO) {
+    suspend fun performSync(timeRangeDays: Int? = null): Result<SyncResult> = withContext(Dispatchers.IO) {
         try {
             val webhookConfigs = preferencesManager.getWebhookConfigs()
 
@@ -29,13 +29,17 @@ class SyncManager(private val context: Context) {
                 return@withContext Result.failure(Exception("No data types enabled"))
             }
 
-            // Get last sync timestamps for all enabled types
-            val lastSyncTimestamps = enabledTypes.associateWith { type ->
-                preferencesManager.getLastSyncTimestamp(type)?.let { Instant.ofEpochMilli(it) }
+            // Get last sync timestamps for all enabled types, ignore if a manual time range is specified
+            val lastSyncTimestamps = if (timeRangeDays == null) {
+                enabledTypes.associateWith { type ->
+                    preferencesManager.getLastSyncTimestamp(type)?.let { Instant.ofEpochMilli(it) }
+                }
+            } else {
+                emptyMap()
             }
 
             // Read health data
-            val healthDataResult = healthConnectManager.readHealthData(enabledTypes, lastSyncTimestamps)
+            val healthDataResult = healthConnectManager.readHealthData(enabledTypes, lastSyncTimestamps, timeRangeDays)
             if (healthDataResult.isFailure) {
                 return@withContext Result.failure(healthDataResult.exceptionOrNull() ?: Exception("Failed to read health data"))
             }

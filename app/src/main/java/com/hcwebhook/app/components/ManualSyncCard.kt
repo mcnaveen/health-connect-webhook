@@ -28,6 +28,15 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
     
     val webhookConfigs = preferencesManager.getWebhookConfigs()
 
+    val timeRangeOptions = listOf(
+        "Default (New data only)" to null,
+        "Past 1 Day" to 1,
+        "Past 7 Days" to 7,
+        "Past 30 Days" to 30
+    )
+    var expanded by remember { mutableStateOf(false) }
+    var selectedOptionIndex by remember { mutableStateOf(0) }
+
     // ── Confirmation Bottom Sheet ──────────────────────────────────────────────
     if (showConfirmSheet) {
         ModalBottomSheet(
@@ -76,7 +85,7 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                                 }
 
                                 val syncManager = SyncManager(context)
-                                val result = syncManager.performSync()
+                                val result = syncManager.performSync(timeRangeOptions[selectedOptionIndex].second)
 
                                 when {
                                     result.isSuccess -> {
@@ -127,6 +136,37 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                 "Trigger a manual sync to send current health data to webhooks",
                 style = MaterialTheme.typography.bodyMedium
             )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = timeRangeOptions[selectedOptionIndex].first,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Time Range") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    timeRangeOptions.forEachIndexed { index, option ->
+                        DropdownMenuItem(
+                            text = { Text(option.first) },
+                            onClick = {
+                                selectedOptionIndex = index
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(

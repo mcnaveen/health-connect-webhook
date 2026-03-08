@@ -176,11 +176,16 @@ class HealthConnectManager(private val context: Context) {
 
     suspend fun readHealthData(
         enabledTypes: Set<HealthDataType>,
-        lastSyncTimestamps: Map<HealthDataType, Instant?>
+        lastSyncTimestamps: Map<HealthDataType, Instant?>,
+        timeRangeDays: Int? = null
     ): Result<HealthData> {
         return try {
             val endTime = Instant.now()
-            val startTime = endTime.minus(LOOKBACK_HOURS, ChronoUnit.HOURS)
+            val startTime = if (timeRangeDays != null) {
+                endTime.minus(timeRangeDays.toLong(), ChronoUnit.DAYS)
+            } else {
+                endTime.minus(LOOKBACK_HOURS, ChronoUnit.HOURS)
+            }
 
             val stepsData = if (HealthDataType.STEPS in enabledTypes)
                 readStepsData(startTime, endTime, lastSyncTimestamps[HealthDataType.STEPS]) else emptyList()
