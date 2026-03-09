@@ -121,7 +121,7 @@ class WebhookManager(
     }
 
     companion object {
-        private const val TIMEOUT_SECONDS = 10L
+        private const val TIMEOUT_SECONDS = 60L
         private const val MAX_RETRIES = 3
         private const val INITIAL_RETRY_DELAY_MS = 1000L
     }
