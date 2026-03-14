@@ -94,7 +94,25 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                                 }
 
                                 val syncManager = SyncManager(context)
-                                val result = syncManager.performSync(timeRangeOptions[selectedOptionIndex].second)
+                                val timeRangeSelection = timeRangeOptions[selectedOptionIndex].second
+
+                                val result = if (timeRangeSelection == -1) {
+                                    // custom date range
+                                    val startInstant = startDate?.atStartOfDay(ZoneOffset.UTC)?.toInstant()
+                                    // normalize both boundaries to midnight UTC
+                                    val endInstant = endDate?.plusDays(1)?.atStartOfDay(ZoneOffset.UTC)?.toInstant()
+                                    if (startInstant == null || endInstant == null) {
+                                        syncMessage = "Please select both start and end dates."
+                                        isSyncing = false
+                                        return@launch
+                                    }
+
+                                    syncMessage = "Syncing data from ${startDate} to ${endDate}..."
+                                    syncManager.performSync(start = startInstant, end = endInstant)
+                                } else {
+                                    // sync the last N days, or from the last sync
+                                    syncManager.performSync(timeRangeSelection)
+                                }
 
                                 when {
                                     result.isSuccess -> {
@@ -227,19 +245,36 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                 }
 
                 if (showEndDatePicker) {
+                    val currentEndDate = endDate
+                    val minEndDateMillis = startDate
+                        ?.atStartOfDay(ZoneOffset.UTC)
+                        ?.toInstant()
+                        ?.toEpochMilli()
+                    val minEndYear = startDate?.year
                     val endPickerState = rememberDatePickerState(
-                        initialSelectedDateMillis = endDate
-                            ?.atStartOfDay(ZoneOffset.UTC)
-                            ?.toInstant()
-                            ?.toEpochMilli()
-                            ?: todayMillis,
+                        initialSelectedDateMillis = when {
+                            currentEndDate != null && minEndDateMillis != null -> {
+                                val endDateMillis = currentEndDate
+                                    .atStartOfDay(ZoneOffset.UTC)
+                                    .toInstant()
+                                    .toEpochMilli()
+                                maxOf(endDateMillis, minEndDateMillis)
+                            }
+                            currentEndDate != null -> currentEndDate
+                                .atStartOfDay(ZoneOffset.UTC)
+                                .toInstant()
+                                .toEpochMilli()
+                            minEndDateMillis != null -> minEndDateMillis
+                            else -> todayMillis
+                        },
                         selectableDates = object : SelectableDates {
                             override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                                return utcTimeMillis <= todayMillis
+                                return utcTimeMillis <= todayMillis &&
+                                    (minEndDateMillis == null || utcTimeMillis >= minEndDateMillis)
                             }
 
                             override fun isSelectableYear(year: Int): Boolean {
-                                return year <= today.year
+                                return year <= today.year && (minEndYear == null || year >= minEndYear)
                             }
                         }
                     )

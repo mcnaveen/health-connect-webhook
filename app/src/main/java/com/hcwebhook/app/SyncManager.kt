@@ -16,7 +16,14 @@ class SyncManager(private val context: Context) {
     private val preferencesManager = PreferencesManager(context)
     private val healthConnectManager = HealthConnectManager(context)
 
-    suspend fun performSync(timeRangeDays: Int? = null): Result<SyncResult> = withContext(Dispatchers.IO) {
+    suspend fun performSync(timeRangeDays: Int? = null, start: Instant? = null, end: Instant? = null): Result<SyncResult> = withContext(Dispatchers.IO) {
+        /*
+        Supports two modes:
+        - timeRangeDays: the amount of days in the past to sync.
+        - start/end: specific time range to sync
+        Note that custom period selection may override the last sync timestamp.
+        */
+
         try {
             val webhookConfigs = preferencesManager.getWebhookConfigs()
 
@@ -29,8 +36,10 @@ class SyncManager(private val context: Context) {
                 return@withContext Result.failure(Exception("No data types enabled"))
             }
 
-            // Get last sync timestamps for all enabled types, ignore if a manual time range is specified
-            val lastSyncTimestamps = if (timeRangeDays == null) {
+            // Keep incremental sync only for default mode.
+            // Explicit ranges (start/end or timeRangeDays) always perform a full read of that window.
+            val hasExplicitRange = start != null || end != null || timeRangeDays != null
+            val lastSyncTimestamps = if (!hasExplicitRange) {
                 enabledTypes.associateWith { type ->
                     preferencesManager.getLastSyncTimestamp(type)?.let { Instant.ofEpochMilli(it) }
                 }
@@ -39,7 +48,13 @@ class SyncManager(private val context: Context) {
             }
 
             // Read health data
-            val healthDataResult = healthConnectManager.readHealthData(enabledTypes, lastSyncTimestamps, timeRangeDays)
+            val healthDataResult = healthConnectManager.readHealthData(
+                enabledTypes = enabledTypes,
+                lastSyncTimestamps = lastSyncTimestamps,
+                timeRangeDays = timeRangeDays,
+                start = start,
+                end = end
+            )
             if (healthDataResult.isFailure) {
                 return@withContext Result.failure(healthDataResult.exceptionOrNull() ?: Exception("Failed to read health data"))
             }
