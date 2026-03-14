@@ -559,6 +559,7 @@ class HealthConnectManager(private val context: Context) {
         fun getPermissionsForTypes(types: Set<HealthDataType>): Set<String> {
             val permissions = types.map { HealthPermission.getReadPermission(it.recordClass) }.toMutableSet()
             permissions.add("android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND")
+            permissions.add("android.permission.health.READ_HEALTH_DATA_HISTORY")
             return permissions
         }
 
@@ -581,7 +582,8 @@ class HealthConnectManager(private val context: Context) {
             HealthPermission.getReadPermission(ExerciseSessionRecord::class),
             HealthPermission.getReadPermission(HydrationRecord::class),
             HealthPermission.getReadPermission(NutritionRecord::class),
-            "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND"
+            "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND",
+            "android.permission.health.READ_HEALTH_DATA_HISTORY"
         )
     }
 }
