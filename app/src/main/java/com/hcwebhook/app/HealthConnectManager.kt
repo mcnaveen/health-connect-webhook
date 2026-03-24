@@ -1226,7 +1226,7 @@ class HealthConnectManager(private val context: Context) {
             return permissions
         }
 
-        val ALL_PERMISSIONS = setOf(
+        val READ_PERMISSIONS = setOf(
             HealthPermission.getReadPermission(StepsRecord::class),
             HealthPermission.getReadPermission(SleepSessionRecord::class),
             HealthPermission.getReadPermission(HeartRateRecord::class),
@@ -1284,6 +1284,8 @@ class HealthConnectManager(private val context: Context) {
             HealthPermission.getWritePermission(FloorsClimbedRecord::class),
             HealthPermission.getWritePermission(MenstruationPeriodRecord::class)
         )
+
+        val ALL_PERMISSIONS = READ_PERMISSIONS + WRITE_PERMISSIONS
 
         private fun getSleepStageName(stage: Int): String = when (stage) {
             SleepSessionRecord.STAGE_TYPE_AWAKE -> "AWAKE"

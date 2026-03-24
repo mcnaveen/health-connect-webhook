@@ -13,8 +13,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Android
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -62,7 +60,6 @@ fun ConfigurationScreen(
     var selectedDataTypeForPermission by remember { mutableStateOf<HealthDataType?>(null) }
     var isDataTypesExpanded by remember { mutableStateOf(false) }
     var writeBackEnabled by remember { mutableStateOf(preferencesManager.isWriteBackEnabled()) }
-    var hasWritePermissions by remember { mutableStateOf(false) }
 
     // Health Connect Check
     var sdkStatus by remember { mutableIntStateOf(HealthConnectClient.SDK_UNAVAILABLE) }
@@ -100,14 +97,11 @@ fun ConfigurationScreen(
                 scope.launch {
                     try {
                         val healthConnectManager = HealthConnectManager(context)
-                        val permissions = healthConnectManager.getGrantedPermissions()
-                        grantedPermissionsSet = permissions
-                        hasWritePermissions = HealthConnectManager.WRITE_PERMISSIONS.all { it in permissions }
+                        grantedPermissionsSet = healthConnectManager.getGrantedPermissions()
                     } catch (e: Exception) { }
                 }
             } else {
                 grantedPermissionsSet = emptySet()
-                hasWritePermissions = false
             }
         }
 
@@ -119,7 +113,6 @@ fun ConfigurationScreen(
                 val grantedPermissions = healthConnectManager.getGrantedPermissions()
                 hasPermissions = grantedPermissions.isNotEmpty()
                 grantedPermissionsSet = grantedPermissions
-                hasWritePermissions = HealthConnectManager.WRITE_PERMISSIONS.all { it in grantedPermissions }
                  // Auto-enable switches for granted permissions if none enabled yet
                 if (enabledDataTypes.isEmpty() && grantedPermissions.isNotEmpty()) {
                     val grantedTypes = HealthDataType.entries.filter { type ->
@@ -544,7 +537,6 @@ fun ConfigurationScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Switch(
                                 checked = writeBackEnabled,
-                                enabled = hasWritePermissions,
                                 onCheckedChange = { enabled ->
                                     writeBackEnabled = enabled
                                     preferencesManager.setWriteBackEnabled(enabled)
@@ -556,21 +548,6 @@ fun ConfigurationScreen(
                                     }
                                 }
                             )
-                        }
-                        if (!hasWritePermissions) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(
-                                onClick = {
-                                    try {
-                                        permissionLauncher.launch(HealthConnectManager.WRITE_PERMISSIONS)
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("Grant Write Permissions")
-                            }
                         }
                     }
                 }
