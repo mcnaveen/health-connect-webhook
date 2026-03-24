@@ -1189,6 +1189,56 @@ class HealthConnectManager(private val context: Context) {
         }
     }
 
+    suspend fun insertSpeed(
+        samples: List<Pair<Instant, Double>>,
+        startTime: Instant,
+        endTime: Instant
+    ): Result<Unit> {
+        return try {
+            val record = SpeedRecord(
+                startTime = startTime,
+                startZoneOffset = ZoneOffset.systemDefault().rules.getOffset(startTime),
+                endTime = endTime,
+                endZoneOffset = ZoneOffset.systemDefault().rules.getOffset(endTime),
+                samples = samples.map { (time, metersPerSecond) ->
+                    SpeedRecord.Sample(
+                        time = time,
+                        speed = Velocity.metersPerSecond(metersPerSecond)
+                    )
+                }
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertPower(
+        samples: List<Pair<Instant, Double>>,
+        startTime: Instant,
+        endTime: Instant
+    ): Result<Unit> {
+        return try {
+            val record = PowerRecord(
+                startTime = startTime,
+                startZoneOffset = ZoneOffset.systemDefault().rules.getOffset(startTime),
+                endTime = endTime,
+                endZoneOffset = ZoneOffset.systemDefault().rules.getOffset(endTime),
+                samples = samples.map { (time, watts) ->
+                    PowerRecord.Sample(
+                        time = time,
+                        power = Power.watts(watts)
+                    )
+                }
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     fun isHealthConnectAvailable(): Boolean {
         return try {
             HealthConnectClient.getOrCreate(context)
@@ -1264,31 +1314,33 @@ class HealthConnectManager(private val context: Context) {
         )
 
         val WRITE_PERMISSIONS = setOf(
-            HealthPermission.getWritePermission(NutritionRecord::class),
-            HealthPermission.getWritePermission(HydrationRecord::class),
-            HealthPermission.getWritePermission(WeightRecord::class),
             HealthPermission.getWritePermission(StepsRecord::class),
-            HealthPermission.getWritePermission(HeartRateRecord::class),
             HealthPermission.getWritePermission(SleepSessionRecord::class),
+            HealthPermission.getWritePermission(HeartRateRecord::class),
+            HealthPermission.getWritePermission(HeartRateVariabilityRmssdRecord::class),
             HealthPermission.getWritePermission(DistanceRecord::class),
             HealthPermission.getWritePermission(ActiveCaloriesBurnedRecord::class),
             HealthPermission.getWritePermission(TotalCaloriesBurnedRecord::class),
+            HealthPermission.getWritePermission(WeightRecord::class),
             HealthPermission.getWritePermission(HeightRecord::class),
-            HealthPermission.getWritePermission(OxygenSaturationRecord::class),
-            HealthPermission.getWritePermission(HeartRateVariabilityRmssdRecord::class),
-            HealthPermission.getWritePermission(BasalMetabolicRateRecord::class),
-            HealthPermission.getWritePermission(BodyFatRecord::class),
-            HealthPermission.getWritePermission(LeanBodyMassRecord::class),
-            HealthPermission.getWritePermission(RestingHeartRateRecord::class),
-            HealthPermission.getWritePermission(Vo2MaxRecord::class),
-            HealthPermission.getWritePermission(BoneMassRecord::class),
             HealthPermission.getWritePermission(BloodPressureRecord::class),
             HealthPermission.getWritePermission(BloodGlucoseRecord::class),
+            HealthPermission.getWritePermission(OxygenSaturationRecord::class),
             HealthPermission.getWritePermission(BodyTemperatureRecord::class),
             HealthPermission.getWritePermission(RespiratoryRateRecord::class),
+            HealthPermission.getWritePermission(RestingHeartRateRecord::class),
             HealthPermission.getWritePermission(ExerciseSessionRecord::class),
+            HealthPermission.getWritePermission(HydrationRecord::class),
+            HealthPermission.getWritePermission(NutritionRecord::class),
+            HealthPermission.getWritePermission(SpeedRecord::class),
+            HealthPermission.getWritePermission(PowerRecord::class),
+            HealthPermission.getWritePermission(BodyFatRecord::class),
+            HealthPermission.getWritePermission(BoneMassRecord::class),
+            HealthPermission.getWritePermission(LeanBodyMassRecord::class),
+            HealthPermission.getWritePermission(MenstruationPeriodRecord::class),
+            HealthPermission.getWritePermission(Vo2MaxRecord::class),
             HealthPermission.getWritePermission(FloorsClimbedRecord::class),
-            HealthPermission.getWritePermission(MenstruationPeriodRecord::class)
+            HealthPermission.getWritePermission(BasalMetabolicRateRecord::class)
         )
 
         val CORE_WRITE_PERMISSIONS = setOf(

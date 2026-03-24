@@ -122,6 +122,8 @@ class WriteBackManager(private val context: Context) {
             "exercise" -> writeExercise(record.data)
             "floors_climbed" -> writeFloorsClimbed(record.data)
             "menstruation" -> writeMenstruation(record.data)
+            "speed" -> writeSpeed(record.data)
+            "power" -> writePower(record.data)
             else -> Result.failure(Exception("Unsupported write type: ${record.type}"))
         }
     }
@@ -323,6 +325,32 @@ class WriteBackManager(private val context: Context) {
 
     private suspend fun writeMenstruation(data: JSONObject): Result<Unit> {
         return healthConnectManager.insertMenstruation(
+            startTime = Instant.parse(data.getString("startTime")),
+            endTime = Instant.parse(data.getString("endTime"))
+        )
+    }
+
+    private suspend fun writeSpeed(data: JSONObject): Result<Unit> {
+        val samplesArray = data.getJSONArray("samples")
+        val samples = (0 until samplesArray.length()).map { i ->
+            val s = samplesArray.getJSONObject(i)
+            Pair(Instant.parse(s.getString("time")), s.getDouble("metersPerSecond"))
+        }
+        return healthConnectManager.insertSpeed(
+            samples = samples,
+            startTime = Instant.parse(data.getString("startTime")),
+            endTime = Instant.parse(data.getString("endTime"))
+        )
+    }
+
+    private suspend fun writePower(data: JSONObject): Result<Unit> {
+        val samplesArray = data.getJSONArray("samples")
+        val samples = (0 until samplesArray.length()).map { i ->
+            val s = samplesArray.getJSONObject(i)
+            Pair(Instant.parse(s.getString("time")), s.getDouble("watts"))
+        }
+        return healthConnectManager.insertPower(
+            samples = samples,
             startTime = Instant.parse(data.getString("startTime")),
             endTime = Instant.parse(data.getString("endTime"))
         )
