@@ -7,8 +7,15 @@ import androidx.health.connect.client.records.*
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import androidx.health.connect.client.units.BloodGlucose
 import androidx.health.connect.client.units.Energy
+import androidx.health.connect.client.units.Length
 import androidx.health.connect.client.units.Mass
+import androidx.health.connect.client.units.Percentage
+import androidx.health.connect.client.units.Power
+import androidx.health.connect.client.units.Pressure
+import androidx.health.connect.client.units.Temperature
+import androidx.health.connect.client.units.Velocity
 import androidx.health.connect.client.units.Volume
 import java.time.Duration
 import java.time.Instant
@@ -800,6 +807,388 @@ class HealthConnectManager(private val context: Context) {
         }
     }
 
+    suspend fun insertHeartRate(
+        bpm: Long,
+        time: Instant
+    ): Result<Unit> {
+        return try {
+            val record = HeartRateRecord(
+                startTime = time,
+                startZoneOffset = ZoneOffset.systemDefault().rules.getOffset(time),
+                endTime = time.plusSeconds(1),
+                endZoneOffset = ZoneOffset.systemDefault().rules.getOffset(time),
+                samples = listOf(HeartRateRecord.Sample(time, bpm))
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertSleep(
+        startTime: Instant,
+        endTime: Instant,
+        stages: List<SleepSessionRecord.Stage>
+    ): Result<Unit> {
+        return try {
+            val record = SleepSessionRecord(
+                startTime = startTime,
+                startZoneOffset = ZoneOffset.systemDefault().rules.getOffset(startTime),
+                endTime = endTime,
+                endZoneOffset = ZoneOffset.systemDefault().rules.getOffset(endTime),
+                stages = stages
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertDistance(
+        meters: Double,
+        startTime: Instant,
+        endTime: Instant
+    ): Result<Unit> {
+        return try {
+            val record = DistanceRecord(
+                startTime = startTime,
+                startZoneOffset = ZoneOffset.systemDefault().rules.getOffset(startTime),
+                endTime = endTime,
+                endZoneOffset = ZoneOffset.systemDefault().rules.getOffset(endTime),
+                distance = Length.meters(meters)
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertActiveCalories(
+        calories: Double,
+        startTime: Instant,
+        endTime: Instant
+    ): Result<Unit> {
+        return try {
+            val record = ActiveCaloriesBurnedRecord(
+                startTime = startTime,
+                startZoneOffset = ZoneOffset.systemDefault().rules.getOffset(startTime),
+                endTime = endTime,
+                endZoneOffset = ZoneOffset.systemDefault().rules.getOffset(endTime),
+                energy = Energy.kilocalories(calories)
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertTotalCalories(
+        calories: Double,
+        startTime: Instant,
+        endTime: Instant
+    ): Result<Unit> {
+        return try {
+            val record = TotalCaloriesBurnedRecord(
+                startTime = startTime,
+                startZoneOffset = ZoneOffset.systemDefault().rules.getOffset(startTime),
+                endTime = endTime,
+                endZoneOffset = ZoneOffset.systemDefault().rules.getOffset(endTime),
+                energy = Energy.kilocalories(calories)
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertHeight(
+        meters: Double,
+        time: Instant
+    ): Result<Unit> {
+        return try {
+            val record = HeightRecord(
+                time = time,
+                zoneOffset = ZoneOffset.systemDefault().rules.getOffset(time),
+                height = Length.meters(meters)
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertOxygenSaturation(
+        percentage: Double,
+        time: Instant
+    ): Result<Unit> {
+        return try {
+            val record = OxygenSaturationRecord(
+                time = time,
+                zoneOffset = ZoneOffset.systemDefault().rules.getOffset(time),
+                percentage = Percentage(percentage)
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertHeartRateVariability(
+        milliseconds: Double,
+        time: Instant
+    ): Result<Unit> {
+        return try {
+            val record = HeartRateVariabilityRmssdRecord(
+                time = time,
+                zoneOffset = ZoneOffset.systemDefault().rules.getOffset(time),
+                heartRateVariabilityMillis = milliseconds
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertBasalMetabolicRate(
+        kcalPerDay: Double,
+        time: Instant
+    ): Result<Unit> {
+        return try {
+            val record = BasalMetabolicRateRecord(
+                time = time,
+                zoneOffset = ZoneOffset.systemDefault().rules.getOffset(time),
+                basalMetabolicRate = Power.kilocaloriesPerDay(kcalPerDay)
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertBodyFat(
+        percentage: Double,
+        time: Instant
+    ): Result<Unit> {
+        return try {
+            val record = BodyFatRecord(
+                time = time,
+                zoneOffset = ZoneOffset.systemDefault().rules.getOffset(time),
+                percentage = Percentage(percentage)
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertLeanBodyMass(
+        kilograms: Double,
+        time: Instant
+    ): Result<Unit> {
+        return try {
+            val record = LeanBodyMassRecord(
+                time = time,
+                zoneOffset = ZoneOffset.systemDefault().rules.getOffset(time),
+                mass = Mass.kilograms(kilograms)
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertRestingHeartRate(
+        bpm: Long,
+        time: Instant
+    ): Result<Unit> {
+        return try {
+            val record = RestingHeartRateRecord(
+                time = time,
+                zoneOffset = ZoneOffset.systemDefault().rules.getOffset(time),
+                beatsPerMinute = bpm
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertVo2Max(
+        vo2MillilitersPerMinuteKilogram: Double,
+        time: Instant
+    ): Result<Unit> {
+        return try {
+            val record = Vo2MaxRecord(
+                time = time,
+                zoneOffset = ZoneOffset.systemDefault().rules.getOffset(time),
+                vo2MillilitersPerMinuteKilogram = vo2MillilitersPerMinuteKilogram
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertBoneMass(
+        kilograms: Double,
+        time: Instant
+    ): Result<Unit> {
+        return try {
+            val record = BoneMassRecord(
+                time = time,
+                zoneOffset = ZoneOffset.systemDefault().rules.getOffset(time),
+                mass = Mass.kilograms(kilograms)
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertBloodPressure(
+        systolic: Double,
+        diastolic: Double,
+        time: Instant
+    ): Result<Unit> {
+        return try {
+            val record = BloodPressureRecord(
+                time = time,
+                zoneOffset = ZoneOffset.systemDefault().rules.getOffset(time),
+                systolic = Pressure.millimetersOfMercury(systolic),
+                diastolic = Pressure.millimetersOfMercury(diastolic)
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertBloodGlucose(
+        millimolePerLiter: Double,
+        time: Instant
+    ): Result<Unit> {
+        return try {
+            val record = BloodGlucoseRecord(
+                time = time,
+                zoneOffset = ZoneOffset.systemDefault().rules.getOffset(time),
+                level = BloodGlucose.millimolesPerLiter(millimolePerLiter)
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertBodyTemperature(
+        celsius: Double,
+        time: Instant
+    ): Result<Unit> {
+        return try {
+            val record = BodyTemperatureRecord(
+                time = time,
+                zoneOffset = ZoneOffset.systemDefault().rules.getOffset(time),
+                temperature = Temperature.celsius(celsius)
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertRespiratoryRate(
+        rate: Double,
+        time: Instant
+    ): Result<Unit> {
+        return try {
+            val record = RespiratoryRateRecord(
+                time = time,
+                zoneOffset = ZoneOffset.systemDefault().rules.getOffset(time),
+                rate = rate
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertExerciseSession(
+        type: Int,
+        startTime: Instant,
+        endTime: Instant,
+        title: String?
+    ): Result<Unit> {
+        return try {
+            val record = ExerciseSessionRecord(
+                startTime = startTime,
+                startZoneOffset = ZoneOffset.systemDefault().rules.getOffset(startTime),
+                endTime = endTime,
+                endZoneOffset = ZoneOffset.systemDefault().rules.getOffset(endTime),
+                exerciseType = type,
+                title = title
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertFloorsClimbed(
+        floors: Double,
+        startTime: Instant,
+        endTime: Instant
+    ): Result<Unit> {
+        return try {
+            val record = FloorsClimbedRecord(
+                startTime = startTime,
+                startZoneOffset = ZoneOffset.systemDefault().rules.getOffset(startTime),
+                endTime = endTime,
+                endZoneOffset = ZoneOffset.systemDefault().rules.getOffset(endTime),
+                floors = floors
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertMenstruation(
+        startTime: Instant,
+        endTime: Instant
+    ): Result<Unit> {
+        return try {
+            val record = MenstruationPeriodRecord(
+                startTime = startTime,
+                startZoneOffset = ZoneOffset.systemDefault().rules.getOffset(startTime),
+                endTime = endTime,
+                endZoneOffset = ZoneOffset.systemDefault().rules.getOffset(endTime)
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     fun isHealthConnectAvailable(): Boolean {
         return try {
             HealthConnectClient.getOrCreate(context)
@@ -872,7 +1261,28 @@ class HealthConnectManager(private val context: Context) {
             HealthPermission.getWritePermission(NutritionRecord::class),
             HealthPermission.getWritePermission(HydrationRecord::class),
             HealthPermission.getWritePermission(WeightRecord::class),
-            HealthPermission.getWritePermission(StepsRecord::class)
+            HealthPermission.getWritePermission(StepsRecord::class),
+            HealthPermission.getWritePermission(HeartRateRecord::class),
+            HealthPermission.getWritePermission(SleepSessionRecord::class),
+            HealthPermission.getWritePermission(DistanceRecord::class),
+            HealthPermission.getWritePermission(ActiveCaloriesBurnedRecord::class),
+            HealthPermission.getWritePermission(TotalCaloriesBurnedRecord::class),
+            HealthPermission.getWritePermission(HeightRecord::class),
+            HealthPermission.getWritePermission(OxygenSaturationRecord::class),
+            HealthPermission.getWritePermission(HeartRateVariabilityRmssdRecord::class),
+            HealthPermission.getWritePermission(BasalMetabolicRateRecord::class),
+            HealthPermission.getWritePermission(BodyFatRecord::class),
+            HealthPermission.getWritePermission(LeanBodyMassRecord::class),
+            HealthPermission.getWritePermission(RestingHeartRateRecord::class),
+            HealthPermission.getWritePermission(Vo2MaxRecord::class),
+            HealthPermission.getWritePermission(BoneMassRecord::class),
+            HealthPermission.getWritePermission(BloodPressureRecord::class),
+            HealthPermission.getWritePermission(BloodGlucoseRecord::class),
+            HealthPermission.getWritePermission(BodyTemperatureRecord::class),
+            HealthPermission.getWritePermission(RespiratoryRateRecord::class),
+            HealthPermission.getWritePermission(ExerciseSessionRecord::class),
+            HealthPermission.getWritePermission(FloorsClimbedRecord::class),
+            HealthPermission.getWritePermission(MenstruationPeriodRecord::class)
         )
 
         private fun getSleepStageName(stage: Int): String = when (stage) {
