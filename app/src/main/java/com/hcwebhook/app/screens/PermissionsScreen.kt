@@ -113,12 +113,14 @@ fun PermissionsScreen() {
             val totalRead = HealthDataType.entries.count { type ->
                 HealthPermission.getReadPermission(type.recordClass) in grantedPermissions
             }
-            val totalWrite = HealthDataType.entries.count { type ->
+            val writableTypes = HealthDataType.entries.filter { !it.readOnly }
+            val totalWrite = writableTypes.count { type ->
                 try {
                     HealthPermission.getWritePermission(type.recordClass) in grantedPermissions
                 } catch (_: Exception) { false }
             }
-            val total = HealthDataType.entries.size
+            val totalReadCount = HealthDataType.entries.size
+            val totalWriteCount = writableTypes.size
 
             Card(
                 colors = CardDefaults.cardColors(
@@ -134,7 +136,7 @@ fun PermissionsScreen() {
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            "$totalRead / $total",
+                            "$totalRead / $totalReadCount",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -147,7 +149,7 @@ fun PermissionsScreen() {
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            "$totalWrite / $total",
+                            "$totalWrite / $totalWriteCount",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.tertiary
@@ -204,7 +206,7 @@ fun PermissionsScreen() {
                 items(HealthDataType.entries.toList()) { dataType ->
                     val readPermission = HealthPermission.getReadPermission(dataType.recordClass)
                     val hasRead = readPermission in grantedPermissions
-                    val hasWrite = try {
+                    val hasWrite = if (dataType.readOnly) null else try {
                         HealthPermission.getWritePermission(dataType.recordClass) in grantedPermissions
                     } catch (_: Exception) { false }
 
@@ -235,17 +237,37 @@ fun PermissionsScreen() {
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
                 }
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "— Some data types are read-only in Health Connect API",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
             }
         }
     }
 }
 
 @Composable
-private fun PermissionIcon(granted: Boolean) {
-    Icon(
-        imageVector = if (granted) Icons.Filled.Check else Icons.Filled.Close,
-        contentDescription = if (granted) "Granted" else "Denied",
-        tint = if (granted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-        modifier = Modifier.size(20.dp)
-    )
+private fun PermissionIcon(granted: Boolean?) {
+    if (granted == null) {
+        Text(
+            "—",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+    } else {
+        Icon(
+            imageVector = if (granted) Icons.Filled.Check else Icons.Filled.Close,
+            contentDescription = if (granted) "Granted" else "Denied",
+            tint = if (granted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(20.dp)
+        )
+    }
 }

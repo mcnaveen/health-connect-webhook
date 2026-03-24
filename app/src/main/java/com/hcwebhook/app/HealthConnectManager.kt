@@ -24,7 +24,11 @@ import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 import kotlin.reflect.KClass
 
-enum class HealthDataType(val displayName: String, val recordClass: KClass<out Record>) {
+enum class HealthDataType(
+    val displayName: String,
+    val recordClass: KClass<out Record>,
+    val readOnly: Boolean = false
+) {
     STEPS("Steps", StepsRecord::class),
     SLEEP("Sleep", SleepSessionRecord::class),
     HEART_RATE("Heart Rate", HeartRateRecord::class),
@@ -43,14 +47,14 @@ enum class HealthDataType(val displayName: String, val recordClass: KClass<out R
     EXERCISE("Exercise Sessions", ExerciseSessionRecord::class),
     HYDRATION("Hydration", HydrationRecord::class),
     NUTRITION("Nutrition", NutritionRecord::class),
-    SPEED("Speed", SpeedRecord::class),
-    POWER("Power", PowerRecord::class),
+    SPEED("Speed", SpeedRecord::class, readOnly = true),
+    POWER("Power", PowerRecord::class, readOnly = true),
     BODY_FAT("Body Fat", BodyFatRecord::class),
     BONE_MASS("Bone Mass", BoneMassRecord::class),
     LEAN_BODY_MASS("Lean Body Mass", LeanBodyMassRecord::class),
     MENSTRUATION("Menstruation", MenstruationPeriodRecord::class),
     VO2_MAX("VO2 Max", Vo2MaxRecord::class),
-    FLOORS_CLIMBED("Floors Climbed", FloorsClimbedRecord::class),
+    FLOORS_CLIMBED("Floors Climbed", FloorsClimbedRecord::class, readOnly = true),
     BASAL_METABOLIC_RATE("Basal Metabolic Rate", BasalMetabolicRateRecord::class)
 }
 
