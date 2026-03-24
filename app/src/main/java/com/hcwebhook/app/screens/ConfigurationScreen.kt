@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -42,7 +43,8 @@ import java.util.Calendar
 @Composable
 fun ConfigurationScreen(
     activity: MainActivity,
-    permissionLauncher: androidx.activity.result.ActivityResultLauncher<Set<String>>
+    permissionLauncher: androidx.activity.result.ActivityResultLauncher<Set<String>>,
+    onNavigateToWebhooks: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -172,6 +174,46 @@ fun ConfigurationScreen(
                 .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Webhook not configured warning banner
+            if (preferencesManager.getWebhookConfigs().isEmpty()) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .padding(12.dp)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "No webhook configured",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Text(
+                                "Data sync will not work until a webhook URL is added.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                        TextButton(onClick = onNavigateToWebhooks) {
+                            Text("Set up")
+                        }
+                    }
+                }
+            }
+
             // Permissions Card
              if (sdkStatus != HealthConnectClient.SDK_AVAILABLE) {
                  Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
@@ -557,10 +599,13 @@ fun ConfigurationScreen(
             }
 
             // Manual Sync
-            com.hcwebhook.app.components.ManualSyncCard(onSyncCompleted = {
-                 lastSyncTime = preferencesManager.getLastSyncTime()
-                 lastSyncSummary = preferencesManager.getLastSyncSummary()
-            })
+            com.hcwebhook.app.components.ManualSyncCard(
+                onSyncCompleted = {
+                    lastSyncTime = preferencesManager.getLastSyncTime()
+                    lastSyncSummary = preferencesManager.getLastSyncSummary()
+                },
+                onNavigateToWebhooks = onNavigateToWebhooks
+            )
         }
 
         // Permission Modal

@@ -2,6 +2,8 @@ package com.hcwebhook.app.components
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,7 +19,10 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
+fun ManualSyncCard(
+    onSyncCompleted: () -> Unit = {},
+    onNavigateToWebhooks: (() -> Unit)? = null
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val preferencesManager = remember { PreferencesManager(context) }
@@ -168,6 +173,45 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
+
+            if (webhookConfigs.isEmpty()) {
+                // Webhook not configured warning
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                "Please configure a webhook URL first",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                        if (onNavigateToWebhooks != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            TextButton(
+                                onClick = onNavigateToWebhooks,
+                                modifier = Modifier.align(Alignment.End)
+                            ) {
+                                Text("Go to Webhooks")
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             Button(
                 onClick = { showConfirmSheet = true },

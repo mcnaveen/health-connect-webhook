@@ -87,10 +87,12 @@ class MainActivity : ComponentActivity() {
             }
         ) { padding ->
             Box(modifier = Modifier.padding(padding)) {
+                val navigateToWebhooks = { selectedScreen = NavigationScreen.Webhooks }
                 when (selectedScreen) {
                     is NavigationScreen.Home -> ConfigurationScreen(
                         activity = activity,
-                        permissionLauncher = permissionLauncher
+                        permissionLauncher = permissionLauncher,
+                        onNavigateToWebhooks = navigateToWebhooks
                     )
                     is NavigationScreen.Webhooks -> com.hcwebhook.app.screens.WebhooksScreen(activity = activity)
                     is NavigationScreen.Permissions -> PermissionsScreen()
