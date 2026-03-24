@@ -6,6 +6,10 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import androidx.health.connect.client.records.ExerciseLap
+import androidx.health.connect.client.records.ExerciseRoute
+import androidx.health.connect.client.records.ExerciseSegment
+import androidx.health.connect.client.units.Length
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Instant
@@ -135,7 +139,45 @@ class WriteBackManager(private val context: Context) {
             carbs = data.optDoubleOrNull("carbs"),
             fat = data.optDoubleOrNull("fat"),
             startTime = Instant.parse(data.getString("startTime")),
-            endTime = Instant.parse(data.getString("endTime"))
+            endTime = Instant.parse(data.getString("endTime")),
+            name = data.optStringOrNull("name"),
+            mealType = data.optInt("mealType", 0),
+            saturatedFat = data.optDoubleOrNull("saturatedFat"),
+            monounsaturatedFat = data.optDoubleOrNull("monounsaturatedFat"),
+            polyunsaturatedFat = data.optDoubleOrNull("polyunsaturatedFat"),
+            transFat = data.optDoubleOrNull("transFat"),
+            dietaryFiber = data.optDoubleOrNull("dietaryFiber"),
+            sugar = data.optDoubleOrNull("sugar"),
+            cholesterol = data.optDoubleOrNull("cholesterol"),
+            caffeine = data.optDoubleOrNull("caffeine"),
+            vitaminA = data.optDoubleOrNull("vitaminA"),
+            vitaminB6 = data.optDoubleOrNull("vitaminB6"),
+            vitaminB12 = data.optDoubleOrNull("vitaminB12"),
+            vitaminC = data.optDoubleOrNull("vitaminC"),
+            vitaminD = data.optDoubleOrNull("vitaminD"),
+            vitaminE = data.optDoubleOrNull("vitaminE"),
+            vitaminK = data.optDoubleOrNull("vitaminK"),
+            biotin = data.optDoubleOrNull("biotin"),
+            folate = data.optDoubleOrNull("folate"),
+            folicAcid = data.optDoubleOrNull("folicAcid"),
+            niacin = data.optDoubleOrNull("niacin"),
+            pantothenicAcid = data.optDoubleOrNull("pantothenicAcid"),
+            riboflavin = data.optDoubleOrNull("riboflavin"),
+            thiamin = data.optDoubleOrNull("thiamin"),
+            calcium = data.optDoubleOrNull("calcium"),
+            iron = data.optDoubleOrNull("iron"),
+            magnesium = data.optDoubleOrNull("magnesium"),
+            zinc = data.optDoubleOrNull("zinc"),
+            potassium = data.optDoubleOrNull("potassium"),
+            sodium = data.optDoubleOrNull("sodium"),
+            phosphorus = data.optDoubleOrNull("phosphorus"),
+            manganese = data.optDoubleOrNull("manganese"),
+            copper = data.optDoubleOrNull("copper"),
+            selenium = data.optDoubleOrNull("selenium"),
+            chromium = data.optDoubleOrNull("chromium"),
+            iodine = data.optDoubleOrNull("iodine"),
+            molybdenum = data.optDoubleOrNull("molybdenum"),
+            chloride = data.optDoubleOrNull("chloride")
         )
     }
 
@@ -186,7 +228,9 @@ class WriteBackManager(private val context: Context) {
         return healthConnectManager.insertSleep(
             startTime = Instant.parse(data.getString("startTime")),
             endTime = Instant.parse(data.getString("endTime")),
-            stages = stages
+            stages = stages,
+            title = data.optStringOrNull("title"),
+            notes = data.optStringOrNull("notes")
         )
     }
 
@@ -281,21 +325,27 @@ class WriteBackManager(private val context: Context) {
         return healthConnectManager.insertBloodPressure(
             systolic = data.getDouble("systolic"),
             diastolic = data.getDouble("diastolic"),
-            time = Instant.parse(data.getString("time"))
+            time = Instant.parse(data.getString("time")),
+            bodyPosition = data.optInt("bodyPosition", 0),
+            measurementLocation = data.optInt("measurementLocation", 0)
         )
     }
 
     private suspend fun writeBloodGlucose(data: JSONObject): Result<Unit> {
         return healthConnectManager.insertBloodGlucose(
             millimolePerLiter = data.getDouble("millimolePerLiter"),
-            time = Instant.parse(data.getString("time"))
+            time = Instant.parse(data.getString("time")),
+            specimenSource = data.optInt("specimenSource", 0),
+            mealType = data.optInt("mealType", 0),
+            relationToMeal = data.optInt("relationToMeal", 0)
         )
     }
 
     private suspend fun writeBodyTemperature(data: JSONObject): Result<Unit> {
         return healthConnectManager.insertBodyTemperature(
             celsius = data.getDouble("celsius"),
-            time = Instant.parse(data.getString("time"))
+            time = Instant.parse(data.getString("time")),
+            measurementLocation = data.optInt("measurementLocation", 0)
         )
     }
 
@@ -307,11 +357,57 @@ class WriteBackManager(private val context: Context) {
     }
 
     private suspend fun writeExercise(data: JSONObject): Result<Unit> {
+        val lapsArray = data.optJSONArray("laps")
+        val laps = if (lapsArray != null) {
+            (0 until lapsArray.length()).map { i ->
+                val lap = lapsArray.getJSONObject(i)
+                ExerciseLap(
+                    startTime = Instant.parse(lap.getString("startTime")),
+                    endTime = Instant.parse(lap.getString("endTime"))
+                )
+            }
+        } else emptyList()
+
+        val segmentsArray = data.optJSONArray("segments")
+        val segments = if (segmentsArray != null) {
+            (0 until segmentsArray.length()).map { i ->
+                val seg = segmentsArray.getJSONObject(i)
+                ExerciseSegment(
+                    startTime = Instant.parse(seg.getString("startTime")),
+                    endTime = Instant.parse(seg.getString("endTime")),
+                    segmentType = seg.getInt("segmentType")
+                )
+            }
+        } else emptyList()
+
+        val routeObj = data.optJSONArray("route")
+        val route = if (routeObj != null && routeObj.length() > 0) {
+            val locations = (0 until routeObj.length()).map { i ->
+                val loc = routeObj.getJSONObject(i)
+                ExerciseRoute.Location(
+                    time = Instant.parse(loc.getString("time")),
+                    latitude = loc.getDouble("latitude"),
+                    longitude = loc.getDouble("longitude"),
+                    horizontalAccuracy = if (loc.has("horizontalAccuracy") && !loc.isNull("horizontalAccuracy"))
+                        Length.meters(loc.getDouble("horizontalAccuracy")) else null,
+                    verticalAccuracy = if (loc.has("verticalAccuracy") && !loc.isNull("verticalAccuracy"))
+                        Length.meters(loc.getDouble("verticalAccuracy")) else null,
+                    altitude = if (loc.has("altitude") && !loc.isNull("altitude"))
+                        Length.meters(loc.getDouble("altitude")) else null
+                )
+            }
+            ExerciseRoute(locations)
+        } else null
+
         return healthConnectManager.insertExerciseSession(
             type = data.getInt("type"),
             startTime = Instant.parse(data.getString("startTime")),
             endTime = Instant.parse(data.getString("endTime")),
-            title = if (data.has("title") && !data.isNull("title")) data.getString("title") else null
+            title = data.optStringOrNull("title"),
+            notes = data.optStringOrNull("notes"),
+            laps = laps,
+            segments = segments,
+            route = route
         )
     }
 
@@ -374,6 +470,10 @@ class WriteBackManager(private val context: Context) {
 
     private fun JSONObject.optDoubleOrNull(key: String): Double? {
         return if (has(key) && !isNull(key)) getDouble(key) else null
+    }
+
+    private fun JSONObject.optStringOrNull(key: String): String? {
+        return if (has(key) && !isNull(key)) getString(key) else null
     }
 
     private data class PendingWriteRecord(
