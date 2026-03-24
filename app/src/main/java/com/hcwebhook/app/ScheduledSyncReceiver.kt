@@ -33,7 +33,15 @@ class ScheduledSyncReceiver : BroadcastReceiver() {
                     try {
                         val syncManager = SyncManager(context)
                         syncManager.performSync()
-                        
+
+                        // Run write-back after read sync (best-effort)
+                        try {
+                            val writeBackManager = WriteBackManager(context)
+                            writeBackManager.processPendingWrites()
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Write-back failed: ${e.message}")
+                        }
+
                         // Reschedule the alarm for the next day
                         if (scheduleId != null) {
                             val preferencesManager = PreferencesManager(context)

@@ -61,6 +61,8 @@ fun ConfigurationScreen(
     var showPermissionModal by remember { mutableStateOf(false) }
     var selectedDataTypeForPermission by remember { mutableStateOf<HealthDataType?>(null) }
     var isDataTypesExpanded by remember { mutableStateOf(false) }
+    var writeBackEnabled by remember { mutableStateOf(preferencesManager.isWriteBackEnabled()) }
+    var hasWritePermissions by remember { mutableStateOf(false) }
 
     // Health Connect Check
     var sdkStatus by remember { mutableIntStateOf(HealthConnectClient.SDK_UNAVAILABLE) }
@@ -98,11 +100,14 @@ fun ConfigurationScreen(
                 scope.launch {
                     try {
                         val healthConnectManager = HealthConnectManager(context)
-                        grantedPermissionsSet = healthConnectManager.getGrantedPermissions()
+                        val permissions = healthConnectManager.getGrantedPermissions()
+                        grantedPermissionsSet = permissions
+                        hasWritePermissions = HealthConnectManager.WRITE_PERMISSIONS.all { it in permissions }
                     } catch (e: Exception) { }
                 }
             } else {
                 grantedPermissionsSet = emptySet()
+                hasWritePermissions = false
             }
         }
 
@@ -114,6 +119,7 @@ fun ConfigurationScreen(
                 val grantedPermissions = healthConnectManager.getGrantedPermissions()
                 hasPermissions = grantedPermissions.isNotEmpty()
                 grantedPermissionsSet = grantedPermissions
+                hasWritePermissions = HealthConnectManager.WRITE_PERMISSIONS.all { it in grantedPermissions }
                  // Auto-enable switches for granted permissions if none enabled yet
                 if (enabledDataTypes.isEmpty() && grantedPermissions.isNotEmpty()) {
                     val grantedTypes = HealthDataType.entries.filter { type ->
@@ -509,6 +515,62 @@ fun ConfigurationScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+                    }
+                }
+            }
+
+            // Write-Back Toggle
+            if (hasPermissions == true) {
+                Card {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    "Write-Back",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    "Allow server to write nutrition, hydration, and weight into Health Connect",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Switch(
+                                checked = writeBackEnabled,
+                                enabled = hasWritePermissions,
+                                onCheckedChange = { enabled ->
+                                    writeBackEnabled = enabled
+                                    preferencesManager.setWriteBackEnabled(enabled)
+                                    val app = activity.application as? HCWebhookApplication
+                                    if (enabled) {
+                                        app?.scheduleWriteBackWork()
+                                    } else {
+                                        app?.cancelWriteBackWork()
+                                    }
+                                }
+                            )
+                        }
+                        if (!hasWritePermissions) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = {
+                                    try {
+                                        permissionLauncher.launch(HealthConnectManager.WRITE_PERMISSIONS)
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Grant Write Permissions")
+                            }
                         }
                     }
                 }

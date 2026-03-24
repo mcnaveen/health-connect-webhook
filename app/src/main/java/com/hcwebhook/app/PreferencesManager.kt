@@ -35,6 +35,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_EVENING_SYNC_MINUTE = "evening_sync_minute"
         private const val KEY_SYNC_MODE = "sync_mode"
         private const val KEY_SCHEDULED_SYNCS = "scheduled_syncs"
+        private const val KEY_WRITEBACK_ENABLED = "writeback_enabled"
     }
 
 
@@ -250,6 +251,14 @@ class PreferencesManager(context: Context) {
 
     fun setLastSyncSummary(summary: String) {
         prefs.edit().putString(KEY_LAST_SYNC_SUMMARY, summary).apply()
+    }
+
+    fun isWriteBackEnabled(): Boolean {
+        return prefs.getBoolean(KEY_WRITEBACK_ENABLED, false)
+    }
+
+    fun setWriteBackEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_WRITEBACK_ENABLED, enabled).apply()
     }
 
     // -------------------------------------------------------------------------

@@ -28,6 +28,11 @@ class HCWebhookApplication : Application() {
                 ScheduledSyncManager(this).scheduleAllAlarms()
             }
         }
+
+        // Schedule write-back polling if enabled
+        if (preferencesManager.isWriteBackEnabled()) {
+            scheduleWriteBackWork()
+        }
     }
 
     fun scheduleSyncWork() {
@@ -54,7 +59,26 @@ class HCWebhookApplication : Application() {
         WorkManager.getInstance(this).cancelUniqueWork(SYNC_WORK_NAME)
     }
 
+    fun scheduleWriteBackWork() {
+        val writeBackRequest = PeriodicWorkRequestBuilder<WriteBackWorker>(
+            repeatInterval = WRITE_BACK_INTERVAL_MINUTES,
+            repeatIntervalTimeUnit = TimeUnit.MINUTES
+        ).build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            WRITE_BACK_WORK_NAME,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            writeBackRequest
+        )
+    }
+
+    fun cancelWriteBackWork() {
+        WorkManager.getInstance(this).cancelUniqueWork(WRITE_BACK_WORK_NAME)
+    }
+
     companion object {
         private const val SYNC_WORK_NAME = "health_data_sync"
+        private const val WRITE_BACK_WORK_NAME = "health_data_write_back"
+        private const val WRITE_BACK_INTERVAL_MINUTES = 15L
     }
 }

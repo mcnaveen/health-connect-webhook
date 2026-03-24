@@ -12,10 +12,17 @@ class SyncWorker(
 ) : CoroutineWorker(appContext, workerParams) {
 
     private val syncManager = SyncManager(appContext)
+    private val writeBackManager = WriteBackManager(appContext)
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
             val syncResult = syncManager.performSync()
+
+            // Run write-back after read sync (best-effort, doesn't affect sync result)
+            try {
+                writeBackManager.processPendingWrites()
+            } catch (_: Exception) { }
+
             when {
                 syncResult.isSuccess -> Result.success()
                 syncResult.isFailure -> Result.failure()

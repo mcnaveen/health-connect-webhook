@@ -60,7 +60,10 @@ class SyncManager(private val context: Context) {
                     healthData.weight.size + healthData.height.size + healthData.bloodPressure.size +
                     healthData.bloodGlucose.size + healthData.oxygenSaturation.size + healthData.bodyTemperature.size +
                     healthData.respiratoryRate.size + healthData.restingHeartRate.size + healthData.exercise.size +
-                    healthData.hydration.size + healthData.nutrition.size
+                    healthData.hydration.size + healthData.nutrition.size +
+                    healthData.speed.size + healthData.power.size + healthData.bodyFat.size +
+                    healthData.boneMass.size + healthData.leanBodyMass.size + healthData.menstruation.size +
+                    healthData.vo2Max.size + healthData.floorsClimbed.size
 
             val webhookManager = WebhookManager(
                 webhookConfigs = webhookConfigs,
@@ -100,7 +103,10 @@ class SyncManager(private val context: Context) {
                 data.weight.isEmpty() && data.height.isEmpty() && data.bloodPressure.isEmpty() &&
                 data.bloodGlucose.isEmpty() && data.oxygenSaturation.isEmpty() && data.bodyTemperature.isEmpty() &&
                 data.respiratoryRate.isEmpty() && data.restingHeartRate.isEmpty() && data.exercise.isEmpty() &&
-                data.hydration.isEmpty() && data.nutrition.isEmpty()
+                data.hydration.isEmpty() && data.nutrition.isEmpty() &&
+                data.speed.isEmpty() && data.power.isEmpty() && data.bodyFat.isEmpty() &&
+                data.boneMass.isEmpty() && data.leanBodyMass.isEmpty() && data.menstruation.isEmpty() &&
+                data.vo2Max.isEmpty() && data.floorsClimbed.isEmpty()
     }
 
     private fun updateSyncTimestamps(data: HealthData, syncCounts: MutableMap<HealthDataType, Int>) {
@@ -176,6 +182,38 @@ class SyncManager(private val context: Context) {
             preferencesManager.setLastSyncTimestamp(HealthDataType.NUTRITION, data.nutrition.maxOf { it.endTime }.toEpochMilli())
             syncCounts[HealthDataType.NUTRITION] = data.nutrition.size
         }
+        if (data.speed.isNotEmpty()) {
+            preferencesManager.setLastSyncTimestamp(HealthDataType.SPEED, data.speed.maxOf { it.time }.toEpochMilli())
+            syncCounts[HealthDataType.SPEED] = data.speed.size
+        }
+        if (data.power.isNotEmpty()) {
+            preferencesManager.setLastSyncTimestamp(HealthDataType.POWER, data.power.maxOf { it.time }.toEpochMilli())
+            syncCounts[HealthDataType.POWER] = data.power.size
+        }
+        if (data.bodyFat.isNotEmpty()) {
+            preferencesManager.setLastSyncTimestamp(HealthDataType.BODY_FAT, data.bodyFat.maxOf { it.time }.toEpochMilli())
+            syncCounts[HealthDataType.BODY_FAT] = data.bodyFat.size
+        }
+        if (data.boneMass.isNotEmpty()) {
+            preferencesManager.setLastSyncTimestamp(HealthDataType.BONE_MASS, data.boneMass.maxOf { it.time }.toEpochMilli())
+            syncCounts[HealthDataType.BONE_MASS] = data.boneMass.size
+        }
+        if (data.leanBodyMass.isNotEmpty()) {
+            preferencesManager.setLastSyncTimestamp(HealthDataType.LEAN_BODY_MASS, data.leanBodyMass.maxOf { it.time }.toEpochMilli())
+            syncCounts[HealthDataType.LEAN_BODY_MASS] = data.leanBodyMass.size
+        }
+        if (data.menstruation.isNotEmpty()) {
+            preferencesManager.setLastSyncTimestamp(HealthDataType.MENSTRUATION, data.menstruation.maxOf { it.endTime }.toEpochMilli())
+            syncCounts[HealthDataType.MENSTRUATION] = data.menstruation.size
+        }
+        if (data.vo2Max.isNotEmpty()) {
+            preferencesManager.setLastSyncTimestamp(HealthDataType.VO2_MAX, data.vo2Max.maxOf { it.time }.toEpochMilli())
+            syncCounts[HealthDataType.VO2_MAX] = data.vo2Max.size
+        }
+        if (data.floorsClimbed.isNotEmpty()) {
+            preferencesManager.setLastSyncTimestamp(HealthDataType.FLOORS_CLIMBED, data.floorsClimbed.maxOf { it.endTime }.toEpochMilli())
+            syncCounts[HealthDataType.FLOORS_CLIMBED] = data.floorsClimbed.size
+        }
     }
 
     private fun buildSyncSummary(data: HealthData): String {
@@ -207,6 +245,21 @@ class SyncManager(private val context: Context) {
         }
         if (data.heartRateVariability.isNotEmpty()) {
             parts.add("${data.heartRateVariability.size} HRV")
+        }
+        if (data.speed.isNotEmpty()) {
+            parts.add("${data.speed.size} speed")
+        }
+        if (data.power.isNotEmpty()) {
+            parts.add("${data.power.size} power")
+        }
+        if (data.bodyFat.isNotEmpty()) {
+            parts.add("${data.bodyFat.size} body fat")
+        }
+        if (data.vo2Max.isNotEmpty()) {
+            parts.add("${data.vo2Max.size} VO2max")
+        }
+        if (data.floorsClimbed.isNotEmpty()) {
+            parts.add("${data.floorsClimbed.size} floors")
         }
 
         return if (parts.isEmpty()) "No new data" else parts.joinToString(" · ")
@@ -399,6 +452,79 @@ class SyncManager(private val context: Context) {
                         it.protein?.let { prot -> put("protein_grams", prot) }
                         it.carbs?.let { carb -> put("carbs_grams", carb) }
                         it.fat?.let { f -> put("fat_grams", f) }
+                        put("start_time", it.startTime.toString())
+                        put("end_time", it.endTime.toString())
+                    }) }
+                }
+            }
+
+            if (healthData.speed.isNotEmpty()) {
+                putJsonArray("speed") {
+                    healthData.speed.forEach { add(buildJsonObject {
+                        put("meters_per_second", it.metersPerSecond)
+                        put("time", it.time.toString())
+                    }) }
+                }
+            }
+
+            if (healthData.power.isNotEmpty()) {
+                putJsonArray("power") {
+                    healthData.power.forEach { add(buildJsonObject {
+                        put("watts", it.watts)
+                        put("time", it.time.toString())
+                    }) }
+                }
+            }
+
+            if (healthData.bodyFat.isNotEmpty()) {
+                putJsonArray("body_fat") {
+                    healthData.bodyFat.forEach { add(buildJsonObject {
+                        put("percentage", it.percentage)
+                        put("time", it.time.toString())
+                    }) }
+                }
+            }
+
+            if (healthData.boneMass.isNotEmpty()) {
+                putJsonArray("bone_mass") {
+                    healthData.boneMass.forEach { add(buildJsonObject {
+                        put("mass_kg", it.massKg)
+                        put("time", it.time.toString())
+                    }) }
+                }
+            }
+
+            if (healthData.leanBodyMass.isNotEmpty()) {
+                putJsonArray("lean_body_mass") {
+                    healthData.leanBodyMass.forEach { add(buildJsonObject {
+                        put("mass_kg", it.massKg)
+                        put("time", it.time.toString())
+                    }) }
+                }
+            }
+
+            if (healthData.menstruation.isNotEmpty()) {
+                putJsonArray("menstruation") {
+                    healthData.menstruation.forEach { add(buildJsonObject {
+                        put("start_time", it.startTime.toString())
+                        put("end_time", it.endTime.toString())
+                    }) }
+                }
+            }
+
+            if (healthData.vo2Max.isNotEmpty()) {
+                putJsonArray("vo2_max") {
+                    healthData.vo2Max.forEach { add(buildJsonObject {
+                        put("vo2_max_ml_per_min_kg", it.vo2Max)
+                        put("time", it.time.toString())
+                    }) }
+                }
+            }
+
+            if (healthData.floorsClimbed.isNotEmpty()) {
+                putJsonArray("floors_climbed") {
+                    healthData.floorsClimbed.forEach { add(buildJsonObject {
+                        put("floors", it.floors)
                         put("start_time", it.startTime.toString())
                         put("end_time", it.endTime.toString())
                     }) }
