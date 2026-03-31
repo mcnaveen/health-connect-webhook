@@ -38,7 +38,7 @@ class WebhookManager(
             if (result.isSuccess) {
                 return result // Success if at least one webhook succeeds
             } else {
-                lastFailure = result.exceptionOrNull() as? Exception ?: Exception("Unknown error")
+                lastFailure = result.exceptionOrNull() as? Exception ?: Exception("Unknown error")  
             }
         }
 

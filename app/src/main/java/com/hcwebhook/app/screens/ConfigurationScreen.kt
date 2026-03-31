@@ -1,6 +1,8 @@
 package com.hcwebhook.app.screens
 
 import android.app.TimePickerDialog
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -13,10 +15,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Android
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -35,8 +36,6 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import com.hcwebhook.app.*
 import com.hcwebhook.app.ui.theme.*
-import android.content.Intent
-import android.net.Uri
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -44,7 +43,11 @@ import java.util.Calendar
 @Composable
 fun ConfigurationScreen(
     activity: MainActivity,
-    permissionLauncher: androidx.activity.result.ActivityResultLauncher<Set<String>>
+    permissionLauncher: androidx.activity.result.ActivityResultLauncher<Set<String>>,
+    hasPermissions: Boolean?,
+    grantedPermissionsSet: Set<String>,
+    sdkStatus: Int,
+    onPermissionsUpdated: (Boolean, Set<String>) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -55,15 +58,11 @@ fun ConfigurationScreen(
     var syncInterval by remember { mutableStateOf(preferencesManager.getSyncIntervalMinutes().toString()) }
     var scheduledSyncs by remember { mutableStateOf(preferencesManager.getScheduledSyncs()) }
     var enabledDataTypes by remember { mutableStateOf(preferencesManager.getEnabledDataTypes()) }
-    
-    var hasPermissions by remember { mutableStateOf<Boolean?>(null) }
-    var grantedPermissionsSet by remember { mutableStateOf<Set<String>>(emptySet()) }
+
     var showPermissionModal by remember { mutableStateOf(false) }
     var selectedDataTypeForPermission by remember { mutableStateOf<HealthDataType?>(null) }
     var isDataTypesExpanded by remember { mutableStateOf(false) }
-
-    // Health Connect Check
-    var sdkStatus by remember { mutableIntStateOf(HealthConnectClient.SDK_UNAVAILABLE) }
+    var showPermissionsSheet by remember { mutableStateOf(false) }
 
     // Last sync status
     var lastSyncTime by remember { mutableStateOf(preferencesManager.getLastSyncTime()) }
@@ -90,50 +89,7 @@ fun ConfigurationScreen(
         }
     }
 
-    // Check permissions
-    LaunchedEffect(Unit) {
-        activity.permissionStatusCallback = { granted ->
-            hasPermissions = granted
-            if (granted) {
-                scope.launch {
-                    try {
-                        val healthConnectManager = HealthConnectManager(context)
-                        grantedPermissionsSet = healthConnectManager.getGrantedPermissions()
-                    } catch (e: Exception) { }
-                }
-            } else {
-                grantedPermissionsSet = emptySet()
-            }
-        }
-
-
-        try {
-            sdkStatus = HealthConnectClient.getSdkStatus(context)
-            if (sdkStatus == HealthConnectClient.SDK_AVAILABLE) {
-                val healthConnectManager = HealthConnectManager(context)
-                val grantedPermissions = healthConnectManager.getGrantedPermissions()
-                hasPermissions = grantedPermissions.isNotEmpty()
-                grantedPermissionsSet = grantedPermissions
-                 // Auto-enable switches for granted permissions if none enabled yet
-                if (enabledDataTypes.isEmpty() && grantedPermissions.isNotEmpty()) {
-                    val grantedTypes = HealthDataType.entries.filter { type ->
-                        HealthPermission.getReadPermission(type.recordClass) in grantedPermissions
-                    }.toSet()
-                    if (grantedTypes.isNotEmpty()) {
-                        enabledDataTypes = grantedTypes
-                        preferencesManager.setEnabledDataTypes(grantedTypes)
-                    }
-                }
-            } else {
-                hasPermissions = false
-            }
-        } catch (e: Exception) {
-            hasPermissions = false
-            sdkStatus = HealthConnectClient.SDK_UNAVAILABLE
-        }
-    }
-
-     // Calculate missing permissions for enabled data types
+    // Calculate missing permissions for enabled data types
     val missingPermissionsForEnabled = remember(enabledDataTypes, grantedPermissionsSet) {
         enabledDataTypes.mapNotNull { dataType ->
             val permission = HealthPermission.getReadPermission(dataType.recordClass)
@@ -141,7 +97,6 @@ fun ConfigurationScreen(
         }.toSet()
     }
     val hasAtLeastOnePermission = grantedPermissionsSet.isNotEmpty()
-    val hasAllPermissionsForEnabled = hasAtLeastOnePermission && missingPermissionsForEnabled.isEmpty()
 
     val scrollState = rememberScrollState()
 
@@ -172,7 +127,31 @@ fun ConfigurationScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Permissions Card
-             if (sdkStatus != HealthConnectClient.SDK_AVAILABLE) {
+            if (hasPermissions == null) {
+                // Still loading — stable-size placeholder
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Android,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Text(
+                            text = "Checking permissions…",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+            } else if (sdkStatus != HealthConnectClient.SDK_AVAILABLE) {
                  Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
                      Column(modifier = Modifier.padding(16.dp)) {
                          Row(
@@ -258,10 +237,16 @@ fun ConfigurationScreen(
                         }
                     }
                 }
-            } else if (hasAllPermissionsForEnabled) {
+            } else if (hasPermissions == true) {
+                val totalPermCount = HealthDataType.entries.size
+                val grantedPermCount = HealthDataType.entries.count { type ->
+                    androidx.health.connect.client.permission.HealthPermission.getReadPermission(type.recordClass) in grantedPermissionsSet
+                }
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showPermissionsSheet = true }
                 ) {
                     Row(
                         modifier = Modifier
@@ -276,7 +261,7 @@ fun ConfigurationScreen(
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(32.dp)
                         )
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Permissions Granted",
                                 style = MaterialTheme.typography.titleMedium,
@@ -284,11 +269,16 @@ fun ConfigurationScreen(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "App can read health data from Health Connect",
+                                text = "$grantedPermCount of $totalPermCount permissions granted",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
+                        Icon(
+                            imageVector = Icons.Filled.ChevronRight,
+                            contentDescription = "View permissions",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     }
                 }
             }
@@ -520,6 +510,14 @@ fun ConfigurationScreen(
                  lastSyncTime = preferencesManager.getLastSyncTime()
                  lastSyncSummary = preferencesManager.getLastSyncSummary()
             })
+        }
+
+        // Permissions bottom sheet
+        if (showPermissionsSheet) {
+            PermissionsBottomSheet(
+                grantedPermissionsSet = grantedPermissionsSet,
+                onDismiss = { showPermissionsSheet = false }
+            )
         }
 
         // Permission Modal
