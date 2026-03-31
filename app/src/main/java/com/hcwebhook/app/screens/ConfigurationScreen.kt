@@ -120,6 +120,7 @@ fun ConfigurationScreen(
         }.toSet()
     }
     val hasAtLeastOnePermission = grantedPermissionsSet.isNotEmpty()
+    val isBackgroundGranted = HealthConnectManager.BACKGROUND_PERMISSION_STR in grantedPermissionsSet
 
     val scrollState = rememberScrollState()
 
@@ -255,7 +256,7 @@ fun ConfigurationScreen(
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(onClick = {
-                            try { permissionLauncher.launch(HealthConnectManager.ALL_PERMISSIONS) } 
+                            try { permissionLauncher.launch(HealthConnectManager.INITIAL_PERMISSIONS) } 
                             catch (e: Exception) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
                         }, modifier = Modifier.fillMaxWidth()) {
                             Text("Grant Permissions")
@@ -344,9 +345,10 @@ fun ConfigurationScreen(
             }
 
             // Sync Strategy Strategy
-            Card {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Sync Schedule", style = MaterialTheme.typography.titleMedium)
+            if (isBackgroundGranted) {
+                Card {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Sync Schedule", style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     // Toggle Mode
@@ -481,6 +483,32 @@ fun ConfigurationScreen(
                     }
                 }
             }
+            } else if (hasPermissions == true) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Filled.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.onErrorContainer)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Background Permission Required", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onErrorContainer)
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("To sync data automatically on a schedule or interval, you must grant Health Connect access for background use.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onErrorContainer)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = {
+                            try {
+                                permissionLauncher.launch(setOf(HealthConnectManager.BACKGROUND_PERMISSION_STR))
+                            } catch(e: Exception) {
+                                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onErrorContainer, contentColor = MaterialTheme.colorScheme.errorContainer)) {
+                            Text("Grant Background Permission")
+                        }
+                    }
+                }
+            }
 
             // Last Sync Status
             if (lastSyncTime != null) {
@@ -538,35 +566,21 @@ fun ConfigurationScreen(
             DataTypesBottomSheet(
                 enabledDataTypes = enabledDataTypes,
                 grantedPermissionsSet = grantedPermissionsSet,
-                hasAtLeastOnePermission = hasAtLeastOnePermission,
+                missingPermissionsForEnabled = missingPermissionsForEnabled,
                 onDismiss = { showDataTypesSheet = false },
-                onToggleDataType = { dataType, checked, isPermissionGranted ->
-                    if (!isPermissionGranted && checked) {
-                        selectedDataTypeForPermission = dataType
-                        showPermissionModal = true
-                    } else {
-                        val newSet = if (checked) enabledDataTypes + dataType else enabledDataTypes - dataType
-                        enabledDataTypes = newSet
-                        preferencesManager.setEnabledDataTypes(newSet)
-                    }
-                }
-            )
-        }
-
-        // Permission Modal
-        if (showPermissionModal && selectedDataTypeForPermission != null) {
-            AlertDialog(
-                onDismissRequest = { showPermissionModal = false },
-                title = { Text("Permission Required") },
-                text = { Text("Health Connect permission is required to sync ${selectedDataTypeForPermission!!.displayName}. Please grant system permission.") },
-                confirmButton = {
-                    Button(onClick = {
-                        val permission = HealthPermission.getReadPermission(selectedDataTypeForPermission!!.recordClass)
-                        permissionLauncher.launch(setOf(permission))
-                        showPermissionModal = false
-                    }) { Text("Grant Permission") }
+                onToggleDataType = { dataType, checked ->
+                    val newSet = if (checked) enabledDataTypes + dataType else enabledDataTypes - dataType
+                    enabledDataTypes = newSet
+                    preferencesManager.setEnabledDataTypes(newSet)
                 },
-                dismissButton = { Button(onClick = { showPermissionModal = false }) { Text("Cancel") } }
+                onRequestPermissions = {
+                    try {
+                        permissionLauncher.launch(missingPermissionsForEnabled)
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                    showDataTypesSheet = false
+                }
             )
         }
     }
@@ -577,9 +591,10 @@ fun ConfigurationScreen(
 fun DataTypesBottomSheet(
     enabledDataTypes: Set<HealthDataType>,
     grantedPermissionsSet: Set<String>,
-    hasAtLeastOnePermission: Boolean,
+    missingPermissionsForEnabled: Set<String>,
     onDismiss: () -> Unit,
-    onToggleDataType: (HealthDataType, Boolean, Boolean) -> Unit
+    onToggleDataType: (HealthDataType, Boolean) -> Unit,
+    onRequestPermissions: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -642,11 +657,24 @@ fun DataTypesBottomSheet(
                         Switch(
                             checked = dataType in enabledDataTypes,
                             onCheckedChange = { checked ->
-                                onToggleDataType(dataType, checked, isPermissionGranted)
+                                onToggleDataType(dataType, checked)
                             }
                         )
                     }
                     HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                }
+            }
+
+            if (missingPermissionsForEnabled.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onRequestPermissions,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(Icons.Filled.Shield, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Grant ${missingPermissionsForEnabled.size} Missing Permissions")
                 }
             }
         }
