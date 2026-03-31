@@ -4,6 +4,8 @@ import android.app.Activity
 import android.widget.Toast
 
 object FlavorUtils {
+    val isPlayStore = true
+
     fun verifyPlayStoreInstallation(activity: Activity) {
         try {
             val installer = activity.packageManager.getInstallerPackageName(activity.packageName)
