@@ -141,6 +141,7 @@ fun ConfigurationScreen(
         }.toSet()
     }
     val hasAtLeastOnePermission = grantedPermissionsSet.isNotEmpty()
+    val hasAllPermissionsForEnabled = hasAtLeastOnePermission && missingPermissionsForEnabled.isEmpty()
 
     val scrollState = rememberScrollState()
 
@@ -257,7 +258,7 @@ fun ConfigurationScreen(
                         }
                     }
                 }
-            } else if (hasPermissions == true) {
+            } else if (hasAllPermissionsForEnabled) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                     modifier = Modifier.fillMaxWidth()

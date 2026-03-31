@@ -550,9 +550,14 @@ class HealthConnectManager(private val context: Context) {
     companion object {
         private const val LOOKBACK_HOURS = 48L
 
-        fun getPermissionsForTypes(types: Set<HealthDataType>): Set<String> {
+        fun getPermissionsForTypes(
+            types: Set<HealthDataType>,
+            includeBackgroundPermission: Boolean = true
+        ): Set<String> {
             val permissions = types.map { HealthPermission.getReadPermission(it.recordClass) }.toMutableSet()
-            permissions.add("android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND")
+            if (includeBackgroundPermission) {
+                permissions.add("android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND")
+            }
             return permissions
         }
 
