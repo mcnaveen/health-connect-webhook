@@ -9,6 +9,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -61,7 +62,7 @@ fun ConfigurationScreen(
 
     var showPermissionModal by remember { mutableStateOf(false) }
     var selectedDataTypeForPermission by remember { mutableStateOf<HealthDataType?>(null) }
-    var isDataTypesExpanded by remember { mutableStateOf(false) }
+    var showDataTypesSheet by remember { mutableStateOf(false) }
     var showPermissionsSheet by remember { mutableStateOf(false) }
 
     // Last sync status
@@ -89,6 +90,28 @@ fun ConfigurationScreen(
         }
     }
 
+    // Auto-enable types when their permission is newly granted
+    LaunchedEffect(grantedPermissionsSet) {
+        val knownGranted = preferencesManager.getKnownGrantedPermissions()
+        val newlyGranted = grantedPermissionsSet - knownGranted
+        
+        if (newlyGranted.isNotEmpty()) {
+            val typesToEnable = HealthDataType.entries.filter { 
+                HealthPermission.getReadPermission(it.recordClass) in newlyGranted 
+            }.toSet()
+            
+            if (typesToEnable.isNotEmpty()) {
+                val newEnabled = enabledDataTypes + typesToEnable
+                enabledDataTypes = newEnabled
+                preferencesManager.setEnabledDataTypes(newEnabled)
+            }
+        }
+        
+        if (grantedPermissionsSet != knownGranted) {
+            preferencesManager.setKnownGrantedPermissions(grantedPermissionsSet)
+        }
+    }
+
     // Calculate missing permissions for enabled data types
     val missingPermissionsForEnabled = remember(enabledDataTypes, grantedPermissionsSet) {
         enabledDataTypes.mapNotNull { dataType ->
@@ -113,7 +136,9 @@ fun ConfigurationScreen(
                         }
                     },
                     icon = { Icon(Icons.Filled.Shield, "Grant Permission") },
-                    text = { Text("Grant") }
+                    text = { Text("Grant") },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }
@@ -284,49 +309,37 @@ fun ConfigurationScreen(
             }
 
             // Data Types Selection
-            Card {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().clickable { isDataTypesExpanded = !isDataTypesExpanded },
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Data Types", style = MaterialTheme.typography.titleMedium)
-                            Text("Select which health data to sync", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Icon(if (isDataTypesExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown, if (isDataTypesExpanded) "Collapse" else "Expand")
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDataTypesSheet = true }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Data Types",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "${enabledDataTypes.size} items selected to sync",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
-                    
-                    AnimatedVisibility(visible = isDataTypesExpanded, enter = expandVertically(), exit = shrinkVertically()) {
-                        Column {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            HealthDataType.entries.forEach { dataType ->
-                                val permission = HealthPermission.getReadPermission(dataType.recordClass)
-                                val isPermissionGranted = permission in grantedPermissionsSet
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).alpha(if (isPermissionGranted) 1f else 0.5f),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(text = dataType.displayName, style = MaterialTheme.typography.bodyMedium)
-                                    Switch(
-                                        checked = dataType in enabledDataTypes,
-                                        onCheckedChange = { checked ->
-                                            if (!isPermissionGranted && checked && !hasAtLeastOnePermission) {
-                                                selectedDataTypeForPermission = dataType
-                                                showPermissionModal = true
-                                            } else {
-                                                val newSet = if (checked) enabledDataTypes + dataType else enabledDataTypes - dataType
-                                                enabledDataTypes = newSet
-                                                preferencesManager.setEnabledDataTypes(newSet)
-                                            }
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    Icon(
+                        imageVector = Icons.Filled.ChevronRight,
+                        contentDescription = "Select Data Types",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 
@@ -520,6 +533,26 @@ fun ConfigurationScreen(
             )
         }
 
+        // Data Types bottom sheet
+        if (showDataTypesSheet) {
+            DataTypesBottomSheet(
+                enabledDataTypes = enabledDataTypes,
+                grantedPermissionsSet = grantedPermissionsSet,
+                hasAtLeastOnePermission = hasAtLeastOnePermission,
+                onDismiss = { showDataTypesSheet = false },
+                onToggleDataType = { dataType, checked, isPermissionGranted ->
+                    if (!isPermissionGranted && checked) {
+                        selectedDataTypeForPermission = dataType
+                        showPermissionModal = true
+                    } else {
+                        val newSet = if (checked) enabledDataTypes + dataType else enabledDataTypes - dataType
+                        enabledDataTypes = newSet
+                        preferencesManager.setEnabledDataTypes(newSet)
+                    }
+                }
+            )
+        }
+
         // Permission Modal
         if (showPermissionModal && selectedDataTypeForPermission != null) {
             AlertDialog(
@@ -535,6 +568,87 @@ fun ConfigurationScreen(
                 },
                 dismissButton = { Button(onClick = { showPermissionModal = false }) { Text("Cancel") } }
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DataTypesBottomSheet(
+    enabledDataTypes: Set<HealthDataType>,
+    grantedPermissionsSet: Set<String>,
+    hasAtLeastOnePermission: Boolean,
+    onDismiss: () -> Unit,
+    onToggleDataType: (HealthDataType, Boolean, Boolean) -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Data Types",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${enabledDataTypes.size} items selected to sync",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion { onDismiss() }
+                }) {
+                    Icon(Icons.Filled.Close, contentDescription = "Close")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Data Types list
+            androidx.compose.foundation.lazy.LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 480.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                items(HealthDataType.entries) { dataType ->
+                    val isPermissionGranted = HealthPermission.getReadPermission(dataType.recordClass) in grantedPermissionsSet
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .alpha(if (isPermissionGranted) 1f else 0.5f),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = dataType.displayName, style = MaterialTheme.typography.bodyMedium)
+                        Switch(
+                            checked = dataType in enabledDataTypes,
+                            onCheckedChange = { checked ->
+                                onToggleDataType(dataType, checked, isPermissionGranted)
+                            }
+                        )
+                    }
+                    HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                }
+            }
         }
     }
 }

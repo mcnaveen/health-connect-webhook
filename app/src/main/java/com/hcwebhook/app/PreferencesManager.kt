@@ -35,6 +35,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_EVENING_SYNC_MINUTE = "evening_sync_minute"
         private const val KEY_SYNC_MODE = "sync_mode"
         private const val KEY_SCHEDULED_SYNCS = "scheduled_syncs"
+        private const val KEY_KNOWN_GRANTED_PERMISSIONS = "known_granted_permissions"
     }
 
 
@@ -115,6 +116,14 @@ class PreferencesManager(context: Context) {
     fun setEnabledDataTypes(types: Set<HealthDataType>) {
         val typesString = types.joinToString(",") { it.name }
         prefs.edit().putString(KEY_ENABLED_DATA_TYPES, typesString).apply()
+    }
+
+    fun getKnownGrantedPermissions(): Set<String> {
+        return prefs.getStringSet(KEY_KNOWN_GRANTED_PERMISSIONS, emptySet()) ?: emptySet()
+    }
+
+    fun setKnownGrantedPermissions(permissions: Set<String>) {
+        prefs.edit().putStringSet(KEY_KNOWN_GRANTED_PERMISSIONS, permissions).apply()
     }
 
     fun getLastSyncTimestamp(type: HealthDataType): Long? {
