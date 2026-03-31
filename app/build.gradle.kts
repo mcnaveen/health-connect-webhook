@@ -11,8 +11,8 @@ android {
     defaultConfig {
         applicationId = "com.hcwebhook.app"
         minSdk = 26
-        targetSdk = 34
-        versionCode = 3
+        targetSdk = 35
+        versionCode = 4
         versionName = "1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
