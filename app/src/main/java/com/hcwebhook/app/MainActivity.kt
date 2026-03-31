@@ -47,6 +47,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // This will only do something if built with 'playstore' flavor.
+        // It does absolutely nothing in the 'foss' flavor.
+        FlavorUtils.verifyPlayStoreInstallation(this)
+        
         installSplashScreen()
         enableEdgeToEdge()
         preferencesManager = PreferencesManager(this)

@@ -18,6 +18,17 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    flavorDimensions += "store"
+
+    productFlavors {
+        create("foss") {
+            dimension = "store"
+        }
+        create("playstore") {
+            dimension = "store"
+        }
+    }
+
     signingConfigs {
         create("release") {
             val keystoreFile = file("release.jks")

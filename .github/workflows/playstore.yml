@@ -1,16 +1,14 @@
-name: Android Release
+name: Play Store Build
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch: # Allows manual trigger for Play Store builds
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
-    name: Build Signed Release APK
+    name: Build Signed App Bundle (AAB)
     runs-on: ubuntu-latest
 
     steps:
@@ -32,20 +30,16 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Release APK
+      - name: Build Play Store AAB
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleFossRelease
+        run: ./gradlew bundlePlaystoreRelease
 
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Upload AAB Artifact
+        uses: actions/upload-artifact@v4
         with:
-          generate_release_notes: true
-          files: |
-            app/build/outputs/apk/foss/release/*.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: playstore-bundle
+          path: app/build/outputs/bundle/playstoreRelease/*.aab
+          retention-days: 7
