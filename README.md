@@ -1,4 +1,4 @@
-# Health Connect to Webhook (Beta)
+# Health Connect to Webhook
 
 ![HC Webhook](image.png)
 
@@ -6,13 +6,13 @@ An Android app that bridges Google Fit, Samsung Health, Fitbit, and other health
 
 ## Overview
 
-HC Webhook connects Google Health Connect to your webhook infrastructure. Health Connect aggregates health data from apps like Google Fit, Samsung Health, Fitbit, and more into a unified API. This app reads that aggregated data and sends it to your configured webhook URLs at customizable intervals, making it easy to integrate health data from multiple sources into your own systems, analytics platforms, or third-party services.
+HC Webhook connects Google Health Connect to your webhook infrastructure. Health Connect aggregates health data from apps like Google Fit, Samsung Health, Fitbit, and more into a unified API. This app reads that aggregated data and sends it to your configured webhook URLs on your chosen sync strategy (interval-based or scheduled times), making it easy to integrate health data from multiple sources into your own systems, analytics platforms, or third-party services.
 
 ## How It Works
 
 1. **Health Apps** (Google Fit, Samsung Health, Fitbit, etc.) sync data to **Health Connect**
 2. **Health Connect** aggregates all health data into a unified API
-3. **HC Webhook** reads data from Health Connect at configured intervals
+3. **HC Webhook** reads data from Health Connect using your selected sync mode (interval or scheduled)
 4. **HC Webhook** sends the data to your configured **webhook URLs**
 5. Your **custom services** receive and process the health data
 
@@ -42,12 +42,13 @@ Health Connect aggregates data from these popular health and fitness apps:
 
 ## Features
 
-- 🔄 **Automated Background Sync** - Configurable sync intervals (minimum 15 minutes) using WorkManager
-- 🎯 **Selective Data Types** - Choose which health data types to sync (18 supported types)
+- 🔄 **Flexible Background Sync** - Choose between interval-based sync (WorkManager) or fixed-time scheduled syncs (AlarmManager)
+- 🎯 **Selective Data Types** - Choose which health data types to sync (23 supported types)
 - 🔗 **Multiple Webhooks** - Send data to multiple webhook URLs simultaneously
 - 📊 **Manual Sync** - Trigger immediate data synchronization on demand
 - 📝 **Webhook Logs** - View detailed logs of all webhook requests and responses
 - 🔐 **Permission Management** - Granular Health Connect permission handling
+- 💾 **Settings Backup** - Export/import webhook configs, data type selections, and sync schedule
 - 🎨 **Modern UI** - Built with Jetpack Compose and Material 3 design
 - ⚡ **Real-time Status** - Visual indicators for permission status and sync state
 - 💬 **Feedback** - Easy access to provide feedback and suggestions through the app menu
@@ -74,6 +75,11 @@ The app supports reading and syncing the following health data types from Health
 16. **Exercise Sessions** - Workout and exercise data
 17. **Hydration** - Water intake tracking
 18. **Nutrition** - Nutritional information (calories, protein, carbs, fat)
+19. **Basal Metabolic Rate** - Basal energy expenditure
+20. **Body Fat** - Body fat percentage measurements
+21. **Lean Body Mass** - Lean body mass measurements
+22. **VO2 Max** - Cardiorespiratory fitness measurements
+23. **Bone Mass** - Bone mass measurements
 
 ## Requirements
 
@@ -104,14 +110,14 @@ cd health-connect-webhook
 
 You can download the latest stable release from the [Releases page](https://github.com/mcnaveen/health-connect-webhook/releases).
 
-### Install via Obtanium
+### Install via Obtainium
 
 You can easily install and update **HC Webhook** using [Obtainium](https://github.com/ImranR98/Obtainium).
 
 1.  Install **Obtainium** on your Android device.
 2.  Tap **"Add App"**.
 3.  Enter the repository URL: `https://github.com/mcnaveen/health-connect-webhook`
-4.  Allow Obtanium to scan for releases.
+4.  Allow Obtainium to scan for releases.
 5.  Tap **Install** / **Update**.
 
 ### From GitHub Actions (Development Builds)
@@ -145,7 +151,9 @@ The APK will be generated at: `app/build/outputs/apk/debug/app-debug.apk`
 3. **Configure Webhooks**
    - Add one or more webhook URLs (must start with `http://` or `https://`)
    - Select which data types to sync
-   - Set your preferred sync interval (minimum 15 minutes)
+   - Choose sync mode:
+     - **Interval Mode**: set your preferred sync interval (minimum 15 minutes)
+     - **Scheduled Mode**: configure one or more fixed times of day
 
 4. **Save Configuration**
    - Tap "Save Configuration" to start automatic syncing
@@ -168,9 +176,13 @@ The APK will be generated at: `app/build/outputs/apk/debug/app-debug.apk`
 
 ### Sync Interval
 
-- Minimum: 15 minutes
-- Recommended: 30-60 minutes for most use cases
-- The app uses WorkManager for reliable background syncing
+- **Interval Mode** (WorkManager)
+  - Minimum: 15 minutes
+  - Recommended: 30-60 minutes for most use cases
+- **Scheduled Mode** (AlarmManager)
+  - Sync at specific times of day (default: Morning 08:00 and Evening 21:00)
+  - Add, remove, and toggle individual schedule entries
+  - Uses exact alarms when available (Android 12+ permission dependent), with safe fallback
 
 ### Webhook Format
 
@@ -181,7 +193,7 @@ The app sends health data to your webhooks in JSON format. Each webhook request 
 - Health data records (filtered to only include new data since last sync)
 - Metadata about the sync operation
 
-> **⚠️ Warning**: Internet retry functionality is not implemented yet. If a webhook request fails due to network issues, the app will not automatically retry. Use at your own risk.
+> **Note**: Webhook delivery includes short retry handling (up to 3 attempts with exponential backoff). If delivery still fails, data is retried on the next successful sync trigger (manual, interval, or scheduled).
 
 ### Data Privacy
 
@@ -192,7 +204,7 @@ The app sends health data to your webhooks in JSON format. Each webhook request 
 
 ## Known Limitations
 
-- ⚠️ **Offline Handling** - The app attempts to retry failed webhook requests briefly (3 retries). If the internet is unavailable, the sync will fail safely without data loss. The data will be automatically retried during the next scheduled sync interval.
+- ⚠️ **Offline Handling** - The app attempts to retry failed webhook requests briefly (3 retries). If the internet is unavailable, the sync fails safely and data is retried on the next successful sync trigger (manual, interval, or scheduled).
 - 🕒 **48-Hour Lookback** - To ensure performance and relevance, the app scans for health data within a rolling 48-hour window. Data older than 48 hours may not be synced if the app was not running or configured during that time.
 
 ## Technical Details
@@ -203,6 +215,7 @@ The app sends health data to your webhooks in JSON format. Each webhook request 
 - **UI Framework**: Jetpack Compose
 - **Health Data**: Health Connect SDK (AndroidX)
 - **Background Work**: WorkManager
+- **Scheduled Alarms**: AlarmManager (exact alarms where available)
 - **Networking**: OkHttp
 - **Serialization**: Kotlinx Serialization
 
@@ -212,12 +225,13 @@ The app sends health data to your webhooks in JSON format. Each webhook request 
 - `HealthConnectManager` - Handles Health Connect data reading
 - `SyncManager` - Manages data synchronization logic
 - `SyncWorker` - Background worker for periodic syncing
+- `ScheduledSyncManager` - Manages AlarmManager schedules for fixed-time syncing
+- `ScheduledSyncReceiver` - Receives alarm broadcasts and triggers scheduled syncs
 - `WebhookManager` - Handles webhook HTTP requests
 - `PreferencesManager` - Manages app configuration and preferences
-- `ScheduledSyncManager` - Manages AlarmManager for custom schedules
-- `ScheduledSyncReceiver` - Receives alarm broadcasts to trigger syncs
 - `ConfigurationScreen` - Main settings UI
 - `LogsScreen` - Displays webhook request/response logs
+- `AboutScreen` - App info, feedback links, and settings export/import
 
 ### Permissions
 
@@ -225,7 +239,10 @@ The app requires the following permissions:
 
 - Health Connect read permissions (for each selected data type)
 - `READ_HEALTH_DATA_IN_BACKGROUND` - For background data access
+- `READ_HEALTH_DATA_HISTORY` - To read historical records within the supported lookback window
 - `INTERNET` - For webhook delivery
+- `RECEIVE_BOOT_COMPLETED` - To restore scheduled syncs after reboot/app update
+- `SCHEDULE_EXACT_ALARM` - For accurate scheduled sync times on supported Android versions
 
 ## Development
 
