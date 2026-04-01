@@ -212,14 +212,20 @@ class HealthConnectManager(private val context: Context) {
     suspend fun readHealthData(
         enabledTypes: Set<HealthDataType>,
         lastSyncTimestamps: Map<HealthDataType, Instant?>,
-        timeRangeDays: Int? = null
+        timeRangeDays: Int? = null,
+        start: Instant? = null,
+        end: Instant? = null
     ): Result<HealthData> {
         return try {
-            val endTime = Instant.now()
-            val startTime = if (timeRangeDays != null) {
-                endTime.minus(timeRangeDays.toLong(), ChronoUnit.DAYS)
-            } else {
-                endTime.minus(LOOKBACK_HOURS, ChronoUnit.HOURS)
+            val endTime = end ?: Instant.now()
+            val startTime = when {
+                start != null -> start
+                timeRangeDays != null -> endTime.minus(timeRangeDays.toLong(), ChronoUnit.DAYS)
+                else -> endTime.minus(LOOKBACK_HOURS, ChronoUnit.HOURS)
+            }
+
+            if (startTime.isAfter(endTime)) {
+                return Result.failure(IllegalArgumentException("start must be before or equal to end"))
             }
 
             val stepsData = if (HealthDataType.STEPS in enabledTypes)
@@ -643,6 +649,7 @@ class HealthConnectManager(private val context: Context) {
             if (includeBackgroundPermission) {
                 permissions.add(BACKGROUND_PERMISSION_STR)
             }
+            permissions.add("android.permission.health.READ_HEALTH_DATA_HISTORY")
             return permissions
         }
 
@@ -674,7 +681,8 @@ class HealthConnectManager(private val context: Context) {
             HealthPermission.getReadPermission(BodyFatRecord::class),
             HealthPermission.getReadPermission(LeanBodyMassRecord::class),
             HealthPermission.getReadPermission(Vo2MaxRecord::class),
-            HealthPermission.getReadPermission(BoneMassRecord::class)
+            HealthPermission.getReadPermission(BoneMassRecord::class),
+            "android.permission.health.READ_HEALTH_DATA_HISTORY"
         )
     }
 }

@@ -14,6 +14,10 @@ import com.hcwebhook.app.PreferencesManager
 import com.hcwebhook.app.SyncManager
 import com.hcwebhook.app.SyncResult
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZoneOffset
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,10 +36,15 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
         "Default (New data only)" to null,
         "Past 1 Day" to 1,
         "Past 7 Days" to 7,
-        "Past 30 Days" to 30
+        "Past 30 Days" to 30,
+        "Custom selection" to -1
     )
     var expanded by remember { mutableStateOf(false) }
     var selectedOptionIndex by remember { mutableStateOf(0) }
+    var startDate by remember { mutableStateOf<LocalDate?>(null) }
+    var endDate by remember { mutableStateOf<LocalDate?>(null) }
+    var showStartDatePicker by remember { mutableStateOf(false) }
+    var showEndDatePicker by remember { mutableStateOf(false) }
 
     // ── Confirmation Bottom Sheet ──────────────────────────────────────────────
     if (showConfirmSheet) {
@@ -90,7 +99,25 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                                 }
 
                                 val syncManager = SyncManager(context)
-                                val result = syncManager.performSync(timeRangeOptions[selectedOptionIndex].second)
+                                val timeRangeSelection = timeRangeOptions[selectedOptionIndex].second
+
+                                val result = if (timeRangeSelection == -1) {
+                                    // custom date range
+                                    val startInstant = startDate?.atStartOfDay(ZoneOffset.UTC)?.toInstant()
+                                    // normalize both boundaries to midnight UTC
+                                    val endInstant = endDate?.plusDays(1)?.atStartOfDay(ZoneOffset.UTC)?.toInstant()
+                                    if (startInstant == null || endInstant == null) {
+                                        syncMessage = "Please select both start and end dates."
+                                        isSyncing = false
+                                        return@launch
+                                    }
+
+                                    syncMessage = "Syncing data from ${startDate} to ${endDate}..."
+                                    syncManager.performSync(start = startInstant, end = endInstant)
+                                } else {
+                                    // sync the last N days, or from the last sync
+                                    syncManager.performSync(timeRangeSelection)
+                                }
 
                                 when {
                                     result.isSuccess -> {
@@ -173,6 +200,156 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
+
+            if (selectedOptionIndex == timeRangeOptions.indexOfFirst { it.second == -1 }) {
+                val today = LocalDate.now()
+                val todayMillis = remember(today) {
+                    today.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+                }
+
+                if (showStartDatePicker) {
+                    val startPickerState = rememberDatePickerState(
+                        initialSelectedDateMillis = startDate
+                            ?.atStartOfDay(ZoneOffset.UTC)
+                            ?.toInstant()
+                            ?.toEpochMilli()
+                            ?: todayMillis,
+                        selectableDates = object : SelectableDates {
+                            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                                return utcTimeMillis <= todayMillis
+                            }
+
+                            override fun isSelectableYear(year: Int): Boolean {
+                                return year <= today.year
+                            }
+                        }
+                    )
+                    DatePickerDialog(
+                        onDismissRequest = { showStartDatePicker = false },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                val selectedMillis = startPickerState.selectedDateMillis
+                                startDate = selectedMillis?.let {
+                                    Instant.ofEpochMilli(it)
+                                        .atZone(ZoneOffset.UTC)
+                                        .toLocalDate()
+                                }
+                                showStartDatePicker = false
+                            }) {
+                                Text("OK")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showStartDatePicker = false }) {
+                                Text("Cancel")
+                            }
+                        }
+                    ) {
+                        DatePicker(state = startPickerState)
+                    }
+                }
+
+                if (showEndDatePicker) {
+                    val currentEndDate = endDate
+                    val minEndDateMillis = startDate
+                        ?.atStartOfDay(ZoneOffset.UTC)
+                        ?.toInstant()
+                        ?.toEpochMilli()
+                    val minEndYear = startDate?.year
+                    val endPickerState = rememberDatePickerState(
+                        initialSelectedDateMillis = when {
+                            currentEndDate != null && minEndDateMillis != null -> {
+                                val endDateMillis = currentEndDate
+                                    .atStartOfDay(ZoneOffset.UTC)
+                                    .toInstant()
+                                    .toEpochMilli()
+                                maxOf(endDateMillis, minEndDateMillis)
+                            }
+                            currentEndDate != null -> currentEndDate
+                                .atStartOfDay(ZoneOffset.UTC)
+                                .toInstant()
+                                .toEpochMilli()
+                            minEndDateMillis != null -> minEndDateMillis
+                            else -> todayMillis
+                        },
+                        selectableDates = object : SelectableDates {
+                            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                                return utcTimeMillis <= todayMillis &&
+                                    (minEndDateMillis == null || utcTimeMillis >= minEndDateMillis)
+                            }
+
+                            override fun isSelectableYear(year: Int): Boolean {
+                                return year <= today.year && (minEndYear == null || year >= minEndYear)
+                            }
+                        }
+                    )
+                    DatePickerDialog(
+                        onDismissRequest = { showEndDatePicker = false },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                val selectedMillis = endPickerState.selectedDateMillis
+                                endDate = selectedMillis?.let {
+                                    Instant.ofEpochMilli(it)
+                                        .atZone(ZoneOffset.UTC)
+                                        .toLocalDate()
+                                }
+                                showEndDatePicker = false
+                            }) {
+                                Text("OK")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showEndDatePicker = false }) {
+                                Text("Cancel")
+                            }
+                        }
+                    ) {
+                        DatePicker(state = endPickerState)
+                    }
+                }
+
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(
+                        onClick = { showStartDatePicker = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(startDate?.let { "Start Date: $it" } ?: "Select Start Date")
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedButton(
+                        onClick = { showEndDatePicker = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(endDate?.let { "End Date: $it" } ?: "Select End Date")
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val startDateParsed = startDate
+                    val endDateParsed = endDate
+
+                    if (startDateParsed != null && endDateParsed != null) {
+                        when {
+                            endDateParsed < startDateParsed -> {
+                                Text(
+                                    "End date must be greater than or equal to start date.",
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            endDateParsed > today -> {
+                                Text(
+                                    "End date cannot be in the future.",
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
+                }
+            }
 
             Button(
                 onClick = { showConfirmSheet = true },
