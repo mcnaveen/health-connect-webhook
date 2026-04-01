@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.health.connect.client.HealthConnectClient
 import androidx.lifecycle.lifecycleScope
 import com.hcwebhook.app.screens.AboutScreen
 import com.hcwebhook.app.screens.ConfigurationScreen
@@ -47,6 +48,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // This will only do something if built with 'playstore' flavor.
+        // It does absolutely nothing in the 'foss' flavor.
+        FlavorUtils.verifyPlayStoreInstallation(this)
+        
         installSplashScreen()
         enableEdgeToEdge()
         preferencesManager = PreferencesManager(this)
@@ -69,6 +75,46 @@ class MainActivity : ComponentActivity() {
     ) {
         var selectedScreen by remember { mutableStateOf<NavigationScreen>(NavigationScreen.Home) }
 
+        // Hoisted permission state — survives tab switches
+        var hasPermissions by remember { mutableStateOf<Boolean?>(null) }
+        var grantedPermissionsSet by remember { mutableStateOf<Set<String>>(emptySet()) }
+        var sdkStatus by remember { mutableIntStateOf(HealthConnectClient.SDK_UNAVAILABLE) }
+
+        // Initial permission check
+        LaunchedEffect(Unit) {
+            try {
+                val status = HealthConnectClient.getSdkStatus(activity)
+                sdkStatus = status
+                if (status == HealthConnectClient.SDK_AVAILABLE) {
+                    val mgr = HealthConnectManager(activity)
+                    val granted = mgr.getGrantedPermissions()
+                    hasPermissions = granted.isNotEmpty()
+                    grantedPermissionsSet = granted
+                } else {
+                    hasPermissions = false
+                }
+            } catch (e: Exception) {
+                hasPermissions = false
+            }
+        }
+
+        // Keep state fresh after the permission launcher returns
+        DisposableEffect(Unit) {
+            activity.permissionStatusCallback = { granted ->
+                hasPermissions = granted
+                if (granted) {
+                    lifecycleScope.launch {
+                        try {
+                            grantedPermissionsSet = HealthConnectManager(activity).getGrantedPermissions()
+                        } catch (_: Exception) {}
+                    }
+                } else {
+                    grantedPermissionsSet = emptySet()
+                }
+            }
+            onDispose { activity.permissionStatusCallback = null }
+        }
+
         Scaffold(
             bottomBar = {
                 NavigationBar(
@@ -89,7 +135,14 @@ class MainActivity : ComponentActivity() {
                 when (selectedScreen) {
                     is NavigationScreen.Home -> ConfigurationScreen(
                         activity = activity,
-                        permissionLauncher = permissionLauncher
+                        permissionLauncher = permissionLauncher,
+                        hasPermissions = hasPermissions,
+                        grantedPermissionsSet = grantedPermissionsSet,
+                        sdkStatus = sdkStatus,
+                        onPermissionsUpdated = { hp, gps ->
+                            hasPermissions = hp
+                            grantedPermissionsSet = gps
+                        }
                     )
                     is NavigationScreen.Webhooks -> com.hcwebhook.app.screens.WebhooksScreen(activity = activity)
                     is NavigationScreen.Logs -> LogsScreen()

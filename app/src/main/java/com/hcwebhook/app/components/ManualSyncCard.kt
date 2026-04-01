@@ -87,7 +87,12 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                                 }
 
                                 val healthConnectManager = HealthConnectManager(context)
-                                if (!healthConnectManager.hasPermissions()) {
+                                val enabledTypes = preferencesManager.getEnabledDataTypes()
+                                val requiredPermissions = HealthConnectManager.getPermissionsForTypes(
+                                    enabledTypes,
+                                    includeBackgroundPermission = false
+                                )
+                                if (requiredPermissions.isNotEmpty() && !healthConnectManager.hasPermissions(requiredPermissions)) {
                                     syncMessage = "Permissions required for sync."
                                     isSyncing = false
                                     return@launch

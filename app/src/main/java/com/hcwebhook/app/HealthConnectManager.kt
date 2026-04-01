@@ -30,7 +30,12 @@ enum class HealthDataType(val displayName: String, val recordClass: KClass<out R
     RESTING_HEART_RATE("Resting Heart Rate", RestingHeartRateRecord::class),
     EXERCISE("Exercise Sessions", ExerciseSessionRecord::class),
     HYDRATION("Hydration", HydrationRecord::class),
-    NUTRITION("Nutrition", NutritionRecord::class)
+    NUTRITION("Nutrition", NutritionRecord::class),
+    BASAL_METABOLIC_RATE("Basal Metabolic Rate", BasalMetabolicRateRecord::class),
+    BODY_FAT("Body Fat", BodyFatRecord::class),
+    LEAN_BODY_MASS("Lean Body Mass", LeanBodyMassRecord::class),
+    VO2_MAX("VO₂ Max", Vo2MaxRecord::class),
+    BONE_MASS("Bone Mass", BoneMassRecord::class)
 }
 
 data class HealthData(
@@ -51,7 +56,12 @@ data class HealthData(
     val restingHeartRate: List<RestingHeartRateData>,
     val exercise: List<ExerciseData>,
     val hydration: List<HydrationData>,
-    val nutrition: List<NutritionData>
+    val nutrition: List<NutritionData>,
+    val basalMetabolicRate: List<BasalMetabolicRateData>,
+    val bodyFat: List<BodyFatData>,
+    val leanBodyMass: List<LeanBodyMassData>,
+    val vo2Max: List<Vo2MaxData>,
+    val boneMass: List<BoneMassData>
 )
 
 data class StepsData(
@@ -164,6 +174,31 @@ data class NutritionData(
     val endTime: Instant
 )
 
+data class BasalMetabolicRateData(
+    val watts: Double,
+    val time: Instant
+)
+
+data class BodyFatData(
+    val percentage: Double,
+    val time: Instant
+)
+
+data class LeanBodyMassData(
+    val kilograms: Double,
+    val time: Instant
+)
+
+data class Vo2MaxData(
+    val mlPerKgPerMin: Double,
+    val time: Instant
+)
+
+data class BoneMassData(
+    val kilograms: Double,
+    val time: Instant
+)
+
 class HealthConnectManager(private val context: Context) {
 
     private val healthConnectClient by lazy {
@@ -229,6 +264,16 @@ class HealthConnectManager(private val context: Context) {
                 readHydrationData(startTime, endTime, lastSyncTimestamps[HealthDataType.HYDRATION]) else emptyList()
             val nutritionData = if (HealthDataType.NUTRITION in enabledTypes)
                 readNutritionData(startTime, endTime, lastSyncTimestamps[HealthDataType.NUTRITION]) else emptyList()
+            val basalMetabolicRateData = if (HealthDataType.BASAL_METABOLIC_RATE in enabledTypes)
+                readBasalMetabolicRateData(startTime, endTime, lastSyncTimestamps[HealthDataType.BASAL_METABOLIC_RATE]) else emptyList()
+            val bodyFatData = if (HealthDataType.BODY_FAT in enabledTypes)
+                readBodyFatData(startTime, endTime, lastSyncTimestamps[HealthDataType.BODY_FAT]) else emptyList()
+            val leanBodyMassData = if (HealthDataType.LEAN_BODY_MASS in enabledTypes)
+                readLeanBodyMassData(startTime, endTime, lastSyncTimestamps[HealthDataType.LEAN_BODY_MASS]) else emptyList()
+            val vo2MaxData = if (HealthDataType.VO2_MAX in enabledTypes)
+                readVo2MaxData(startTime, endTime, lastSyncTimestamps[HealthDataType.VO2_MAX]) else emptyList()
+            val boneMassData = if (HealthDataType.BONE_MASS in enabledTypes)
+                readBoneMassData(startTime, endTime, lastSyncTimestamps[HealthDataType.BONE_MASS]) else emptyList()
 
             Result.success(HealthData(
                 steps = stepsData,
@@ -248,7 +293,12 @@ class HealthConnectManager(private val context: Context) {
                 restingHeartRate = restingHeartRateData,
                 exercise = exerciseData,
                 hydration = hydrationData,
-                nutrition = nutritionData
+                nutrition = nutritionData,
+                basalMetabolicRate = basalMetabolicRateData,
+                bodyFat = bodyFatData,
+                leanBodyMass = leanBodyMassData,
+                vo2Max = vo2MaxData,
+                boneMass = boneMassData
             ))
         } catch (e: Exception) {
             Result.failure(e)
@@ -525,6 +575,41 @@ class HealthConnectManager(private val context: Context) {
             .map { NutritionData(it.energy?.inKilocalories, it.protein?.inGrams, it.totalCarbohydrate?.inGrams, it.totalFat?.inGrams, it.startTime, it.endTime) }
     }
 
+    private suspend fun readBasalMetabolicRateData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BasalMetabolicRateData> {
+        val request = ReadRecordsRequest(recordType = BasalMetabolicRateRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
+        val response = healthConnectClient.readRecords(request)
+        return response.records.filter { lastSync == null || it.time >= lastSync }
+            .map { BasalMetabolicRateData(it.basalMetabolicRate.inWatts, it.time) }
+    }
+
+    private suspend fun readBodyFatData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BodyFatData> {
+        val request = ReadRecordsRequest(recordType = BodyFatRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
+        val response = healthConnectClient.readRecords(request)
+        return response.records.filter { lastSync == null || it.time >= lastSync }
+            .map { BodyFatData(it.percentage.value, it.time) }
+    }
+
+    private suspend fun readLeanBodyMassData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<LeanBodyMassData> {
+        val request = ReadRecordsRequest(recordType = LeanBodyMassRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
+        val response = healthConnectClient.readRecords(request)
+        return response.records.filter { lastSync == null || it.time >= lastSync }
+            .map { LeanBodyMassData(it.mass.inKilograms, it.time) }
+    }
+
+    private suspend fun readVo2MaxData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<Vo2MaxData> {
+        val request = ReadRecordsRequest(recordType = Vo2MaxRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
+        val response = healthConnectClient.readRecords(request)
+        return response.records.filter { lastSync == null || it.time >= lastSync }
+            .map { Vo2MaxData(it.vo2MillilitersPerMinuteKilogram, it.time) }
+    }
+
+    private suspend fun readBoneMassData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BoneMassData> {
+        val request = ReadRecordsRequest(recordType = BoneMassRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
+        val response = healthConnectClient.readRecords(request)
+        return response.records.filter { lastSync == null || it.time >= lastSync }
+            .map { BoneMassData(it.mass.inKilograms, it.time) }
+    }
+
     fun isHealthConnectAvailable(): Boolean {
         return try {
             HealthConnectClient.getOrCreate(context)
@@ -556,12 +641,22 @@ class HealthConnectManager(private val context: Context) {
     companion object {
         private const val LOOKBACK_HOURS = 48L
 
-        fun getPermissionsForTypes(types: Set<HealthDataType>): Set<String> {
+        fun getPermissionsForTypes(
+            types: Set<HealthDataType>,
+            includeBackgroundPermission: Boolean = true
+        ): Set<String> {
             val permissions = types.map { HealthPermission.getReadPermission(it.recordClass) }.toMutableSet()
-            permissions.add("android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND")
+            if (includeBackgroundPermission) {
+                permissions.add(BACKGROUND_PERMISSION_STR)
+            }
             permissions.add("android.permission.health.READ_HEALTH_DATA_HISTORY")
             return permissions
         }
+
+        const val BACKGROUND_PERMISSION_STR = "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND"
+
+        val INITIAL_PERMISSIONS: Set<String>
+            get() = ALL_PERMISSIONS + BACKGROUND_PERMISSION_STR
 
         val ALL_PERMISSIONS = setOf(
             HealthPermission.getReadPermission(StepsRecord::class),
@@ -582,7 +677,11 @@ class HealthConnectManager(private val context: Context) {
             HealthPermission.getReadPermission(ExerciseSessionRecord::class),
             HealthPermission.getReadPermission(HydrationRecord::class),
             HealthPermission.getReadPermission(NutritionRecord::class),
-            "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND",
+            HealthPermission.getReadPermission(BasalMetabolicRateRecord::class),
+            HealthPermission.getReadPermission(BodyFatRecord::class),
+            HealthPermission.getReadPermission(LeanBodyMassRecord::class),
+            HealthPermission.getReadPermission(Vo2MaxRecord::class),
+            HealthPermission.getReadPermission(BoneMassRecord::class),
             "android.permission.health.READ_HEALTH_DATA_HISTORY"
         )
     }

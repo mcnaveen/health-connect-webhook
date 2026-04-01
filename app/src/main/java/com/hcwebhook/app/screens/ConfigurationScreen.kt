@@ -1,22 +1,24 @@
 package com.hcwebhook.app.screens
 
 import android.app.TimePickerDialog
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Android
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -35,8 +37,6 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import com.hcwebhook.app.*
 import com.hcwebhook.app.ui.theme.*
-import android.content.Intent
-import android.net.Uri
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -44,7 +44,11 @@ import java.util.Calendar
 @Composable
 fun ConfigurationScreen(
     activity: MainActivity,
-    permissionLauncher: androidx.activity.result.ActivityResultLauncher<Set<String>>
+    permissionLauncher: androidx.activity.result.ActivityResultLauncher<Set<String>>,
+    hasPermissions: Boolean?,
+    grantedPermissionsSet: Set<String>,
+    sdkStatus: Int,
+    onPermissionsUpdated: (Boolean, Set<String>) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -55,15 +59,11 @@ fun ConfigurationScreen(
     var syncInterval by remember { mutableStateOf(preferencesManager.getSyncIntervalMinutes().toString()) }
     var scheduledSyncs by remember { mutableStateOf(preferencesManager.getScheduledSyncs()) }
     var enabledDataTypes by remember { mutableStateOf(preferencesManager.getEnabledDataTypes()) }
-    
-    var hasPermissions by remember { mutableStateOf<Boolean?>(null) }
-    var grantedPermissionsSet by remember { mutableStateOf<Set<String>>(emptySet()) }
+
     var showPermissionModal by remember { mutableStateOf(false) }
     var selectedDataTypeForPermission by remember { mutableStateOf<HealthDataType?>(null) }
-    var isDataTypesExpanded by remember { mutableStateOf(false) }
-
-    // Health Connect Check
-    var sdkStatus by remember { mutableIntStateOf(HealthConnectClient.SDK_UNAVAILABLE) }
+    var showDataTypesSheet by remember { mutableStateOf(false) }
+    var showPermissionsSheet by remember { mutableStateOf(false) }
 
     // Last sync status
     var lastSyncTime by remember { mutableStateOf(preferencesManager.getLastSyncTime()) }
@@ -90,50 +90,29 @@ fun ConfigurationScreen(
         }
     }
 
-    // Check permissions
-    LaunchedEffect(Unit) {
-        activity.permissionStatusCallback = { granted ->
-            hasPermissions = granted
-            if (granted) {
-                scope.launch {
-                    try {
-                        val healthConnectManager = HealthConnectManager(context)
-                        grantedPermissionsSet = healthConnectManager.getGrantedPermissions()
-                    } catch (e: Exception) { }
-                }
-            } else {
-                grantedPermissionsSet = emptySet()
+    // Auto-enable types when their permission is newly granted
+    LaunchedEffect(grantedPermissionsSet) {
+        val knownGranted = preferencesManager.getKnownGrantedPermissions()
+        val newlyGranted = grantedPermissionsSet - knownGranted
+        
+        if (newlyGranted.isNotEmpty()) {
+            val typesToEnable = HealthDataType.entries.filter { 
+                HealthPermission.getReadPermission(it.recordClass) in newlyGranted 
+            }.toSet()
+            
+            if (typesToEnable.isNotEmpty()) {
+                val newEnabled = enabledDataTypes + typesToEnable
+                enabledDataTypes = newEnabled
+                preferencesManager.setEnabledDataTypes(newEnabled)
             }
         }
-
-
-        try {
-            sdkStatus = HealthConnectClient.getSdkStatus(context)
-            if (sdkStatus == HealthConnectClient.SDK_AVAILABLE) {
-                val healthConnectManager = HealthConnectManager(context)
-                val grantedPermissions = healthConnectManager.getGrantedPermissions()
-                hasPermissions = grantedPermissions.isNotEmpty()
-                grantedPermissionsSet = grantedPermissions
-                 // Auto-enable switches for granted permissions if none enabled yet
-                if (enabledDataTypes.isEmpty() && grantedPermissions.isNotEmpty()) {
-                    val grantedTypes = HealthDataType.entries.filter { type ->
-                        HealthPermission.getReadPermission(type.recordClass) in grantedPermissions
-                    }.toSet()
-                    if (grantedTypes.isNotEmpty()) {
-                        enabledDataTypes = grantedTypes
-                        preferencesManager.setEnabledDataTypes(grantedTypes)
-                    }
-                }
-            } else {
-                hasPermissions = false
-            }
-        } catch (e: Exception) {
-            hasPermissions = false
-            sdkStatus = HealthConnectClient.SDK_UNAVAILABLE
+        
+        if (grantedPermissionsSet != knownGranted) {
+            preferencesManager.setKnownGrantedPermissions(grantedPermissionsSet)
         }
     }
 
-     // Calculate missing permissions for enabled data types
+    // Calculate missing permissions for enabled data types
     val missingPermissionsForEnabled = remember(enabledDataTypes, grantedPermissionsSet) {
         enabledDataTypes.mapNotNull { dataType ->
             val permission = HealthPermission.getReadPermission(dataType.recordClass)
@@ -141,6 +120,7 @@ fun ConfigurationScreen(
         }.toSet()
     }
     val hasAtLeastOnePermission = grantedPermissionsSet.isNotEmpty()
+    val isBackgroundGranted = HealthConnectManager.BACKGROUND_PERMISSION_STR in grantedPermissionsSet
 
     val scrollState = rememberScrollState()
 
@@ -157,7 +137,9 @@ fun ConfigurationScreen(
                         }
                     },
                     icon = { Icon(Icons.Filled.Shield, "Grant Permission") },
-                    text = { Text("Grant") }
+                    text = { Text("Grant") },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }
@@ -171,7 +153,31 @@ fun ConfigurationScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Permissions Card
-             if (sdkStatus != HealthConnectClient.SDK_AVAILABLE) {
+            if (hasPermissions == null) {
+                // Still loading — stable-size placeholder
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Android,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Text(
+                            text = "Checking permissions…",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+            } else if (sdkStatus != HealthConnectClient.SDK_AVAILABLE) {
                  Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
                      Column(modifier = Modifier.padding(16.dp)) {
                          Row(
@@ -250,7 +256,7 @@ fun ConfigurationScreen(
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(onClick = {
-                            try { permissionLauncher.launch(HealthConnectManager.ALL_PERMISSIONS) } 
+                            try { permissionLauncher.launch(HealthConnectManager.INITIAL_PERMISSIONS) } 
                             catch (e: Exception) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
                         }, modifier = Modifier.fillMaxWidth()) {
                             Text("Grant Permissions")
@@ -258,9 +264,15 @@ fun ConfigurationScreen(
                     }
                 }
             } else if (hasPermissions == true) {
+                val totalPermCount = HealthDataType.entries.size
+                val grantedPermCount = HealthDataType.entries.count { type ->
+                    androidx.health.connect.client.permission.HealthPermission.getReadPermission(type.recordClass) in grantedPermissionsSet
+                }
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showPermissionsSheet = true }
                 ) {
                     Row(
                         modifier = Modifier
@@ -275,7 +287,7 @@ fun ConfigurationScreen(
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(32.dp)
                         )
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Permissions Granted",
                                 style = MaterialTheme.typography.titleMedium,
@@ -283,66 +295,60 @@ fun ConfigurationScreen(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "App can read health data from Health Connect",
+                                text = "$grantedPermCount of $totalPermCount permissions granted",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
+                        Icon(
+                            imageVector = Icons.Filled.ChevronRight,
+                            contentDescription = "View permissions",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     }
                 }
             }
 
             // Data Types Selection
-            Card {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().clickable { isDataTypesExpanded = !isDataTypesExpanded },
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Data Types", style = MaterialTheme.typography.titleMedium)
-                            Text("Select which health data to sync", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Icon(if (isDataTypesExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown, if (isDataTypesExpanded) "Collapse" else "Expand")
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDataTypesSheet = true }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Data Types",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "${enabledDataTypes.size} items selected to sync",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
-                    
-                    AnimatedVisibility(visible = isDataTypesExpanded, enter = expandVertically(), exit = shrinkVertically()) {
-                        Column {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            HealthDataType.entries.forEach { dataType ->
-                                val permission = HealthPermission.getReadPermission(dataType.recordClass)
-                                val isPermissionGranted = permission in grantedPermissionsSet
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).alpha(if (isPermissionGranted) 1f else 0.5f),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(text = dataType.displayName, style = MaterialTheme.typography.bodyMedium)
-                                    Switch(
-                                        checked = dataType in enabledDataTypes,
-                                        onCheckedChange = { checked ->
-                                            if (!isPermissionGranted && checked && !hasAtLeastOnePermission) {
-                                                selectedDataTypeForPermission = dataType
-                                                showPermissionModal = true
-                                            } else {
-                                                val newSet = if (checked) enabledDataTypes + dataType else enabledDataTypes - dataType
-                                                enabledDataTypes = newSet
-                                                preferencesManager.setEnabledDataTypes(newSet)
-                                            }
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    Icon(
+                        imageVector = Icons.Filled.ChevronRight,
+                        contentDescription = "Select Data Types",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 
             // Sync Strategy Strategy
-            Card {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Sync Schedule", style = MaterialTheme.typography.titleMedium)
+            if (isBackgroundGranted) {
+                Card {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Sync Schedule", style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     // Toggle Mode
@@ -477,6 +483,32 @@ fun ConfigurationScreen(
                     }
                 }
             }
+            } else if (hasPermissions == true) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Filled.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.onErrorContainer)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Background Permission Required", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onErrorContainer)
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("To sync data automatically on a schedule or interval, you must grant Health Connect access for background use.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onErrorContainer)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = {
+                            try {
+                                permissionLauncher.launch(setOf(HealthConnectManager.BACKGROUND_PERMISSION_STR))
+                            } catch(e: Exception) {
+                                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onErrorContainer, contentColor = MaterialTheme.colorScheme.errorContainer)) {
+                            Text("Grant Background Permission")
+                        }
+                    }
+                }
+            }
 
             // Last Sync Status
             if (lastSyncTime != null) {
@@ -521,21 +553,130 @@ fun ConfigurationScreen(
             })
         }
 
-        // Permission Modal
-        if (showPermissionModal && selectedDataTypeForPermission != null) {
-            AlertDialog(
-                onDismissRequest = { showPermissionModal = false },
-                title = { Text("Permission Required") },
-                text = { Text("Health Connect permission is required to sync ${selectedDataTypeForPermission!!.displayName}. Please grant system permission.") },
-                confirmButton = {
-                    Button(onClick = {
-                        val permission = HealthPermission.getReadPermission(selectedDataTypeForPermission!!.recordClass)
-                        permissionLauncher.launch(setOf(permission))
-                        showPermissionModal = false
-                    }) { Text("Grant Permission") }
-                },
-                dismissButton = { Button(onClick = { showPermissionModal = false }) { Text("Cancel") } }
+        // Permissions bottom sheet
+        if (showPermissionsSheet) {
+            PermissionsBottomSheet(
+                grantedPermissionsSet = grantedPermissionsSet,
+                onDismiss = { showPermissionsSheet = false }
             )
+        }
+
+        // Data Types bottom sheet
+        if (showDataTypesSheet) {
+            DataTypesBottomSheet(
+                enabledDataTypes = enabledDataTypes,
+                grantedPermissionsSet = grantedPermissionsSet,
+                missingPermissionsForEnabled = missingPermissionsForEnabled,
+                onDismiss = { showDataTypesSheet = false },
+                onToggleDataType = { dataType, checked ->
+                    val newSet = if (checked) enabledDataTypes + dataType else enabledDataTypes - dataType
+                    enabledDataTypes = newSet
+                    preferencesManager.setEnabledDataTypes(newSet)
+                },
+                onRequestPermissions = {
+                    try {
+                        permissionLauncher.launch(missingPermissionsForEnabled)
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                    showDataTypesSheet = false
+                }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DataTypesBottomSheet(
+    enabledDataTypes: Set<HealthDataType>,
+    grantedPermissionsSet: Set<String>,
+    missingPermissionsForEnabled: Set<String>,
+    onDismiss: () -> Unit,
+    onToggleDataType: (HealthDataType, Boolean) -> Unit,
+    onRequestPermissions: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Data Types",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${enabledDataTypes.size} items selected to sync",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion { onDismiss() }
+                }) {
+                    Icon(Icons.Filled.Close, contentDescription = "Close")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Data Types list
+            androidx.compose.foundation.lazy.LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 480.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                items(HealthDataType.entries) { dataType ->
+                    val isPermissionGranted = HealthPermission.getReadPermission(dataType.recordClass) in grantedPermissionsSet
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .alpha(if (isPermissionGranted) 1f else 0.5f),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = dataType.displayName, style = MaterialTheme.typography.bodyMedium)
+                        Switch(
+                            checked = dataType in enabledDataTypes,
+                            onCheckedChange = { checked ->
+                                onToggleDataType(dataType, checked)
+                            }
+                        )
+                    }
+                    HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                }
+            }
+
+            if (missingPermissionsForEnabled.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onRequestPermissions,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(Icons.Filled.Shield, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Grant ${missingPermissionsForEnabled.size} Missing Permissions")
+                }
+            }
         }
     }
 }

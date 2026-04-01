@@ -11,11 +11,22 @@ android {
     defaultConfig {
         applicationId = "com.hcwebhook.app"
         minSdk = 26
-        targetSdk = 34
-        versionCode = 3
-        versionName = "1.2"
+        targetSdk = 35
+        versionCode = 6
+        versionName = "1.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    flavorDimensions += "store"
+
+    productFlavors {
+        create("foss") {
+            dimension = "store"
+        }
+        create("playstore") {
+            dimension = "store"
+        }
     }
 
     signingConfigs {
