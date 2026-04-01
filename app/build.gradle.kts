@@ -4,6 +4,12 @@ plugins {
     alias(libs.plugins.kotlinx.serialization)
 }
 
+val appVersionMajor = 1
+val appVersionMinor = 5
+val appVersionPatch = 1
+val appVersionCode = (appVersionMajor * 10000) + (appVersionMinor * 100) + appVersionPatch
+val appVersionName = "$appVersionMajor.$appVersionMinor.$appVersionPatch"
+
 android {
     namespace = "com.hcwebhook.app"
     compileSdk = 35
@@ -12,8 +18,8 @@ android {
         applicationId = "com.hcwebhook.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 6
-        versionName = "1.5"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
