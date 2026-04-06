@@ -2,6 +2,8 @@
 
 ![HC Webhook](image.png)
 
+<a href="https://play.google.com/store/apps/details?id=com.hcwebhook.app"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" width="160"></a>
+
 An Android app that bridges Google Fit, Samsung Health, Fitbit, and other health apps to your webhooks via Health Connect APIs, enabling seamless integration with your custom endpoints and services.
 
 ## Overview
@@ -108,7 +110,10 @@ cd health-connect-webhook
 
 ### Downloads
 
-You can download the latest stable release from the [Releases page](https://github.com/mcnaveen/health-connect-webhook/releases).
+#### Easy (Recommended)
+
+<a href="https://play.google.com/store/apps/details?id=com.hcwebhook.app"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" width="160"></a>
+
 
 ### Install via Obtainium
 
@@ -120,13 +125,6 @@ You can easily install and update **HC Webhook** using [Obtainium](https://githu
 4.  Allow Obtainium to scan for releases.
 5.  Tap **Install** / **Update**.
 
-### From GitHub Actions (Development Builds)
-
-If you want to test the latest development changes (which might be unstable), you can download artifacts from GitHub Actions:
-
-1.  Go to the [Actions](https://github.com/mcnaveen/health-connect-webhook/actions) tab.
-2.  Click on the latest successful workflow run.
-3.  Scroll down to **Artifacts** and download `app-debug`.
 
 ### Building the APK
 
