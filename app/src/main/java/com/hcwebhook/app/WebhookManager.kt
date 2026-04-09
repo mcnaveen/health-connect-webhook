@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLException
 import kotlin.math.pow
 
-class HttpResponseException(
+internal class HttpResponseException(
     val statusCode: Int,
     message: String
 ) : IOException(message)
@@ -76,6 +76,7 @@ class WebhookManager(
 
             var lastException: Exception? = null
             for (attempt in 1..MAX_RETRIES) {
+                var shouldRetry = true
                 try {
                     client.newCall(request).execute().use { response ->
                         statusCode = response.code
@@ -90,11 +91,12 @@ class WebhookManager(
                             )
                             lastException = httpException
                             errorMessage = httpException.message
-
-                            if (!isRetryableException(httpException)) {
-                                break
-                            }
+                            shouldRetry = isRetryableException(httpException)
                         }
+                    }
+
+                    if (!shouldRetry) {
+                        break
                     }
                 } catch (e: IOException) {
                     lastException = e
