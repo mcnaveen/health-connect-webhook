@@ -149,16 +149,16 @@ class WebhookManager(
         private const val TIMEOUT_SECONDS = 60L
         private const val MAX_RETRIES = 3
         private const val INITIAL_RETRY_DELAY_MS = 1000L
-    }
 
-    fun isRetryableException(exception: IOException): Boolean {
-        return when (exception) {
-            is HttpResponseException -> exception.statusCode >= 500
-            is SocketTimeoutException -> true
-            is UnknownHostException -> true
-            is SSLException -> false
-            is ProtocolException -> false
-            else -> true
+        internal fun isRetryableException(exception: IOException): Boolean {
+            return when (exception) {
+                is HttpResponseException -> exception.statusCode >= 500
+                is SocketTimeoutException -> true
+                is UnknownHostException -> true
+                is SSLException -> false
+                is ProtocolException -> false
+                else -> true
+            }
         }
     }
 }

@@ -14,7 +14,6 @@ class SyncWorker(
 ) : CoroutineWorker(appContext, workerParams) {
 
     private val syncManager = SyncManager(appContext)
-    private val webhookManager = WebhookManager(emptyList())
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
@@ -35,8 +34,8 @@ class SyncWorker(
 
     private fun mapFailure(error: Throwable?): Result {
         return when (error) {
-            is HttpResponseException -> if (webhookManager.isRetryableException(error)) Result.retry() else Result.failure()
-            is IOException -> if (webhookManager.isRetryableException(error)) Result.retry() else Result.failure()
+            is HttpResponseException -> if (WebhookManager.isRetryableException(error)) Result.retry() else Result.failure()
+            is IOException -> if (WebhookManager.isRetryableException(error)) Result.retry() else Result.failure()
             else -> Result.failure()
         }
     }
