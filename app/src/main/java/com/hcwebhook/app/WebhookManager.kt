@@ -40,7 +40,7 @@ class WebhookManager(
             return Result.failure(IllegalStateException("No webhook URLs configured"))
         }
 
-        var lastFailure: Exception? = null
+        var lastFailure: Throwable? = null
 
         // Try posting to all configured webhooks
         for (config in webhookConfigs) {
@@ -48,7 +48,7 @@ class WebhookManager(
             if (result.isSuccess) {
                 return result // Success if at least one webhook succeeds
             } else {
-                lastFailure = result.exceptionOrNull() as? Exception ?: Exception("Unknown error")  
+                lastFailure = result.exceptionOrNull()
             }
         }
 
