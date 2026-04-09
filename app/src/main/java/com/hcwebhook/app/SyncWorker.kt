@@ -5,6 +5,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.IOException
 
 class SyncWorker(
     appContext: Context,
@@ -16,11 +17,16 @@ class SyncWorker(
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
             val syncResult = syncManager.performSync()
-            when {
-                syncResult.isSuccess -> Result.success()
-                syncResult.isFailure -> Result.failure()
-                else -> Result.success() // No data case
+            if (syncResult.isSuccess) {
+                Result.success()
+            } else {
+                when (syncResult.exceptionOrNull()) {
+                    is IOException -> Result.retry()
+                    else -> Result.failure()
+                }
             }
+        } catch (e: IOException) {
+            Result.retry()
         } catch (e: Exception) {
             Result.failure()
         }
