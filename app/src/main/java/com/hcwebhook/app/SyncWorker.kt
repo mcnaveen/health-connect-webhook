@@ -3,6 +3,7 @@ package com.hcwebhook.app
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
@@ -20,11 +21,16 @@ class SyncWorker(
             if (syncResult.isSuccess) {
                 Result.success()
             } else {
-                when (syncResult.exceptionOrNull()) {
+                when (val error = syncResult.exceptionOrNull()) {
+                    is HttpResponseException -> if (error.statusCode >= 500) Result.retry() else Result.failure()
                     is IOException -> Result.retry()
                     else -> Result.failure()
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpResponseException) {
+            if (e.statusCode >= 500) Result.retry() else Result.failure()
         } catch (e: IOException) {
             Result.retry()
         } catch (e: Exception) {

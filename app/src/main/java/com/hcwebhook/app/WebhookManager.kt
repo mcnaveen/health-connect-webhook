@@ -6,9 +6,15 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import java.net.SocketTimeoutException
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.math.pow
+
+class HttpResponseException(
+    val statusCode: Int,
+    message: String
+) : IOException(message)
 
 class WebhookManager(
     private val webhookConfigs: List<WebhookConfig>,
@@ -74,12 +80,24 @@ class WebhookManager(
                         logWebhookCall(config.url, timestamp, statusCode, true, null)
                         return Result.success(Unit)
                     } else {
-                        lastException = IOException("HTTP ${response.code}: ${response.message}")
-                        errorMessage = "HTTP ${response.code}: ${response.message}"
+                        val httpException = HttpResponseException(
+                            response.code,
+                            "HTTP ${response.code}: ${response.message}"
+                        )
+                        lastException = httpException
+                        errorMessage = httpException.message
+
+                        if (!isRetryableException(httpException)) {
+                            break
+                        }
                     }
                 } catch (e: IOException) {
                     lastException = e
                     errorMessage = e.message
+
+                    if (!isRetryableException(e)) {
+                        break
+                    }
                 }
 
                 if (attempt < MAX_RETRIES) {
@@ -124,5 +142,13 @@ class WebhookManager(
         private const val TIMEOUT_SECONDS = 60L
         private const val MAX_RETRIES = 3
         private const val INITIAL_RETRY_DELAY_MS = 1000L
+    }
+
+    private fun isRetryableException(exception: IOException): Boolean {
+        return when (exception) {
+            is HttpResponseException -> exception.statusCode >= 500
+            is SocketTimeoutException -> true
+            else -> true
+        }
     }
 }
