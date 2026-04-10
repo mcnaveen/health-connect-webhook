@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLException
 import kotlin.math.pow
 
-class HttpResponseException(
+private class HttpResponseException(
     val statusCode: Int,
     message: String
 ) : IOException(message)
@@ -171,9 +171,12 @@ class WebhookManager(
         private const val INITIAL_RETRY_DELAY_MS = 1000L
         private const val MAX_LOG_ERROR_LENGTH = 300
         private const val REDACTED_URL_PLACEHOLDER = "<redacted>"
-        private val URL_REGEX = Regex("""https?://[^\s<>"{}|\\^`\[\]]+""")
+        private val URL_REGEX = Regex(
+            """https?://[^\s<>"{}|\\^`\[\]]+""",
+            setOf(RegexOption.IGNORE_CASE)
+        )
 
-        fun isRetryableException(exception: IOException): Boolean {
+        private fun isRetryableException(exception: IOException): Boolean {
             return when (exception) {
                 is HttpResponseException -> exception.statusCode >= 500
                 is SocketTimeoutException -> true
