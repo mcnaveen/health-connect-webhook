@@ -34,6 +34,7 @@ class SyncWorker(
 
     private fun mapFailure(error: Throwable?): Result {
         return when (error) {
+            is CancellationException -> throw error
             is IOException -> if (WebhookManager.isRetryableException(error)) Result.retry() else Result.failure()
             else -> Result.failure()
         }
