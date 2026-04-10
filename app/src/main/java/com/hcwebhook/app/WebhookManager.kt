@@ -1,14 +1,25 @@
 package com.hcwebhook.app
 
 import android.content.Context
+import kotlinx.coroutines.CancellationException
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import java.net.ProtocolException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLException
 import kotlin.math.pow
+
+class HttpResponseException(
+    val statusCode: Int,
+    message: String
+) : IOException(message)
 
 class WebhookManager(
     private val webhookConfigs: List<WebhookConfig>,
@@ -38,7 +49,7 @@ class WebhookManager(
             if (result.isSuccess) {
                 return result // Success if at least one webhook succeeds
             } else {
-                lastFailure = result.exceptionOrNull() as? Exception ?: Exception("Unknown error")  
+                lastFailure = result.exceptionOrNull() as? Exception ?: Exception("Unknown error")
             }
         }
 
@@ -56,30 +67,43 @@ class WebhookManager(
             val requestBuilder = Request.Builder()
                 .url(config.url)
                 .post(requestBody)
-            
+
             // Add custom headers
             config.headers.forEach { (key, value) ->
                 requestBuilder.addHeader(key, value)
             }
-            
+
             val request = requestBuilder.build()
 
             var lastException: Exception? = null
             for (attempt in 1..MAX_RETRIES) {
                 try {
-                    val response = client.newCall(request).execute()
-                    statusCode = response.code
-                    if (response.isSuccessful) {
-                        success = true
-                        logWebhookCall(config.url, timestamp, statusCode, true, null)
-                        return Result.success(Unit)
-                    } else {
-                        lastException = IOException("HTTP ${response.code}: ${response.message}")
-                        errorMessage = "HTTP ${response.code}: ${response.message}"
+                    client.newCall(request).execute().use { response ->
+                        statusCode = response.code
+                        if (response.isSuccessful) {
+                            success = true
+                            logWebhookCall(config.url, timestamp, statusCode, true, null)
+                            return Result.success(Unit)
+                        } else {
+                            val httpException = HttpResponseException(
+                                response.code,
+                                "HTTP ${response.code}: ${response.message}"
+                            )
+                            lastException = httpException
+                            errorMessage = httpException.message
+
+                            if (!isRetryableException(httpException)) {
+                                break
+                            }
+                        }
                     }
                 } catch (e: IOException) {
                     lastException = e
                     errorMessage = e.message
+
+                    if (!isRetryableException(e)) {
+                        break
+                    }
                 }
 
                 if (attempt < MAX_RETRIES) {
@@ -91,6 +115,8 @@ class WebhookManager(
 
             logWebhookCall(config.url, timestamp, statusCode, false, errorMessage)
             Result.failure(lastException ?: IOException("Max retries exceeded"))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             logWebhookCall(config.url, timestamp, null, false, e.message)
             Result.failure(e)
@@ -109,10 +135,10 @@ class WebhookManager(
             val log = WebhookLog(
                 id = UUID.randomUUID().toString(),
                 timestamp = timestamp,
-                url = url,
+                url = redactUrl(url),
                 statusCode = statusCode,
                 success = success,
-                errorMessage = errorMessage,
+                errorMessage = redactSensitiveText(errorMessage)?.take(MAX_LOG_ERROR_LENGTH),
                 dataType = dataType,
                 recordCount = recordCount
             )
@@ -120,9 +146,42 @@ class WebhookManager(
         }
     }
 
+    private fun redactUrl(url: String): String {
+        val parsed = url.toHttpUrlOrNull() ?: return REDACTED_URL_PLACEHOLDER
+        return "${parsed.scheme}://${parsed.host}"
+    }
+
+    private fun redactSensitiveText(text: String?): String? {
+        if (text == null) return null
+
+        return URL_REGEX.replace(text) { match ->
+            val (trimmedUrl, trailingPunctuation) = splitTrailingPunctuation(match.value)
+            redactUrl(trimmedUrl) + trailingPunctuation
+        }
+    }
+
+    private fun splitTrailingPunctuation(value: String): Pair<String, String> {
+        val trimmedUrl = value.trimEnd('.', ',', ';', ':', '!', '?', ')', '"', '\'', '’', '”')
+        return trimmedUrl to value.removePrefix(trimmedUrl)
+    }
+
     companion object {
         private const val TIMEOUT_SECONDS = 60L
         private const val MAX_RETRIES = 3
         private const val INITIAL_RETRY_DELAY_MS = 1000L
+        private const val MAX_LOG_ERROR_LENGTH = 300
+        private const val REDACTED_URL_PLACEHOLDER = "<redacted>"
+        private val URL_REGEX = Regex("""https?://[^\s<>"{}|\\^`\[\]]+""")
+
+        fun isRetryableException(exception: IOException): Boolean {
+            return when (exception) {
+                is HttpResponseException -> exception.statusCode >= 500
+                is SocketTimeoutException -> true
+                is UnknownHostException -> true
+                is SSLException -> false
+                is ProtocolException -> false
+                else -> true
+            }
+        }
     }
 }
