@@ -2,6 +2,7 @@ package com.hcwebhook.app
 
 import android.content.Context
 import kotlinx.coroutines.CancellationException
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -15,7 +16,7 @@ import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLException
 import kotlin.math.pow
 
-internal class HttpResponseException(
+class HttpResponseException(
     val statusCode: Int,
     message: String
 ) : IOException(message)
@@ -40,8 +41,7 @@ class WebhookManager(
             return Result.failure(IllegalStateException("No webhook URLs configured"))
         }
 
-        var lastFailure: Throwable? = null
-        var retryableFailure: IOException? = null
+        var lastFailure: Exception? = null
 
         // Try posting to all configured webhooks
         for (config in webhookConfigs) {
@@ -49,17 +49,11 @@ class WebhookManager(
             if (result.isSuccess) {
                 return result // Success if at least one webhook succeeds
             } else {
-                val ex = result.exceptionOrNull()
-                lastFailure = ex
-                if (ex is IOException && isRetryableException(ex)) {
-                    retryableFailure = ex
-                }
+                lastFailure = result.exceptionOrNull() as? Exception ?: Exception("Unknown error")
             }
         }
 
-        // Prefer a retryable exception so that SyncWorker can schedule a retry
-        // even if the last webhook failed with a non-retryable error
-        return Result.failure(retryableFailure ?: lastFailure ?: IOException("All webhook posts failed"))
+        return Result.failure(lastFailure ?: IOException("All webhook posts failed"))
     }
 
     private suspend fun postToUrl(config: WebhookConfig, jsonPayload: String): Result<Unit> {
@@ -73,17 +67,16 @@ class WebhookManager(
             val requestBuilder = Request.Builder()
                 .url(config.url)
                 .post(requestBody)
-            
+
             // Add custom headers
             config.headers.forEach { (key, value) ->
                 requestBuilder.addHeader(key, value)
             }
-            
+
             val request = requestBuilder.build()
 
             var lastException: Exception? = null
             for (attempt in 1..MAX_RETRIES) {
-                var shouldRetry = true
                 try {
                     client.newCall(request).execute().use { response ->
                         statusCode = response.code
@@ -98,12 +91,11 @@ class WebhookManager(
                             )
                             lastException = httpException
                             errorMessage = httpException.message
-                            shouldRetry = isRetryableException(httpException)
-                        }
-                    }
 
-                    if (!shouldRetry) {
-                        break
+                            if (!isRetryableException(httpException)) {
+                                break
+                            }
+                        }
                     }
                 } catch (e: IOException) {
                     lastException = e
@@ -143,10 +135,10 @@ class WebhookManager(
             val log = WebhookLog(
                 id = UUID.randomUUID().toString(),
                 timestamp = timestamp,
-                url = url,
+                url = redactUrl(url),
                 statusCode = statusCode,
                 success = success,
-                errorMessage = errorMessage,
+                errorMessage = redactSensitiveText(errorMessage)?.take(MAX_LOG_ERROR_LENGTH),
                 dataType = dataType,
                 recordCount = recordCount
             )
@@ -154,12 +146,34 @@ class WebhookManager(
         }
     }
 
+    private fun redactUrl(url: String): String {
+        val parsed = url.toHttpUrlOrNull() ?: return REDACTED_URL_PLACEHOLDER
+        return "${parsed.scheme}://${parsed.host}"
+    }
+
+    private fun redactSensitiveText(text: String?): String? {
+        if (text == null) return null
+
+        return URL_REGEX.replace(text) { match ->
+            val (trimmedUrl, trailingPunctuation) = splitTrailingPunctuation(match.value)
+            redactUrl(trimmedUrl) + trailingPunctuation
+        }
+    }
+
+    private fun splitTrailingPunctuation(value: String): Pair<String, String> {
+        val trimmedUrl = value.trimEnd('.', ',', ';', ':', '!', '?', ')', '"', '\'', '’', '”')
+        return trimmedUrl to value.removePrefix(trimmedUrl)
+    }
+
     companion object {
         private const val TIMEOUT_SECONDS = 60L
         private const val MAX_RETRIES = 3
         private const val INITIAL_RETRY_DELAY_MS = 1000L
+        private const val MAX_LOG_ERROR_LENGTH = 300
+        private const val REDACTED_URL_PLACEHOLDER = "<redacted>"
+        private val URL_REGEX = Regex("""https?://[^\s<>"{}|\\^`\[\]]+""")
 
-        internal fun isRetryableException(exception: IOException): Boolean {
+        fun isRetryableException(exception: IOException): Boolean {
             return when (exception) {
                 is HttpResponseException -> exception.statusCode >= 500
                 is SocketTimeoutException -> true
