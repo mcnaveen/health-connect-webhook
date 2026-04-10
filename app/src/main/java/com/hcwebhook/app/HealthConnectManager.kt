@@ -3,6 +3,7 @@ package com.hcwebhook.app
 import android.content.Context
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
+import kotlinx.coroutines.CancellationException
 import androidx.health.connect.client.records.*
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
@@ -300,6 +301,8 @@ class HealthConnectManager(private val context: Context) {
                 vo2Max = vo2MaxData,
                 boneMass = boneMassData
             ))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }
