@@ -73,6 +73,15 @@ fun PermissionsBottomSheet(
                 }
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Rationale required by Google Play
+            Text(
+                text = "These privileges allow the app to read health and fitness data so it can be backed up or synced to your webhook. Access is limited to the data types you actively configure.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // Permission list

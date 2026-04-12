@@ -90,34 +90,20 @@ fun ConfigurationScreen(
         }
     }
 
-    // Auto-enable types when their permission is newly granted
-    LaunchedEffect(grantedPermissionsSet) {
-        val knownGranted = preferencesManager.getKnownGrantedPermissions()
-        val newlyGranted = grantedPermissionsSet - knownGranted
-        
-        if (newlyGranted.isNotEmpty()) {
-            val typesToEnable = HealthDataType.entries.filter { 
-                HealthPermission.getReadPermission(it.recordClass) in newlyGranted 
-            }.toSet()
-            
-            if (typesToEnable.isNotEmpty()) {
-                val newEnabled = enabledDataTypes + typesToEnable
-                enabledDataTypes = newEnabled
-                preferencesManager.setEnabledDataTypes(newEnabled)
-            }
-        }
-        
-        if (grantedPermissionsSet != knownGranted) {
-            preferencesManager.setKnownGrantedPermissions(grantedPermissionsSet)
-        }
-    }
+    // No auto-enable logic. Users must explicitly toggle data types to enable them.
+    // This resolves Issue #12 where data types were forcefully re-enabled on cold start.
 
-    // Calculate missing permissions for enabled data types
+    // Calculate missing permissions for enabled data types + ALWAYS require HISTORY permission
     val missingPermissionsForEnabled = remember(enabledDataTypes, grantedPermissionsSet) {
-        enabledDataTypes.mapNotNull { dataType ->
+        val baseMissing = enabledDataTypes.mapNotNull { dataType ->
             val permission = HealthPermission.getReadPermission(dataType.recordClass)
             if (permission !in grantedPermissionsSet) permission else null
-        }.toSet()
+        }.toMutableSet()
+        
+        if (baseMissing.isNotEmpty() && "android.permission.health.READ_HEALTH_DATA_HISTORY" !in grantedPermissionsSet) {
+            baseMissing.add("android.permission.health.READ_HEALTH_DATA_HISTORY")
+        }
+        baseMissing.toSet()
     }
     val hasAtLeastOnePermission = grantedPermissionsSet.isNotEmpty()
     val isBackgroundGranted = HealthConnectManager.BACKGROUND_PERMISSION_STR in grantedPermissionsSet
@@ -127,7 +113,7 @@ fun ConfigurationScreen(
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
         floatingActionButton = {
-            if (hasAtLeastOnePermission && missingPermissionsForEnabled.isNotEmpty()) {
+            if (missingPermissionsForEnabled.isNotEmpty()) {
                 ExtendedFloatingActionButton(
                     onClick = {
                         try {
@@ -226,7 +212,7 @@ fun ConfigurationScreen(
                          }
                      }
                  }
-             } else if (hasPermissions == false) {
+            } else if (hasPermissions == false) {
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(
@@ -242,24 +228,25 @@ fun ConfigurationScreen(
                             )
                             Column {
                                 Text(
-                                    text = "Permissions Required",
+                                    text = "0 Permissions Granted",
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onErrorContainer
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Health Connect permissions are needed to read health data",
+                                    text = "To sync your health data, you must grant read access. The data is only read locally and sent directly to your configured URLs.",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onErrorContainer
                                 )
                             }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
+                        // We use strict data minimization: we no longer ask for INITIAL_PERMISSIONS here.
+                        // The user must go to Data Types and select the types they want first.
                         Button(onClick = {
-                            try { permissionLauncher.launch(HealthConnectManager.INITIAL_PERMISSIONS) } 
-                            catch (e: Exception) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
+                            showDataTypesSheet = true
                         }, modifier = Modifier.fillMaxWidth()) {
-                            Text("Grant Permissions")
+                            Text("Select Data Types Configure")
                         }
                     }
                 }
@@ -634,6 +621,15 @@ fun DataTypesBottomSheet(
                 }
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Rationale required by Google Play
+            Text(
+                text = "Health Connect read permissions are required to access this data locally and automatically sync it to your configured webhooks.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // Data Types list
@@ -674,7 +670,7 @@ fun DataTypesBottomSheet(
                 ) {
                     Icon(Icons.Filled.Shield, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Grant ${missingPermissionsForEnabled.size} Missing Permissions")
+                    Text("Grant Missing Permissions")
                 }
             }
         }
