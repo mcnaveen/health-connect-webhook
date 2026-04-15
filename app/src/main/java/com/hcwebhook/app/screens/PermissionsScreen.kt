@@ -77,7 +77,7 @@ fun PermissionsBottomSheet(
 
             // Rationale required by Google Play
             Text(
-                text = "These privileges allow the app to read health and fitness data so it can be backed up or synced to your webhook. Access is limited to the data types you actively configure.",
+                text = "Health Connect to Webhook requires access to your health and fitness data. This data is strictly used to fulfill the core functionality of the app: securely transmitting your chosen health metrics (such as steps, sleep, and heart rate) directly to your personal webhook URLs. We do not sell or share your data with any third parties. Only the data types you explicitly choose to configure below will be requested and synced.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
