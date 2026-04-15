@@ -1,6 +1,9 @@
 name: Play Store Build
 
 on:
+  push:
+    tags:
+      - "v*.*.*"
   workflow_dispatch: # Allows manual trigger for Play Store builds
 
 permissions:
