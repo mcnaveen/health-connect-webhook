@@ -625,7 +625,7 @@ fun DataTypesBottomSheet(
 
             // Rationale required by Google Play
             Text(
-                text = "Health Connect read permissions are required to access this data locally and automatically sync it to your configured webhooks.",
+                text = "Health Connect to Webhook requires access to your health and fitness data. This data is strictly used to fulfill the core functionality of the app: securely transmitting your chosen health metrics directly to your personal webhook URLs. We do not sell or share your data with any third parties. Only the data types you explicitly choose to configure below will be requested and synced.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
