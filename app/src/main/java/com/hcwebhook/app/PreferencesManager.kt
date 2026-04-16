@@ -36,6 +36,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_SYNC_MODE = "sync_mode"
         private const val KEY_SCHEDULED_SYNCS = "scheduled_syncs"
         private const val KEY_KNOWN_GRANTED_PERMISSIONS = "known_granted_permissions"
+        private const val KEY_HAS_SEEN_ONBOARDING = "has_seen_onboarding"
     }
 
 
@@ -259,6 +260,12 @@ class PreferencesManager(context: Context) {
 
     fun setLastSyncSummary(summary: String) {
         prefs.edit().putString(KEY_LAST_SYNC_SUMMARY, summary).apply()
+    }
+
+    fun hasSeenOnboarding(): Boolean = prefs.getBoolean(KEY_HAS_SEEN_ONBOARDING, false)
+
+    fun setHasSeenOnboarding() {
+        prefs.edit().putBoolean(KEY_HAS_SEEN_ONBOARDING, true).apply()
     }
 
     // -------------------------------------------------------------------------

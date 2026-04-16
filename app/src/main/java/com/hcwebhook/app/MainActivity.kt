@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import com.hcwebhook.app.screens.AboutScreen
 import com.hcwebhook.app.screens.ConfigurationScreen
 import com.hcwebhook.app.screens.LogsScreen
+import com.hcwebhook.app.screens.OnboardingScreen
 import com.hcwebhook.app.ui.theme.HCWebhookTheme
 import kotlinx.coroutines.launch
 
@@ -60,10 +61,19 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             HCWebhookTheme {
-                MainScreenWithNav(
-                    activity = this@MainActivity,
-                    permissionLauncher = permissionLauncher
-                )
+                var showOnboarding by remember { mutableStateOf(!preferencesManager.hasSeenOnboarding()) }
+                if (showOnboarding) {
+                    OnboardingScreen(onFinish = {
+                        preferencesManager.setHasSeenOnboarding()
+                        showOnboarding = false
+                    })
+                } else {
+                    MainScreenWithNav(
+                        activity = this@MainActivity,
+                        permissionLauncher = permissionLauncher,
+                        onRestartOnboarding = { showOnboarding = true }
+                    )
+                }
             }
         }
     }
@@ -71,7 +81,8 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun MainScreenWithNav(
         activity: MainActivity,
-        permissionLauncher: androidx.activity.result.ActivityResultLauncher<Set<String>>
+        permissionLauncher: androidx.activity.result.ActivityResultLauncher<Set<String>>,
+        onRestartOnboarding: () -> Unit = {}
     ) {
         var selectedScreen by remember { mutableStateOf<NavigationScreen>(NavigationScreen.Home) }
 
@@ -146,7 +157,7 @@ class MainActivity : ComponentActivity() {
                     )
                     is NavigationScreen.Webhooks -> com.hcwebhook.app.screens.WebhooksScreen(activity = activity)
                     is NavigationScreen.Logs -> LogsScreen()
-                    is NavigationScreen.About -> AboutScreen(activity = activity)
+                    is NavigationScreen.About -> AboutScreen(activity = activity, onRestartOnboarding = onRestartOnboarding)
                 }
             }
         }
