@@ -644,12 +644,19 @@ fun DataTypesBottomSheet(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp)
+                            .padding(vertical = 8.dp)
                             .alpha(if (isPermissionGranted) 1f else 0.5f),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(text = dataType.displayName, style = MaterialTheme.typography.bodyMedium)
+                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                            Text(text = dataType.displayName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                            Text(
+                                text = dataType.rationale,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         Switch(
                             checked = dataType in enabledDataTypes,
                             onCheckedChange = { checked ->

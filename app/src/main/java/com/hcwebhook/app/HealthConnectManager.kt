@@ -12,30 +12,99 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import kotlin.reflect.KClass
 
-enum class HealthDataType(val displayName: String, val recordClass: KClass<out Record>) {
-    STEPS("Steps", StepsRecord::class),
-    SLEEP("Sleep", SleepSessionRecord::class),
-    HEART_RATE("Heart Rate", HeartRateRecord::class),
-    HEART_RATE_VARIABILITY("Heart Rate Variability", HeartRateVariabilityRmssdRecord::class),
-    DISTANCE("Distance", DistanceRecord::class),
-    ACTIVE_CALORIES("Active Calories", ActiveCaloriesBurnedRecord::class),
-    TOTAL_CALORIES("Total Calories", TotalCaloriesBurnedRecord::class),
-    WEIGHT("Weight", WeightRecord::class),
-    HEIGHT("Height", HeightRecord::class),
-    BLOOD_PRESSURE("Blood Pressure", BloodPressureRecord::class),
-    BLOOD_GLUCOSE("Blood Glucose", BloodGlucoseRecord::class),
-    OXYGEN_SATURATION("Oxygen Saturation", OxygenSaturationRecord::class),
-    BODY_TEMPERATURE("Body Temperature", BodyTemperatureRecord::class),
-    RESPIRATORY_RATE("Respiratory Rate", RespiratoryRateRecord::class),
-    RESTING_HEART_RATE("Resting Heart Rate", RestingHeartRateRecord::class),
-    EXERCISE("Exercise Sessions", ExerciseSessionRecord::class),
-    HYDRATION("Hydration", HydrationRecord::class),
-    NUTRITION("Nutrition", NutritionRecord::class),
-    BASAL_METABOLIC_RATE("Basal Metabolic Rate", BasalMetabolicRateRecord::class),
-    BODY_FAT("Body Fat", BodyFatRecord::class),
-    LEAN_BODY_MASS("Lean Body Mass", LeanBodyMassRecord::class),
-    VO2_MAX("VO₂ Max", Vo2MaxRecord::class),
-    BONE_MASS("Bone Mass", BoneMassRecord::class)
+enum class HealthDataType(val displayName: String, val recordClass: KClass<out Record>, val rationale: String) {
+    STEPS(
+        "Steps", StepsRecord::class,
+        "Track daily step counts and send activity totals to your webhook for fitness automation and habit tracking."
+    ),
+    SLEEP(
+        "Sleep", SleepSessionRecord::class,
+        "Forward sleep session duration and stage breakdowns (light, deep, REM) to build custom sleep reports or recovery dashboards."
+    ),
+    HEART_RATE(
+        "Heart Rate", HeartRateRecord::class,
+        "Stream continuous heart rate readings to your webhook for real-time health monitoring, alerts, or workout analysis."
+    ),
+    HEART_RATE_VARIABILITY(
+        "Heart Rate Variability", HeartRateVariabilityRmssdRecord::class,
+        "Send HRV (RMSSD) readings to your webhook to track stress levels, recovery quality, and nervous system health over time."
+    ),
+    DISTANCE(
+        "Distance", DistanceRecord::class,
+        "Forward daily distance traveled to log running, walking, or cycling progress and trigger location-based automations."
+    ),
+    ACTIVE_CALORIES(
+        "Active Calories", ActiveCaloriesBurnedRecord::class,
+        "Send active calorie burn data to your webhook to power fitness tracking, nutrition planning, or goal-based automations."
+    ),
+    TOTAL_CALORIES(
+        "Total Calories", TotalCaloriesBurnedRecord::class,
+        "Forward total daily calorie expenditure for comprehensive energy balance tracking and diet management workflows."
+    ),
+    WEIGHT(
+        "Weight", WeightRecord::class,
+        "Sync body weight measurements to your webhook to track trends, calculate BMI, or trigger health goal notifications."
+    ),
+    HEIGHT(
+        "Height", HeightRecord::class,
+        "Send height data to your webhook to enable BMI and body composition calculations in downstream automations."
+    ),
+    BLOOD_PRESSURE(
+        "Blood Pressure", BloodPressureRecord::class,
+        "Forward systolic and diastolic readings to monitor cardiovascular health, log trends, and set up alert workflows."
+    ),
+    BLOOD_GLUCOSE(
+        "Blood Glucose", BloodGlucoseRecord::class,
+        "Send blood glucose levels to your webhook to support diabetes management, meal tracking, and health alert automations."
+    ),
+    OXYGEN_SATURATION(
+        "Oxygen Saturation", OxygenSaturationRecord::class,
+        "Forward SpO₂ readings to monitor respiratory health, flag low-oxygen events, and integrate with wellness dashboards."
+    ),
+    BODY_TEMPERATURE(
+        "Body Temperature", BodyTemperatureRecord::class,
+        "Send body temperature readings to your webhook for illness detection, fever tracking, and long-term health logging."
+    ),
+    RESPIRATORY_RATE(
+        "Respiratory Rate", RespiratoryRateRecord::class,
+        "Forward breathing rate data to track respiratory health, monitor recovery, and detect anomalies via your webhook."
+    ),
+    RESTING_HEART_RATE(
+        "Resting Heart Rate", RestingHeartRateRecord::class,
+        "Send daily resting heart rate to your webhook to track long-term cardiovascular fitness trends and training adaptation."
+    ),
+    EXERCISE(
+        "Exercise Sessions", ExerciseSessionRecord::class,
+        "Forward workout sessions including exercise type and duration to your webhook for activity logging and training analysis."
+    ),
+    HYDRATION(
+        "Hydration", HydrationRecord::class,
+        "Send fluid intake logs to your webhook to support daily hydration tracking, reminders, and wellness automations."
+    ),
+    NUTRITION(
+        "Nutrition", NutritionRecord::class,
+        "Forward calorie and macronutrient (protein, carbs, fat) data to power diet tracking and nutrition automation workflows."
+    ),
+    BASAL_METABOLIC_RATE(
+        "Basal Metabolic Rate", BasalMetabolicRateRecord::class,
+        "Send BMR data to your webhook to enable personalized calorie target calculations and metabolism tracking dashboards."
+    ),
+    BODY_FAT(
+        "Body Fat", BodyFatRecord::class,
+        "Forward body fat percentage measurements to your webhook to track body composition changes and fitness progress over time."
+    ),
+    LEAN_BODY_MASS(
+        "Lean Body Mass", LeanBodyMassRecord::class,
+        "Send lean mass data to your webhook to monitor muscle gain or loss and support body recomposition tracking workflows."
+    ),
+    VO2_MAX(
+        "VO₂ Max", Vo2MaxRecord::class,
+        "Forward VO₂ max readings to your webhook to track aerobic fitness improvements, training load, and endurance progress."
+    ),
+    BONE_MASS(
+        "Bone Mass", BoneMassRecord::class,
+        "Send bone density measurements to your webhook to track skeletal health and monitor long-term wellness trends."
+    )
 }
 
 data class HealthData(

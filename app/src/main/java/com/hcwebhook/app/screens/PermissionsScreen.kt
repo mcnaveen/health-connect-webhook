@@ -93,7 +93,11 @@ fun PermissionsBottomSheet(
             ) {
                 items(HealthDataType.entries) { dataType ->
                     val isGranted = HealthPermission.getReadPermission(dataType.recordClass) in grantedPermissionsSet
-                    PermissionRow(name = dataType.displayName, isGranted = isGranted)
+                    PermissionRow(
+                        name = dataType.displayName,
+                        rationale = dataType.rationale,
+                        isGranted = isGranted
+                    )
                 }
             }
 
@@ -131,19 +135,26 @@ fun PermissionsBottomSheet(
 }
 
 @Composable
-private fun PermissionRow(name: String, isGranted: Boolean) {
+private fun PermissionRow(name: String, rationale: String, isGranted: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = name,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+            )
+            Text(
+                text = rationale,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         if (isGranted) {
             Icon(
                 imageVector = Icons.Filled.CheckCircle,
