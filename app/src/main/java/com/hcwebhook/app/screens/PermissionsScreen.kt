@@ -13,10 +13,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.permission.HealthPermission
 import com.hcwebhook.app.HealthDataType
+import com.hcwebhook.app.R
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,12 +55,12 @@ fun PermissionsBottomSheet(
             ) {
                 Column {
                     Text(
-                        text = "Health Permissions",
+                        text = stringResource(R.string.perms_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "$grantedCount of $totalCount permissions granted",
+                        text = stringResource(R.string.perms_granted_summary, grantedCount, totalCount),
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (grantedCount == totalCount)
                             MaterialTheme.colorScheme.primary
@@ -69,7 +71,7 @@ fun PermissionsBottomSheet(
                 IconButton(onClick = {
                     scope.launch { sheetState.hide() }.invokeOnCompletion { onDismiss() }
                 }) {
-                    Icon(Icons.Filled.Close, contentDescription = "Close")
+                    Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_close))
                 }
             }
 
@@ -77,7 +79,7 @@ fun PermissionsBottomSheet(
 
             // Rationale required by Google Play
             Text(
-                text = "Health Connect to Webhook requires access to your health and fitness data. This data is strictly used to fulfill the core functionality of the app: securely transmitting your chosen health metrics (such as steps, sleep, and heart rate) directly to your personal webhook URLs. We do not sell or share your data with any third parties. Only the data types you explicitly choose to configure below will be requested and synced.",
+                text = stringResource(R.string.perms_rationale_desc),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -94,8 +96,7 @@ fun PermissionsBottomSheet(
                 items(HealthDataType.entries) { dataType ->
                     val isGranted = HealthPermission.getReadPermission(dataType.recordClass) in grantedPermissionsSet
                     PermissionRow(
-                        name = dataType.displayName,
-                        rationale = dataType.rationale,
+                        dataType = dataType,
                         isGranted = isGranted
                     )
                 }
@@ -128,14 +129,14 @@ fun PermissionsBottomSheet(
             ) {
                 Icon(Icons.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Manage in Health Connect")
+                Text(stringResource(R.string.config_manage_hc))
             }
         }
     }
 }
 
 @Composable
-private fun PermissionRow(name: String, rationale: String, isGranted: Boolean) {
+private fun PermissionRow(dataType: HealthDataType, isGranted: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -143,29 +144,41 @@ private fun PermissionRow(name: String, rationale: String, isGranted: Boolean) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+        Row(
+            modifier = Modifier.weight(1f).padding(end = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = iconForDataType(dataType),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
             )
-            Text(
-                text = rationale,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Column {
+                Text(
+                    text = stringResource(id = dataType.nameResId),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                )
+                Text(
+                    text = stringResource(id = dataType.rationaleResId),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
         if (isGranted) {
             Icon(
                 imageVector = Icons.Filled.CheckCircle,
-                contentDescription = "Granted",
+                contentDescription = stringResource(R.string.perms_status_granted),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
             )
         } else {
             Icon(
                 imageVector = Icons.Filled.Close,
-                contentDescription = "Not granted",
+                contentDescription = stringResource(R.string.perms_status_not_granted),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 modifier = Modifier.size(20.dp)
             )

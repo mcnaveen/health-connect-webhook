@@ -1,7 +1,7 @@
 package com.hcwebhook.app
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
@@ -17,8 +17,9 @@ import com.hcwebhook.app.screens.LogsScreen
 import com.hcwebhook.app.screens.OnboardingScreen
 import com.hcwebhook.app.ui.theme.HCWebhookTheme
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private lateinit var preferencesManager: PreferencesManager
     internal var pendingSyncCallback: (() -> Unit)? = null
@@ -133,8 +134,8 @@ class MainActivity : ComponentActivity() {
                 ) {
                     bottomNavItems.forEach { screen ->
                         NavigationBarItem(
-                            icon = { Icon(screen.icon, contentDescription = screen.title) },
-                            label = { Text(screen.title) },
+                            icon = { Icon(screen.icon, contentDescription = stringResource(screen.titleResId)) },
+                            label = { Text(stringResource(screen.titleResId)) },
                             selected = selectedScreen == screen,
                             onClick = { selectedScreen = screen }
                         )

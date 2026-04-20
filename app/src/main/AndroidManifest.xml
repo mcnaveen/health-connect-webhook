@@ -43,6 +43,7 @@
 
     <application
         android:name=".HCWebhookApplication"
+        android:localeConfig="@xml/locales_config"
         android:usesCleartextTraffic="true"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -67,6 +68,15 @@
             android:name=".LogsActivity"
             android:exported="false"
             android:label="Webhook Logs" />
+
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
 
 
         <!-- Scheduled Sync Receiver -->

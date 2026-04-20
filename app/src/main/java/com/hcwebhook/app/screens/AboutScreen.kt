@@ -1,7 +1,7 @@
 package com.hcwebhook.app.screens
 
 import android.content.Intent
-import android.content.pm.PackageManager
+
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Security
@@ -25,13 +26,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.hcwebhook.app.FlavorUtils
 import com.hcwebhook.app.MainActivity
 import com.hcwebhook.app.PreferencesManager
+import com.hcwebhook.app.R
 import com.hcwebhook.app.SettingsExport
+import android.widget.Toast
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.PlayArrow
 import com.hcwebhook.app.ui.theme.IconBackgroundBlue
 import com.hcwebhook.app.ui.theme.IconBackgroundGreen
@@ -52,18 +57,18 @@ fun AboutScreen(activity: MainActivity, onRestartOnboarding: () -> Unit = {}) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val prefsManager = remember { PreferencesManager(context) }
-    var showImportSheet by remember { mutableStateOf(false) }
+    var showImportConfirmSheet by remember { mutableStateOf(false) }
     val prettyJson = Json { prettyPrint = true }
 
     // ── Version info ──────────────────────────────────────────────────────────
     val versionName = try {
         context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "Unknown"
-    } catch (e: PackageManager.NameNotFoundException) { "Unknown" }
+    } catch (e: android.content.pm.PackageManager.NameNotFoundException) { "Unknown" }
 
     val versionCode = try {
         @Suppress("DEPRECATION")
         context.packageManager.getPackageInfo(context.packageName, 0).versionCode.toLong()
-    } catch (e: PackageManager.NameNotFoundException) { 0L }
+    } catch (e: android.content.pm.PackageManager.NameNotFoundException) { 0L }
 
     // ── Import file picker ────────────────────────────────────────────────────
     val importLauncher = rememberLauncherForActivityResult(
@@ -77,55 +82,39 @@ fun AboutScreen(activity: MainActivity, onRestartOnboarding: () -> Unit = {}) {
                 val jsonText = inputStream.bufferedReader().use { it.readText() }
                 val export = Json.decodeFromString<SettingsExport>(jsonText)
                 prefsManager.importSettings(export)
-                snackbarHostState.showSnackbar("✅ Settings imported successfully")
+                Toast.makeText(context, context.getString(R.string.about_toast_import_success), Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                snackbarHostState.showSnackbar("❌ Import failed: ${e.message ?: "Invalid file"}")
+                val msg = e.message ?: context.getString(R.string.about_error_unknown)
+                Toast.makeText(context, context.getString(R.string.about_toast_import_failed, msg), Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    // ── Import Confirmation Bottom Sheet ──────────────────────────────────────
-    if (showImportSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showImportSheet = false }
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Warning,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(40.dp)
-                )
-                Text("Import Settings?", style = MaterialTheme.typography.titleLarge)
-                Text(
-                    "This will overwrite your current webhook URLs, headers, and sync schedule with the imported file.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Button(
-                    onClick = {
-                        showImportSheet = false
-                        importLauncher.launch(arrayOf("application/json", "*/*"))
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Choose File & Import")
+    // ── Import Confirmation Dialog ────────────────────────────────────────────
+    if (showImportConfirmSheet) {
+        val title = stringResource(R.string.about_import_sheet_title)
+        val desc = stringResource(R.string.about_import_sheet_desc)
+        val chooseFile = stringResource(R.string.about_action_choose_import)
+        val cancel = stringResource(R.string.action_cancel)
+
+        AlertDialog(
+            onDismissRequest = { showImportConfirmSheet = false },
+            title = { Text(title) },
+            text = { Text(desc) },
+            confirmButton = {
+                Button(onClick = {
+                    showImportConfirmSheet = false
+                    importLauncher.launch(arrayOf("application/json"))
+                }) {
+                    Text(chooseFile)
                 }
-                OutlinedButton(
-                    onClick = { showImportSheet = false },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Cancel")
+            },
+            dismissButton = {
+                TextButton(onClick = { showImportConfirmSheet = false }) {
+                    Text(cancel)
                 }
             }
-        }
+        )
     }
 
     // ── Export helper ─────────────────────────────────────────────────────────
@@ -151,11 +140,11 @@ fun AboutScreen(activity: MainActivity, onRestartOnboarding: () -> Unit = {}) {
                 putExtra(Intent.EXTRA_SUBJECT, "HC Webhook Settings Export")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(shareIntent, "Export Settings"))
+            val title = context.getString(R.string.about_export_intent_title)
+            context.startActivity(Intent.createChooser(shareIntent, title))
         } catch (e: Exception) {
-            scope.launch {
-                snackbarHostState.showSnackbar("❌ Export failed: ${e.message ?: "Unknown error"}")
-            }
+            val msg = e.message ?: context.getString(R.string.about_error_unknown)
+            Toast.makeText(context, context.getString(R.string.about_toast_export_failed, msg), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -198,18 +187,13 @@ fun AboutScreen(activity: MainActivity, onRestartOnboarding: () -> Unit = {}) {
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text(
-                            "Health Connect to Webhook",
+                            text = stringResource(R.string.about_app_title),
                             style = MaterialTheme.typography.titleMedium
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            "Beta",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            "Version $versionName ($versionCode)",
+                            text = stringResource(R.string.about_app_version, versionName, versionCode),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -226,7 +210,7 @@ fun AboutScreen(activity: MainActivity, onRestartOnboarding: () -> Unit = {}) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        "An Android application that seamlessly connects Health Connect data to your webhooks, enabling automated health data synchronization to your custom endpoints.",
+                        text = stringResource(R.string.about_app_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -263,15 +247,13 @@ fun AboutScreen(activity: MainActivity, onRestartOnboarding: () -> Unit = {}) {
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text(
-                            "Privacy & Security",
-                            style = MaterialTheme.typography.titleMedium
+                            text = stringResource(R.string.about_privacy_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            "• HC Webhook does not collect, store, or transmit any personal data to third-party services\n" +
-                            "• All health data remains on your device until sent to your configured webhooks\n" +
-                            "• Webhook URLs are stored locally on your device\n" +
-                            "• You have full control over which data types are synced and where they are sent",
+                            text = stringResource(R.string.about_privacy_desc),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -309,11 +291,11 @@ fun AboutScreen(activity: MainActivity, onRestartOnboarding: () -> Unit = {}) {
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text(
-                            "Settings Backup",
+                            text = stringResource(R.string.about_settings_backup_title),
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            "Export or import your webhook URLs, headers, and sync schedule",
+                            text = stringResource(R.string.about_settings_backup_desc),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -332,29 +314,23 @@ fun AboutScreen(activity: MainActivity, onRestartOnboarding: () -> Unit = {}) {
                         onClick = { exportSettings() },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.Upload,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Export")
+                        Icon(Icons.Filled.Upload, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.about_action_export))
                     }
 
                     OutlinedButton(
-                        onClick = { showImportSheet = true },
+                        onClick = { showImportConfirmSheet = true },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.Download,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Import")
+                        Icon(Icons.Filled.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.about_action_import))
                     }
                 }
             }
+
+            LanguageSelectorCard()
 
             // Links Card
             Card(
@@ -365,15 +341,15 @@ fun AboutScreen(activity: MainActivity, onRestartOnboarding: () -> Unit = {}) {
             ) {
                 Column {
                     Text(
-                        "Links",
+                        text = stringResource(R.string.about_links_title),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp)
                     )
 
                     if (!FlavorUtils.isPlayStore) {
                         LinkRow(
-                            label = "GitHub Repository",
-                            icon = Icons.AutoMirrored.Filled.OpenInNew,
+                            label = stringResource(R.string.about_link_github),
+                            icon = Icons.Filled.Code,
                             onClick = {
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/mcnaveen/health-connect-webhook"))
                                 context.startActivity(intent)
@@ -399,8 +375,8 @@ fun AboutScreen(activity: MainActivity, onRestartOnboarding: () -> Unit = {}) {
                     )
                 }
             }
-
             Spacer(modifier = Modifier.height(80.dp)) // Bottom padding for nav bar
+
         }
 
         // Snackbar overlay
@@ -437,5 +413,82 @@ private fun LinkRow(
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(18.dp)
         )
+    }
+}
+
+
+@Composable
+private fun LanguageSelectorCard() {
+    var expanded by remember { mutableStateOf(false) }
+    val languages = listOf(
+        "" to "System Default",
+        "en" to "English",
+        "ta" to "தமிழ்", // Tamil
+        "fr" to "Français", // French
+        "de" to "Deutsch", // German
+        "es" to "Español", // Spanish
+        "pt" to "Português", // Portuguese
+        "zh" to "中文", // Chinese
+        "ja" to "日本語", // Japanese
+        "ko" to "한국어", // Korean
+        "it" to "Italiano" // Italian
+    )
+
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxWidth().clickable { expanded = true }) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.Translate,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = "Language",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Change the application language context",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+            
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                languages.forEach { (tag, name) ->
+                    DropdownMenuItem(
+                        text = { Text(name) },
+                        onClick = {
+                            if (tag.isEmpty()) {
+                                androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(androidx.core.os.LocaleListCompat.getEmptyLocaleList())
+                            } else {
+                                androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(androidx.core.os.LocaleListCompat.forLanguageTags(tag))
+                            }
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
     }
 }

@@ -14,6 +14,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.hcwebhook.app.R
 import com.hcwebhook.app.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,9 +67,9 @@ fun WebhooksScreen(
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(40.dp)
                 )
-                Text("Delete Webhook?", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.webhooks_delete_title), style = MaterialTheme.typography.titleLarge)
                 Text(
-                    "\"$urlToDelete\" will be permanently removed.",
+                    stringResource(R.string.webhooks_delete_desc, urlToDelete),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -84,7 +86,7 @@ fun WebhooksScreen(
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.action_delete))
                 }
                 OutlinedButton(
                     onClick = {
@@ -93,7 +95,7 @@ fun WebhooksScreen(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         }
@@ -114,12 +116,12 @@ fun WebhooksScreen(
             // Webhook URLs Section
             Card {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Webhook URLs", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.webhooks_section_title), style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(16.dp))
 
                     if (webhookConfigs.isEmpty()) {
                         Text(
-                            "No webhooks configured. Add a URL to start syncing data.",
+                            stringResource(R.string.webhooks_empty_desc),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -142,7 +144,7 @@ fun WebhooksScreen(
                                     val headerCount = config.getHeaderCount()
                                     if (headerCount > 0) {
                                         Text(
-                                            text = "$headerCount headers configured",
+                                            text = stringResource(R.string.webhooks_headers_count, headerCount),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.primary
                                         )
@@ -153,7 +155,7 @@ fun WebhooksScreen(
                                         selectedConfigIndex = index
                                         showHeaderDialog = true
                                     }) {
-                                        Icon(Icons.Filled.Edit, "Edit Headers")
+                                        Icon(Icons.Filled.Edit, stringResource(R.string.webhooks_action_edit_headers))
                                     }
                                     IconButton(onClick = {
                                         pendingDeleteIndex = index
@@ -161,7 +163,7 @@ fun WebhooksScreen(
                                     }) {
                                         Icon(
                                             Icons.Filled.Delete,
-                                            "Delete",
+                                            stringResource(R.string.action_delete),
                                             tint = MaterialTheme.colorScheme.error
                                         )
                                     }
@@ -177,7 +179,7 @@ fun WebhooksScreen(
                     OutlinedTextField(
                         value = newUrl,
                         onValueChange = { newUrl = it },
-                        label = { Text("New Webhook URL") },
+                        label = { Text(stringResource(R.string.webhooks_new_url_label)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -188,12 +190,12 @@ fun WebhooksScreen(
                                 webhookConfigs = webhookConfigs + WebhookConfig.fromUrl(newUrl)
                                 newUrl = ""
                             } else {
-                                Toast.makeText(context, "Please enter a valid HTTP/HTTPS URL", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.webhooks_toast_invalid_url), Toast.LENGTH_SHORT).show()
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Add Webhook")
+                        Text(stringResource(R.string.webhooks_action_add))
                     }
                 }
             }
@@ -209,15 +211,15 @@ fun WebhooksScreen(
         
         AlertDialog(
             onDismissRequest = { showHeaderDialog = false },
-            title = { Text("Manage Headers") },
+            title = { Text(stringResource(R.string.webhooks_headers_manage_title)) },
             text = {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    Text("Headers for ${config.url}", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.webhooks_headers_for_url, config.url), style = MaterialTheme.typography.bodySmall)
                     Spacer(modifier = Modifier.height(8.dp))
                     
                     // Existing Headers
                     if (currentHeaders.isEmpty()) {
-                        Text("No headers added", style = MaterialTheme.typography.bodySmall, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                        Text(stringResource(R.string.webhooks_headers_empty), style = MaterialTheme.typography.bodySmall, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
                     }
                     
                     currentHeaders.forEach { (key, value) ->
@@ -232,20 +234,20 @@ fun WebhooksScreen(
                             IconButton(onClick = {
                                 currentHeaders = currentHeaders - key
                             }) {
-                                Icon(Icons.Filled.Delete, "Remove Header", modifier = Modifier.size(20.dp))
+                                Icon(Icons.Filled.Delete, stringResource(R.string.webhooks_headers_action_remove), modifier = Modifier.size(20.dp))
                             }
                         }
                         Divider()
                     }
                     
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Add Header", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.webhooks_headers_action_add_title), style = MaterialTheme.typography.labelLarge)
                     Spacer(modifier = Modifier.height(8.dp))
                     
                     OutlinedTextField(
                         value = newKey,
                         onValueChange = { newKey = it },
-                        label = { Text("Key") },
+                        label = { Text(stringResource(R.string.webhooks_headers_key_label)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -253,7 +255,7 @@ fun WebhooksScreen(
                     OutlinedTextField(
                         value = newValue,
                         onValueChange = { newValue = it },
-                        label = { Text("Value") },
+                        label = { Text(stringResource(R.string.webhooks_headers_value_label)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -268,7 +270,7 @@ fun WebhooksScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Add Header")
+                        Text(stringResource(R.string.webhooks_headers_action_add_title))
                     }
                 }
             },
@@ -280,12 +282,12 @@ fun WebhooksScreen(
                     webhookConfigs = newList
                     showHeaderDialog = false
                 }) {
-                    Text("Save")
+                    Text(stringResource(R.string.action_save))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showHeaderDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )

@@ -12,98 +12,75 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import kotlin.reflect.KClass
 
-enum class HealthDataType(val displayName: String, val recordClass: KClass<out Record>, val rationale: String) {
+enum class HealthDataType(val nameResId: Int, val recordClass: KClass<out Record>, val rationaleResId: Int) {
     STEPS(
-        "Steps", StepsRecord::class,
-        "Track daily step counts and send activity totals to your webhook for fitness automation and habit tracking."
+        R.string.dt_steps_name, StepsRecord::class, R.string.dt_steps_rationale
     ),
     SLEEP(
-        "Sleep", SleepSessionRecord::class,
-        "Forward sleep session duration and stage breakdowns (light, deep, REM) to build custom sleep reports or recovery dashboards."
+        R.string.dt_sleep_name, SleepSessionRecord::class, R.string.dt_sleep_rationale
     ),
     HEART_RATE(
-        "Heart Rate", HeartRateRecord::class,
-        "Stream continuous heart rate readings to your webhook for real-time health monitoring, alerts, or workout analysis."
+        R.string.dt_hr_name, HeartRateRecord::class, R.string.dt_hr_rationale
     ),
     HEART_RATE_VARIABILITY(
-        "Heart Rate Variability", HeartRateVariabilityRmssdRecord::class,
-        "Send HRV (RMSSD) readings to your webhook to track stress levels, recovery quality, and nervous system health over time."
+        R.string.dt_hrv_name, HeartRateVariabilityRmssdRecord::class, R.string.dt_hrv_rationale
     ),
     DISTANCE(
-        "Distance", DistanceRecord::class,
-        "Forward daily distance traveled to log running, walking, or cycling progress and trigger location-based automations."
+        R.string.dt_dist_name, DistanceRecord::class, R.string.dt_dist_rationale
     ),
     ACTIVE_CALORIES(
-        "Active Calories", ActiveCaloriesBurnedRecord::class,
-        "Send active calorie burn data to your webhook to power fitness tracking, nutrition planning, or goal-based automations."
+        R.string.dt_act_cal_name, ActiveCaloriesBurnedRecord::class, R.string.dt_act_cal_rationale
     ),
     TOTAL_CALORIES(
-        "Total Calories", TotalCaloriesBurnedRecord::class,
-        "Forward total daily calorie expenditure for comprehensive energy balance tracking and diet management workflows."
+        R.string.dt_tot_cal_name, TotalCaloriesBurnedRecord::class, R.string.dt_tot_cal_rationale
     ),
     WEIGHT(
-        "Weight", WeightRecord::class,
-        "Sync body weight measurements to your webhook to track trends, calculate BMI, or trigger health goal notifications."
+        R.string.dt_weight_name, WeightRecord::class, R.string.dt_weight_rationale
     ),
     HEIGHT(
-        "Height", HeightRecord::class,
-        "Send height data to your webhook to enable BMI and body composition calculations in downstream automations."
+        R.string.dt_height_name, HeightRecord::class, R.string.dt_height_rationale
     ),
     BLOOD_PRESSURE(
-        "Blood Pressure", BloodPressureRecord::class,
-        "Forward systolic and diastolic readings to monitor cardiovascular health, log trends, and set up alert workflows."
+        R.string.dt_bp_name, BloodPressureRecord::class, R.string.dt_bp_rationale
     ),
     BLOOD_GLUCOSE(
-        "Blood Glucose", BloodGlucoseRecord::class,
-        "Send blood glucose levels to your webhook to support diabetes management, meal tracking, and health alert automations."
+        R.string.dt_bg_name, BloodGlucoseRecord::class, R.string.dt_bg_rationale
     ),
     OXYGEN_SATURATION(
-        "Oxygen Saturation", OxygenSaturationRecord::class,
-        "Forward SpO₂ readings to monitor respiratory health, flag low-oxygen events, and integrate with wellness dashboards."
+        R.string.dt_oxy_name, OxygenSaturationRecord::class, R.string.dt_oxy_rationale
     ),
     BODY_TEMPERATURE(
-        "Body Temperature", BodyTemperatureRecord::class,
-        "Send body temperature readings to your webhook for illness detection, fever tracking, and long-term health logging."
+        R.string.dt_temp_name, BodyTemperatureRecord::class, R.string.dt_temp_rationale
     ),
     RESPIRATORY_RATE(
-        "Respiratory Rate", RespiratoryRateRecord::class,
-        "Forward breathing rate data to track respiratory health, monitor recovery, and detect anomalies via your webhook."
+        R.string.dt_resp_name, RespiratoryRateRecord::class, R.string.dt_resp_rationale
     ),
     RESTING_HEART_RATE(
-        "Resting Heart Rate", RestingHeartRateRecord::class,
-        "Send daily resting heart rate to your webhook to track long-term cardiovascular fitness trends and training adaptation."
+        R.string.dt_rhr_name, RestingHeartRateRecord::class, R.string.dt_rhr_rationale
     ),
     EXERCISE(
-        "Exercise Sessions", ExerciseSessionRecord::class,
-        "Forward workout sessions including exercise type and duration to your webhook for activity logging and training analysis."
+        R.string.dt_exer_name, ExerciseSessionRecord::class, R.string.dt_exer_rationale
     ),
     HYDRATION(
-        "Hydration", HydrationRecord::class,
-        "Send fluid intake logs to your webhook to support daily hydration tracking, reminders, and wellness automations."
+        R.string.dt_hydr_name, HydrationRecord::class, R.string.dt_hydr_rationale
     ),
     NUTRITION(
-        "Nutrition", NutritionRecord::class,
-        "Forward calorie and macronutrient (protein, carbs, fat) data to power diet tracking and nutrition automation workflows."
+        R.string.dt_nutr_name, NutritionRecord::class, R.string.dt_nutr_rationale
     ),
     BASAL_METABOLIC_RATE(
-        "Basal Metabolic Rate", BasalMetabolicRateRecord::class,
-        "Send BMR data to your webhook to enable personalized calorie target calculations and metabolism tracking dashboards."
+        R.string.dt_bmr_name, BasalMetabolicRateRecord::class, R.string.dt_bmr_rationale
     ),
     BODY_FAT(
-        "Body Fat", BodyFatRecord::class,
-        "Forward body fat percentage measurements to your webhook to track body composition changes and fitness progress over time."
+        R.string.dt_bf_name, BodyFatRecord::class, R.string.dt_bf_rationale
     ),
     LEAN_BODY_MASS(
-        "Lean Body Mass", LeanBodyMassRecord::class,
-        "Send lean mass data to your webhook to monitor muscle gain or loss and support body recomposition tracking workflows."
+        R.string.dt_lbm_name, LeanBodyMassRecord::class, R.string.dt_lbm_rationale
     ),
     VO2_MAX(
-        "VO₂ Max", Vo2MaxRecord::class,
-        "Forward VO₂ max readings to your webhook to track aerobic fitness improvements, training load, and endurance progress."
+        R.string.dt_vo2_name, Vo2MaxRecord::class, R.string.dt_vo2_rationale
     ),
     BONE_MASS(
-        "Bone Mass", BoneMassRecord::class,
-        "Send bone density measurements to your webhook to track skeletal health and monitor long-term wellness trends."
+        R.string.dt_bone_name, BoneMassRecord::class, R.string.dt_bone_rationale
     )
 }
 

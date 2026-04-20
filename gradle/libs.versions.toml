@@ -12,10 +12,12 @@ healthConnect = "1.1.0-alpha11"
 workManager = "2.9.0"
 okhttp = "4.12.0"
 kotlinxSerialization = "1.6.3"
+appcompat = "1.6.1"
 splashScreen = "1.0.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

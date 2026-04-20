@@ -12,7 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import com.hcwebhook.app.PreferencesManager
+import com.hcwebhook.app.R
 import com.hcwebhook.app.WebhookLog
 import java.text.SimpleDateFormat
 import java.util.*
@@ -43,9 +45,9 @@ fun LogsScreen() {
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(40.dp)
                 )
-                Text("Clear All Logs?", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.logs_clear_title), style = MaterialTheme.typography.titleLarge)
                 Text(
-                    "All webhook logs will be permanently deleted.",
+                    stringResource(R.string.logs_clear_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -62,13 +64,13 @@ fun LogsScreen() {
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Clear Logs")
+                    Text(stringResource(R.string.action_clear_logs))
                 }
                 OutlinedButton(
                     onClick = { showClearSheet = false },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         }
@@ -84,12 +86,12 @@ fun LogsScreen() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "Webhook Logs",
+                stringResource(R.string.logs_title),
                 style = MaterialTheme.typography.titleLarge
             )
             if (logs.isNotEmpty()) {
                 TextButton(onClick = { showClearSheet = true }) {
-                    Text("Clear")
+                    Text(stringResource(R.string.action_clear))
                 }
             }
         }
@@ -102,7 +104,7 @@ fun LogsScreen() {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    "No logs yet",
+                    stringResource(R.string.logs_empty),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
@@ -170,7 +172,7 @@ private fun LogItem(log: WebhookLog) {
                 MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
             
             Text(
-                text = "${log.statusCode ?: "ERR"}",
+                text = "${log.statusCode ?: stringResource(R.string.logs_status_err)}",
                 style = MaterialTheme.typography.labelMedium,
                 color = statusColor
             )

@@ -40,8 +40,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
+import androidx.compose.material.icons.filled.Translate
 import com.hcwebhook.app.FlavorUtils
 import com.hcwebhook.app.HealthDataType
+import com.hcwebhook.app.R
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -54,22 +59,33 @@ fun OnboardingScreen(onFinish: () -> Unit) {
     if (showSkipDialog) {
         AlertDialog(
             onDismissRequest = { showSkipDialog = false },
-            title = { Text("Skip Introduction?") },
-            text = { Text("You can view it again anytime from the About screen.") },
+            title = { Text(stringResource(R.string.onboarding_skip_dialog_title)) },
+            text = { Text(stringResource(R.string.onboarding_skip_dialog_text)) },
             confirmButton = {
                 TextButton(onClick = {
                     showSkipDialog = false
                     onFinish()
-                }) { Text("Skip") }
+                }) { Text(stringResource(R.string.onboarding_skip)) }
             },
             dismissButton = {
-                TextButton(onClick = { showSkipDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showSkipDialog = false }) { Text(stringResource(R.string.onboarding_cancel)) }
             }
         )
     }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .statusBarsPadding(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                LanguageSelector()
+            }
+        },
         bottomBar = {
             Column(
                 modifier = Modifier
@@ -107,12 +123,12 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(if (pagerState.currentPage < 2) "Next" else "Get Started")
+                    Text(if (pagerState.currentPage < 2) stringResource(R.string.onboarding_next) else stringResource(R.string.onboarding_get_started))
                 }
 
                 if (pagerState.currentPage < 2) {
                     TextButton(onClick = { showSkipDialog = true }) {
-                        Text("Skip", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.onboarding_skip), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -152,14 +168,14 @@ private fun WelcomePage() {
         )
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = "Health Connect to Webhook",
+            text = stringResource(R.string.onboarding_welcome_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "Forward your health data to any webhook — automatically.",
+            text = stringResource(R.string.onboarding_welcome_subtitle),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -167,20 +183,20 @@ private fun WelcomePage() {
         Spacer(modifier = Modifier.height(32.dp))
         FeatureRow(
             icon = Icons.Filled.CheckCircle,
-            title = "You choose what to sync",
-            description = "Select only the health data types you want to forward."
+            title = stringResource(R.string.onboarding_feature1_title),
+            description = stringResource(R.string.onboarding_feature1_desc)
         )
         Spacer(modifier = Modifier.height(16.dp))
         FeatureRow(
             icon = Icons.Filled.Webhook,
-            title = "Send to any webhook URL",
-            description = "Your data goes directly to your configured URLs — nothing else."
+            title = stringResource(R.string.onboarding_feature2_title),
+            description = stringResource(R.string.onboarding_feature2_desc)
         )
         Spacer(modifier = Modifier.height(16.dp))
         FeatureRow(
             icon = Icons.Filled.Lock,
-            title = "Permissions on demand",
-            description = "Health Connect permissions are requested only for the types you enable."
+            title = stringResource(R.string.onboarding_feature3_title),
+            description = stringResource(R.string.onboarding_feature3_desc)
         )
     }
 }
@@ -196,27 +212,27 @@ private fun DataTypesPage() {
     ) {
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = "Available Data Types",
+            text = stringResource(R.string.onboarding_datatypes_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Choose from ${HealthDataType.entries.size} health data types to forward to your webhook. You're in full control — only what you turn on gets synced.",
+            text = stringResource(R.string.onboarding_datatypes_desc, HealthDataType.entries.size),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(20.dp))
 
         val groups = mapOf(
-            "Activity" to listOf(
+            stringResource(R.string.onboarding_group_activity) to listOf(
                 HealthDataType.STEPS,
                 HealthDataType.DISTANCE,
                 HealthDataType.ACTIVE_CALORIES,
                 HealthDataType.TOTAL_CALORIES,
                 HealthDataType.EXERCISE
             ),
-            "Heart & Vitals" to listOf(
+            stringResource(R.string.onboarding_group_heart_vitals) to listOf(
                 HealthDataType.HEART_RATE,
                 HealthDataType.HEART_RATE_VARIABILITY,
                 HealthDataType.RESTING_HEART_RATE,
@@ -226,10 +242,10 @@ private fun DataTypesPage() {
                 HealthDataType.BODY_TEMPERATURE,
                 HealthDataType.BLOOD_GLUCOSE
             ),
-            "Sleep" to listOf(
+            stringResource(R.string.onboarding_group_sleep) to listOf(
                 HealthDataType.SLEEP
             ),
-            "Body Composition" to listOf(
+            stringResource(R.string.onboarding_group_body_composition) to listOf(
                 HealthDataType.WEIGHT,
                 HealthDataType.HEIGHT,
                 HealthDataType.BODY_FAT,
@@ -238,7 +254,7 @@ private fun DataTypesPage() {
                 HealthDataType.BASAL_METABOLIC_RATE,
                 HealthDataType.VO2_MAX
             ),
-            "Nutrition & Hydration" to listOf(
+            stringResource(R.string.onboarding_group_nutrition) to listOf(
                 HealthDataType.NUTRITION,
                 HealthDataType.HYDRATION
             )
@@ -266,12 +282,12 @@ private fun DataTypesPage() {
                     )
                     Column {
                         Text(
-                            text = type.displayName,
+                            text = stringResource(id = type.nameResId),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = type.rationale,
+                            text = stringResource(id = type.rationaleResId),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -305,14 +321,14 @@ private fun PrivacyPage() {
         )
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = "Your Data, Your Control",
+            text = stringResource(R.string.onboarding_privacy_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "This app is a transparent forwarder. Here's exactly how your data is handled:",
+            text = stringResource(R.string.onboarding_privacy_subtitle),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -320,11 +336,11 @@ private fun PrivacyPage() {
         Spacer(modifier = Modifier.height(32.dp))
 
         val points = listOf(
-            "You decide which health data types to enable — nothing is read without your choice",
-            "Permissions are only asked for the types you turn on. If you never enable a type, its permission is never requested",
-            "Your data is sent directly to your own webhook URLs — nowhere else",
-            "Nothing is stored on any external server",
-            "Your data is never sold or shared with anyone"
+            stringResource(R.string.onboarding_privacy_p1),
+            stringResource(R.string.onboarding_privacy_p2),
+            stringResource(R.string.onboarding_privacy_p3),
+            stringResource(R.string.onboarding_privacy_p4),
+            stringResource(R.string.onboarding_privacy_p5)
         )
 
         points.forEach { point ->
@@ -352,7 +368,7 @@ private fun PrivacyPage() {
 
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = "Have feedback or suggestions? Head to the About tab anytime — we'd love to hear from you.",
+            text = stringResource(R.string.onboarding_privacy_footer),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -376,13 +392,13 @@ private fun PrivacyPage() {
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
-                            text = "Use only the official version",
+                            text = stringResource(R.string.onboarding_privacy_warning_title),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
                         Text(
-                            text = "Cracked or modified versions of this app may steal your webhook URLs or send your health data to unknown servers. Always download from Google Play.",
+                            text = stringResource(R.string.onboarding_privacy_warning_desc),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
@@ -393,7 +409,7 @@ private fun PrivacyPage() {
     }
 }
 
-private fun iconForDataType(type: HealthDataType): ImageVector = when (type) {
+fun iconForDataType(type: HealthDataType): ImageVector = when (type) {
     HealthDataType.STEPS               -> Icons.Filled.DirectionsWalk
     HealthDataType.DISTANCE            -> Icons.Filled.Straighten
     HealthDataType.ACTIVE_CALORIES     -> Icons.Filled.LocalFireDepartment
@@ -437,6 +453,49 @@ private fun FeatureRow(icon: ImageVector, title: String, description: String) {
         Column {
             Text(text = title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
             Text(text = description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+fun LanguageSelector() {
+    var expanded by remember { mutableStateOf(false) }
+
+    val languages = listOf(
+        "" to "System Default",
+        "en" to "English",
+        "ta" to "தமிழ்", // Tamil
+        "fr" to "Français", // French
+        "de" to "Deutsch", // German
+        "es" to "Español", // Spanish
+        "pt" to "Português", // Portuguese
+        "zh" to "中文", // Chinese
+        "ja" to "日本語", // Japanese
+        "ko" to "한국어", // Korean
+        "it" to "Italiano" // Italian
+    )
+
+    Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
+        IconButton(onClick = { expanded = true }) {
+            Icon(Icons.Filled.Translate, contentDescription = "Select Language")
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            languages.forEach { (tag, name) ->
+                DropdownMenuItem(
+                    text = { Text(name) },
+                    onClick = {
+                        if (tag.isEmpty()) {
+                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
+                        } else {
+                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
+                        }
+                        expanded = false
+                    }
+                )
+            }
         }
     }
 }

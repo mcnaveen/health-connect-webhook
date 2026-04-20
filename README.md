@@ -48,12 +48,28 @@ Health Connect aggregates data from these popular health and fitness apps:
 - 🎯 **Selective Data Types** - Choose which health data types to sync (23 supported types)
 - 🔗 **Multiple Webhooks** - Send data to multiple webhook URLs simultaneously
 - 📊 **Manual Sync** - Trigger immediate data synchronization on demand
+- 🌍 **Multi-language Support** - Fully localized in 10 languages with manual override support
 - 📝 **Webhook Logs** - View detailed logs of all webhook requests and responses
 - 🔐 **Permission Management** - Granular Health Connect permission handling
 - 💾 **Settings Backup** - Export/import webhook configs, data type selections, and sync schedule
 - 🎨 **Modern UI** - Built with Jetpack Compose and Material 3 design
 - ⚡ **Real-time Status** - Visual indicators for permission status and sync state
 - 💬 **Feedback** - Easy access to provide feedback and suggestions through the app menu
+
+## Supported Languages
+
+The app is fully localized and supports 10 languages. You can manually override the app language from the **About** screen:
+
+- 🇬🇧 English (Default)
+- 🇮🇳 Tamil
+- 🇫🇷 French
+- 🇩🇪 German
+- 🇪🇸 Spanish
+- 🇵🇹 Portuguese
+- 🇨🇳 Chinese (Simplified)
+- 🇯🇵 Japanese
+- 🇰🇷 Korean
+- 🇮🇹 Italian
 
 ## Supported Health Data Types
 

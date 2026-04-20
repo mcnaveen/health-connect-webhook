@@ -1,3 +1,222 @@
 <resources>
     <string name="app_name">HC Webhook</string>
+    <string name="onboarding_skip_dialog_title">Skip Introduction?</string>
+    <string name="onboarding_skip_dialog_text">You can view it again anytime from the About screen.</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_cancel">Cancel</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_get_started">Get Started</string>
+
+    <string name="onboarding_welcome_title">Health Connect to Webhook</string>
+    <string name="onboarding_welcome_subtitle">Forward your health data to any webhook — automatically.</string>
+    
+    <string name="onboarding_feature1_title">You choose what to sync</string>
+    <string name="onboarding_feature1_desc">Select only the health data types you want to forward.</string>
+    <string name="onboarding_feature2_title">Send to any webhook URL</string>
+    <string name="onboarding_feature2_desc">Your data goes directly to your configured URLs — nothing else.</string>
+    <string name="onboarding_feature3_title">Permissions on demand</string>
+    <string name="onboarding_feature3_desc">Health Connect permissions are requested only for the types you enable.</string>
+
+    <string name="onboarding_datatypes_title">Available Data Types</string>
+    <string name="onboarding_datatypes_desc">Choose from %1$d health data types to forward to your webhook. You’re in full control — only what you turn on gets synced.</string>
+    <string name="onboarding_group_activity">Activity</string>
+    <string name="onboarding_group_heart_vitals">Heart &amp; Vitals</string>
+    <string name="onboarding_group_sleep">Sleep</string>
+    <string name="onboarding_group_body_composition">Body Composition</string>
+    <string name="onboarding_group_nutrition">Nutrition &amp; Hydration</string>
+    
+    <string name="onboarding_privacy_title">Your Data, Your Control</string>
+    <string name="onboarding_privacy_subtitle">This app is a transparent forwarder. Here’s exactly how your data is handled:</string>
+    <string name="onboarding_privacy_p1">You decide which health data types to enable — nothing is read without your choice</string>
+    <string name="onboarding_privacy_p2">Permissions are only asked for the types you turn on. If you never enable a type, its permission is never requested</string>
+    <string name="onboarding_privacy_p3">Your data is sent directly to your own webhook URLs — nowhere else</string>
+    <string name="onboarding_privacy_p4">Nothing is stored on any external server</string>
+    <string name="onboarding_privacy_p5">Your data is never sold or shared with anyone</string>
+    <string name="onboarding_privacy_footer">Have feedback or suggestions? Head to the About tab anytime — we’d love to hear from you.</string>
+    <string name="onboarding_privacy_warning_title">Use only the official version</string>
+    <string name="onboarding_privacy_warning_desc">Cracked or modified versions of this app may steal your webhook URLs or send your health data to unknown servers. Always download from Google Play.</string>
+    <string name="dt_steps_name">Steps</string>
+    <string name="dt_steps_rationale">Track daily step counts and send activity totals to your webhook for fitness automation and habit tracking.</string>
+    <string name="dt_sleep_name">Sleep</string>
+    <string name="dt_sleep_rationale">Forward sleep session duration and stage breakdowns (light, deep, REM) to build custom sleep reports or recovery dashboards.</string>
+    <string name="dt_hr_name">Heart Rate</string>
+    <string name="dt_hr_rationale">Stream continuous heart rate readings to your webhook for real-time health monitoring, alerts, or workout analysis.</string>
+    <string name="dt_hrv_name">Heart Rate Variability</string>
+    <string name="dt_hrv_rationale">Send HRV (RMSSD) readings to your webhook to track stress levels, recovery quality, and nervous system health over time.</string>
+    <string name="dt_dist_name">Distance</string>
+    <string name="dt_dist_rationale">Forward daily distance traveled to log running, walking, or cycling progress and trigger location-based automations.</string>
+    <string name="dt_act_cal_name">Active Calories</string>
+    <string name="dt_act_cal_rationale">Send active calorie burn data to your webhook to power fitness tracking, nutrition planning, or goal-based automations.</string>
+    <string name="dt_tot_cal_name">Total Calories</string>
+    <string name="dt_tot_cal_rationale">Forward total daily calorie expenditure for comprehensive energy balance tracking and diet management workflows.</string>
+    <string name="dt_weight_name">Weight</string>
+    <string name="dt_weight_rationale">Sync body weight measurements to your webhook to track trends, calculate BMI, or trigger health goal notifications.</string>
+    <string name="dt_height_name">Height</string>
+    <string name="dt_height_rationale">Send height data to your webhook to enable BMI and body composition calculations in downstream automations.</string>
+    <string name="dt_bp_name">Blood Pressure</string>
+    <string name="dt_bp_rationale">Forward systolic and diastolic readings to monitor cardiovascular health, log trends, and set up alert workflows.</string>
+    <string name="dt_bg_name">Blood Glucose</string>
+    <string name="dt_bg_rationale">Send blood glucose levels to your webhook to support diabetes management, meal tracking, and health alert automations.</string>
+    <string name="dt_oxy_name">Oxygen Saturation</string>
+    <string name="dt_oxy_rationale">Forward SpO₂ readings to monitor respiratory health, flag low-oxygen events, and integrate with wellness dashboards.</string>
+    <string name="dt_temp_name">Body Temperature</string>
+    <string name="dt_temp_rationale">Send body temperature readings to your webhook for illness detection, fever tracking, and long-term health logging.</string>
+    <string name="dt_resp_name">Respiratory Rate</string>
+    <string name="dt_resp_rationale">Forward breathing rate data to track respiratory health, monitor recovery, and detect anomalies via your webhook.</string>
+    <string name="dt_rhr_name">Resting Heart Rate</string>
+    <string name="dt_rhr_rationale">Send daily resting heart rate to your webhook to track long-term cardiovascular fitness trends and training adaptation.</string>
+    <string name="dt_exer_name">Exercise Sessions</string>
+    <string name="dt_exer_rationale">Forward workout sessions including exercise type and duration to your webhook for activity logging and training analysis.</string>
+    <string name="dt_hydr_name">Hydration</string>
+    <string name="dt_hydr_rationale">Send fluid intake logs to your webhook to support daily hydration tracking, reminders, and wellness automations.</string>
+    <string name="dt_nutr_name">Nutrition</string>
+    <string name="dt_nutr_rationale">Forward calorie and macronutrient (protein, carbs, fat) data to power diet tracking and nutrition automation workflows.</string>
+    <string name="dt_bmr_name">Basal Metabolic Rate</string>
+    <string name="dt_bmr_rationale">Send BMR data to your webhook to enable personalized calorie target calculations and metabolism tracking dashboards.</string>
+    <string name="dt_bf_name">Body Fat</string>
+    <string name="dt_bf_rationale">Forward body fat percentage measurements to your webhook to track body composition changes and fitness progress over time.</string>
+    <string name="dt_lbm_name">Lean Body Mass</string>
+    <string name="dt_lbm_rationale">Send lean mass data to your webhook to monitor muscle gain or loss and support body recomposition tracking workflows.</string>
+    <string name="dt_vo2_name">VO₂ Max</string>
+    <string name="dt_vo2_rationale">Forward VO₂ max readings to your webhook to track aerobic fitness improvements, training load, and endurance progress.</string>
+    <string name="dt_bone_name">Bone Mass</string>
+    <string name="dt_bone_rationale">Send bone density measurements to your webhook to track skeletal health and monitor long-term wellness trends.</string>
+    <string name="dt_hc_rationale">Health Connect to Webhook requires access to your health and fitness data. This data is strictly used to fulfill the core functionality of the app: securely transmitting your chosen health metrics directly to your personal webhook URLs. We do not sell or share your data with any third parties. Only the data types you explicitly choose to configure below will be requested and synced.</string>
+    <string name="datatypes_granted_summary">%1$d of %2$d permissions granted</string>
+    <string name="datatypes_selected_summary">%1$d items selected to sync</string>
+
+    <string name="manual_sync_title">Manual Sync</string>
+    <string name="manual_sync_desc">Trigger a manual sync to send current health data to webhooks</string>
+    <string name="manual_sync_time_range">Time Range</string>
+    <string name="manual_sync_default_range">Default (New data only)</string>
+    <string name="manual_sync_past_1_day">Past 1 Day</string>
+    <string name="manual_sync_past_7_days">Past 7 Days</string>
+    <string name="manual_sync_past_30_days">Past 30 Days</string>
+    <string name="manual_sync_custom">Custom selection</string>
+    <string name="manual_sync_start_date">Select Start Date</string>
+    <string name="manual_sync_end_date">Select End Date</string>
+    <string name="manual_sync_start_label">Start Date: %1$s</string>
+    <string name="manual_sync_end_label">End Date: %1$s</string>
+    <string name="manual_sync_confirm_title">Sync Now?</string>
+    <string name="manual_sync_confirm_desc">This will immediately send your health data to all configured webhooks.</string>
+    <string name="manual_sync_btn">Sync Now</string>
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="manual_sync_syncing">Syncing...</string>
+    <string name="err_end_date_before_start">End date must be greater than or equal to start date.</string>
+    <string name="err_end_date_future">End date cannot be in the future.</string>
+    <string name="err_select_both_dates">Please select both start and end dates.</string>
+    <string name="err_hc_not_installed">Health Connect is not installed</string>
+    <string name="err_hc_needs_update">Health Connect needs update</string>
+    <string name="err_hc_not_available">Health Connect is not available</string>
+    <string name="err_permissions_required">Permissions required for sync.</string>
+    <string name="manual_sync_progress">Syncing data from %1$s to %2$s...</string>
+    <string name="manual_sync_no_data">No new data to sync</string>
+    <string name="manual_sync_success_empty">Sync completed successfully</string>
+    <string name="manual_sync_success_items">Synced %1$s</string>
+    <string name="manual_sync_failed">Sync failed: %1$s</string>
+    
+    <string name="config_permissions_granted">Permissions Granted</string>
+    <string name="config_data_types">Data Types</string>
+    <string name="config_manage_hc">Manage in Health Connect</string>
+    <string name="perms_title">Health Permissions</string>
+
+    <!-- Webhooks Screen -->
+    <string name="webhooks_delete_title">Delete Webhook?</string>
+    <string name="webhooks_delete_desc">"%1$s" will be permanently removed.</string>
+    <string name="action_delete">Delete</string>
+    <string name="webhooks_section_title">Webhook URLs</string>
+    <string name="webhooks_empty_desc">No webhooks configured. Add a URL to start syncing data.</string>
+    <string name="webhooks_headers_count">%1$d headers configured</string>
+    <string name="webhooks_action_edit_headers">Edit Headers</string>
+    <string name="webhooks_new_url_label">New Webhook URL</string>
+    <string name="webhooks_action_add">Add Webhook</string>
+    <string name="webhooks_toast_invalid_url">Please enter a valid HTTP/HTTPS URL</string>
+    <string name="webhooks_headers_manage_title">Manage Headers</string>
+    <string name="webhooks_headers_for_url">Headers for %1$s</string>
+    <string name="webhooks_headers_empty">No headers added</string>
+    <string name="webhooks_headers_action_remove">Remove Header</string>
+    <string name="webhooks_headers_action_add_title">Add Header</string>
+    <string name="webhooks_headers_key_label">Key</string>
+    <string name="webhooks_headers_value_label">Value</string>
+    <string name="action_save">Save</string>
+
+    <!-- Configuration Screen -->
+    <string name="config_perms_checking">Checking permissions…</string>
+    <string name="config_hc_not_found_title">Health Connect Not Found</string>
+    <string name="config_hc_not_found_desc">Health Connect is required to sync your health data with this app.</string>
+    <string name="config_perms_zero_title">0 Permissions Granted</string>
+    <string name="config_perms_zero_desc">To sync your health data, you must grant read access. The data is only read locally and sent directly to your configured URLs.</string>
+    <string name="config_action_select_datatypes">Select Data Types Configure</string>
+    <string name="config_action_view_perms">View permissions</string>
+    <string name="config_action_select_dt">Select Data Types</string>
+    <string name="config_sync_schedule_title">Sync Schedule</string>
+    <string name="config_sync_mode_interval">Interval</string>
+    <string name="config_sync_mode_scheduled">Scheduled</string>
+    <string name="config_sync_interval_label">Interval (Minutes)</string>
+    <string name="config_action_update_interval">Update Interval</string>
+    <string name="config_toast_interval_saved">Interval saved</string>
+    <string name="config_toast_min_interval">Min 15 minutes</string>
+    <string name="config_action_add_schedule">Add Schedule Time</string>
+    <string name="config_bg_perm_title">Background Permission Required</string>
+    <string name="config_bg_perm_desc">To sync data automatically on a schedule or interval, you must grant Health Connect access for background use.</string>
+    <string name="config_action_grant_bg">Grant Background Permission</string>
+    <string name="config_last_sync_title">Last Sync</string>
+    <string name="config_action_grant">Grant Permission</string>
+    <string name="config_action_grant_short">Grant</string>
+    <string name="config_action_grant_missing">Grant Missing Permissions</string>
+    <string name="config_toast_error">Error: %1$s</string>
+
+    <!-- About Screen -->
+    <string name="about_toast_import_success">✅ Settings imported successfully</string>
+    <string name="about_toast_import_failed">❌ Import failed: %1$s</string>
+    <string name="about_toast_import_invalid">Invalid file</string>
+    <string name="about_import_sheet_title">Import Settings?</string>
+    <string name="about_import_sheet_desc">This will overwrite your current webhook URLs, headers, and sync schedule with the imported file.</string>
+    <string name="about_action_choose_import">Choose File &amp; Import</string>
+    <string name="about_toast_export_failed">❌ Export failed: %1$s</string>
+    <string name="about_error_unknown">Unknown error</string>
+    <string name="about_export_intent_title">Export Settings</string>
+    <string name="about_app_title">Health Connect to Webhook</string>
+    <string name="about_app_beta">Beta</string>
+    <string name="about_app_version">Version %1$s (%2$d)</string>
+    <string name="about_app_desc">An Android application that seamlessly connects Health Connect data to your webhooks, enabling automated health data synchronization to your custom endpoints.</string>
+    <string name="about_privacy_title">Privacy &amp; Security</string>
+    <string name="about_privacy_desc">• HC Webhook does not collect, store, or transmit any personal data to third-party services
+• All health data remains on your device until sent to your configured webhooks
+• Webhook URLs are stored locally on your device
+• You have full control over which data types are synced and where they are sent</string>
+    <string name="about_settings_backup_title">Settings Backup</string>
+    <string name="about_settings_backup_desc">Export or import your webhook URLs, headers, and sync schedule</string>
+    <string name="about_action_export">Export</string>
+    <string name="about_action_import">Import</string>
+    <string name="about_links_title">Links</string>
+    <string name="about_link_github">GitHub Repository</string>
+    <string name="about_link_feedback">Provide Feedback</string>
+    <string name="about_link_intro">View Introduction</string>
+
+    <!-- Permissions Screen -->
+    <string name="perms_granted_summary">%1$d of %2$d permissions granted</string>
+    <string name="action_close">Close</string>
+    <string name="perms_rationale_desc">Health Connect to Webhook requires access to your health and fitness data. This data is strictly used to fulfill the core functionality of the app: securely transmitting your chosen health metrics (such as steps, sleep, and heart rate) directly to your personal webhook URLs. We do not sell or share your data with any third parties. Only the data types you explicitly choose to configure below will be requested and synced.</string>
+    <string name="perms_status_granted">Granted</string>
+    <string name="perms_status_not_granted">Not granted</string>
+
+    <!-- Logs Screen -->
+    <string name="logs_clear_title">Clear All Logs?</string>
+    <string name="logs_clear_desc">All webhook logs will be permanently deleted.</string>
+    <string name="action_clear_logs">Clear Logs</string>
+    <string name="logs_title">Webhook Logs</string>
+    <string name="action_clear">Clear</string>
+    <string name="logs_empty">No logs yet</string>
+    <string name="logs_status_err">ERR</string>
+
+    <!-- Navigation Items -->
+    <string name="nav_home">Home</string>
+    <string name="nav_webhooks">Webhooks</string>
+    <string name="nav_logs">Logs</string>
+    <string name="nav_about">About</string>
 </resources>
+
+
+

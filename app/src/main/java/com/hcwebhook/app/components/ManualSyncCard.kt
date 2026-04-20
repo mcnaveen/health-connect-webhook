@@ -18,6 +18,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
+import androidx.compose.ui.res.stringResource
+import com.hcwebhook.app.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,11 +35,11 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
     val webhookConfigs = preferencesManager.getWebhookConfigs()
 
     val timeRangeOptions = listOf(
-        "Default (New data only)" to null,
-        "Past 1 Day" to 1,
-        "Past 7 Days" to 7,
-        "Past 30 Days" to 30,
-        "Custom selection" to -1
+        context.getString(R.string.manual_sync_default_range) to null,
+        context.getString(R.string.manual_sync_past_1_day) to 1,
+        context.getString(R.string.manual_sync_past_7_days) to 7,
+        context.getString(R.string.manual_sync_past_30_days) to 30,
+        context.getString(R.string.manual_sync_custom) to -1
     )
     var expanded by remember { mutableStateOf(false) }
     var selectedOptionIndex by remember { mutableStateOf(0) }
@@ -58,9 +60,9 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("Sync Now?", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.manual_sync_confirm_title), style = MaterialTheme.typography.titleLarge)
                 Text(
-                    "This will immediately send your health data to all configured webhooks.",
+                    stringResource(R.string.manual_sync_confirm_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -78,9 +80,9 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                                 val availability = HealthConnectClient.getSdkStatus(context)
                                 if (availability != HealthConnectClient.SDK_AVAILABLE) {
                                     syncMessage = when (availability) {
-                                        HealthConnectClient.SDK_UNAVAILABLE -> "Health Connect is not installed"
-                                        HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED -> "Health Connect needs update"
-                                        else -> "Health Connect is not available"
+                                        HealthConnectClient.SDK_UNAVAILABLE -> context.getString(R.string.err_hc_not_installed)
+                                        HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED -> context.getString(R.string.err_hc_needs_update)
+                                        else -> context.getString(R.string.err_hc_not_available)
                                     }
                                     isSyncing = false
                                     return@launch
@@ -93,7 +95,7 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                                     includeBackgroundPermission = false
                                 )
                                 if (requiredPermissions.isNotEmpty() && !healthConnectManager.hasPermissions(requiredPermissions)) {
-                                    syncMessage = "Permissions required for sync."
+                                    syncMessage = context.getString(R.string.err_permissions_required)
                                     isSyncing = false
                                     return@launch
                                 }
@@ -107,12 +109,12 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                                     // normalize both boundaries to midnight UTC
                                     val endInstant = endDate?.plusDays(1)?.atStartOfDay(ZoneOffset.UTC)?.toInstant()
                                     if (startInstant == null || endInstant == null) {
-                                        syncMessage = "Please select both start and end dates."
+                                        syncMessage = context.getString(R.string.err_select_both_dates)
                                         isSyncing = false
                                         return@launch
                                     }
 
-                                    syncMessage = "Syncing data from ${startDate} to ${endDate}..."
+                                    syncMessage = context.getString(R.string.manual_sync_progress, startDate.toString(), endDate.toString())
                                     syncManager.performSync(start = startInstant, end = endInstant)
                                 } else {
                                     // sync the last N days, or from the last sync
@@ -123,23 +125,23 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                                     result.isSuccess -> {
                                         val syncResult = result.getOrThrow()
                                         syncMessage = when (syncResult) {
-                                            is SyncResult.NoData -> "No new data to sync"
+                                            is SyncResult.NoData -> context.getString(R.string.manual_sync_no_data)
                                             is SyncResult.Success -> {
                                                 val parts = syncResult.syncCounts.map { (type, count) ->
-                                                    "$count ${type.displayName.lowercase()}"
+                                                    "$count ${context.getString(type.nameResId).lowercase()}"
                                                 }
-                                                if (parts.isEmpty()) "Sync completed successfully"
-                                                else "Synced ${parts.joinToString(", ")}"
+                                                if (parts.isEmpty()) context.getString(R.string.manual_sync_success_empty)
+                                                else context.getString(R.string.manual_sync_success_items, parts.joinToString(", "))
                                             }
                                         }
                                         onSyncCompleted()
                                     }
                                     result.isFailure -> {
-                                        syncMessage = "Sync failed: ${result.exceptionOrNull()?.message ?: "Unknown error"}"
+                                        syncMessage = context.getString(R.string.manual_sync_failed, result.exceptionOrNull()?.message ?: "Unknown error")
                                     }
                                 }
                             } catch (e: Exception) {
-                                syncMessage = "Sync failed: ${e.message}"
+                                syncMessage = context.getString(R.string.manual_sync_failed, e.message)
                             } finally {
                                 isSyncing = false
                             }
@@ -147,13 +149,13 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Sync Now")
+                    Text(stringResource(R.string.manual_sync_btn))
                 }
                 OutlinedButton(
                     onClick = { showConfirmSheet = false },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         }
@@ -162,10 +164,10 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
     // ── Card UI ───────────────────────────────────────────────────────────────
     Card {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Manual Sync", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.manual_sync_title), style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "Trigger a manual sync to send current health data to webhooks",
+                stringResource(R.string.manual_sync_desc),
                 style = MaterialTheme.typography.bodyMedium
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -179,7 +181,7 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                     value = timeRangeOptions[selectedOptionIndex].first,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Time Range") },
+                    label = { Text(stringResource(R.string.manual_sync_time_range)) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                     modifier = Modifier.menuAnchor().fillMaxWidth()
@@ -236,12 +238,12 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                                 }
                                 showStartDatePicker = false
                             }) {
-                                Text("OK")
+                                Text(stringResource(R.string.action_ok))
                             }
                         },
                         dismissButton = {
                             TextButton(onClick = { showStartDatePicker = false }) {
-                                Text("Cancel")
+                                Text(stringResource(R.string.action_cancel))
                             }
                         }
                     ) {
@@ -295,12 +297,12 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                                 }
                                 showEndDatePicker = false
                             }) {
-                                Text("OK")
+                                Text(stringResource(R.string.action_ok))
                             }
                         },
                         dismissButton = {
                             TextButton(onClick = { showEndDatePicker = false }) {
-                                Text("Cancel")
+                                Text(stringResource(R.string.action_cancel))
                             }
                         }
                     ) {
@@ -313,7 +315,7 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                         onClick = { showStartDatePicker = true },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(startDate?.let { "Start Date: $it" } ?: "Select Start Date")
+                        Text(startDate?.let { context.getString(R.string.manual_sync_start_label, it.toString()) } ?: stringResource(R.string.manual_sync_start_date))
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -322,7 +324,7 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                         onClick = { showEndDatePicker = true },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(endDate?.let { "End Date: $it" } ?: "Select End Date")
+                        Text(endDate?.let { context.getString(R.string.manual_sync_end_label, it.toString()) } ?: stringResource(R.string.manual_sync_end_date))
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -334,14 +336,14 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                         when {
                             endDateParsed < startDateParsed -> {
                                 Text(
-                                    "End date must be greater than or equal to start date.",
+                                    stringResource(R.string.err_end_date_before_start),
                                     color = MaterialTheme.colorScheme.error,
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
                             endDateParsed > today -> {
                                 Text(
-                                    "End date cannot be in the future.",
+                                    stringResource(R.string.err_end_date_future),
                                     color = MaterialTheme.colorScheme.error,
                                     style = MaterialTheme.typography.bodySmall
                                 )
@@ -363,9 +365,9 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Syncing...")
+                    Text(stringResource(R.string.manual_sync_syncing))
                 } else {
-                    Text("Sync Now")
+                    Text(stringResource(R.string.manual_sync_btn))
                 }
             }
 
