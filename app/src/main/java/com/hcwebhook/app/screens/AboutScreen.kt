@@ -31,7 +31,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.hcwebhook.app.FlavorUtils
-import com.hcwebhook.app.MainActivity
 import com.hcwebhook.app.PreferencesManager
 import com.hcwebhook.app.R
 import com.hcwebhook.app.SettingsExport
@@ -52,7 +51,7 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AboutScreen(activity: MainActivity, onRestartOnboarding: () -> Unit = {}) {
+fun AboutScreen(onRestartOnboarding: () -> Unit = {}) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()

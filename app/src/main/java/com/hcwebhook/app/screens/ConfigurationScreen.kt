@@ -54,10 +54,10 @@ fun ConfigurationScreen(
     hasPermissions: Boolean?,
     grantedPermissionsSet: Set<String>,
     sdkStatus: Int,
+    @Suppress("UNUSED_PARAMETER")
     onPermissionsUpdated: (Boolean, Set<String>) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val preferencesManager = remember { PreferencesManager(context) }
 
     var syncMode by remember { mutableStateOf(preferencesManager.getSyncMode()) }

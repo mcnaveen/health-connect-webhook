@@ -20,9 +20,7 @@ import com.hcwebhook.app.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WebhooksScreen(
-    activity: MainActivity
-) {
+fun WebhooksScreen() {
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context) }
     
@@ -169,7 +167,7 @@ fun WebhooksScreen(
                                     }
                                 }
                             }
-                            Divider()
+                            HorizontalDivider()
                         }
                     }
 
@@ -237,7 +235,7 @@ fun WebhooksScreen(
                                 Icon(Icons.Filled.Delete, stringResource(R.string.webhooks_headers_action_remove), modifier = Modifier.size(20.dp))
                             }
                         }
-                        Divider()
+                        HorizontalDivider()
                     }
                     
                     Spacer(modifier = Modifier.height(16.dp))
