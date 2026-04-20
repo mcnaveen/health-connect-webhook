@@ -65,7 +65,6 @@ class WebhookManager(
     private suspend fun postToUrl(config: WebhookConfig, jsonPayload: String): Result<Unit> {
         val timestamp = System.currentTimeMillis()
         var statusCode: Int? = null
-        var success = false
         var errorMessage: String? = null
 
         return try {
@@ -83,12 +82,11 @@ class WebhookManager(
 
             var lastException: Exception? = null
             for (attempt in 1..MAX_RETRIES) {
-                var shouldRetry = true
+                var shouldRetry: Boolean
                 try {
                     client.newCall(request).execute().use { response ->
                         statusCode = response.code
                         if (response.isSuccessful) {
-                            success = true
                             logWebhookCall(config.url, timestamp, statusCode, true, null)
                             return Result.success(Unit)
                         } else {
@@ -108,8 +106,9 @@ class WebhookManager(
                 } catch (e: IOException) {
                     lastException = e
                     errorMessage = e.message
+                    shouldRetry = isRetryableException(e)
 
-                    if (!isRetryableException(e)) {
+                    if (!shouldRetry) {
                         break
                     }
                 }

@@ -1,6 +1,7 @@
 package com.hcwebhook.app
 
 import android.content.Context
+import android.content.pm.PackageManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -13,6 +14,14 @@ import kotlinx.serialization.json.putJsonArray
 import java.time.Instant
 
 class SyncManager(private val context: Context) {
+
+    private val appVersionName: String by lazy {
+        try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "Unknown"
+        } catch (_: PackageManager.NameNotFoundException) {
+            "Unknown"
+        }
+    }
 
     private val preferencesManager = PreferencesManager(context)
     private val healthConnectManager = HealthConnectManager(context)
@@ -257,7 +266,7 @@ class SyncManager(private val context: Context) {
     private fun buildJsonPayload(healthData: HealthData): String {
         val json = buildJsonObject {
             put("timestamp", Instant.now().toString())
-            put("app_version", "1.0")
+            put("app_version", appVersionName)
 
             if (healthData.steps.isNotEmpty()) {
                 putJsonArray("steps") {

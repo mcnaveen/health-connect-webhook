@@ -117,7 +117,7 @@ fun LogsScreen() {
             ) {
                 items(logs) { log ->
                     LogItem(log)
-                    Divider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
                 }
                 
                 item {

@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
     private fun initializePermissionLauncher() {
         val requestPermissionActivityContract = androidx.health.connect.client.PermissionController.createRequestPermissionResultContract()
 
-        permissionLauncher = registerForActivityResult(requestPermissionActivityContract) { granted: Set<String> ->
+        permissionLauncher = registerForActivityResult(requestPermissionActivityContract) { _: Set<String> ->
             lifecycleScope.launch {
                 val healthConnectManager = HealthConnectManager(this@MainActivity)
                 val grantedPermissions = healthConnectManager.getGrantedPermissions()
@@ -150,15 +150,11 @@ class MainActivity : AppCompatActivity() {
                         permissionLauncher = permissionLauncher,
                         hasPermissions = hasPermissions,
                         grantedPermissionsSet = grantedPermissionsSet,
-                        sdkStatus = sdkStatus,
-                        onPermissionsUpdated = { hp, gps ->
-                            hasPermissions = hp
-                            grantedPermissionsSet = gps
-                        }
+                        sdkStatus = sdkStatus
                     )
-                    is NavigationScreen.Webhooks -> com.hcwebhook.app.screens.WebhooksScreen(activity = activity)
+                    is NavigationScreen.Webhooks -> com.hcwebhook.app.screens.WebhooksScreen()
                     is NavigationScreen.Logs -> LogsScreen()
-                    is NavigationScreen.About -> AboutScreen(activity = activity, onRestartOnboarding = onRestartOnboarding)
+                    is NavigationScreen.About -> AboutScreen(onRestartOnboarding = onRestartOnboarding)
                 }
             }
         }

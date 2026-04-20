@@ -427,14 +427,14 @@ class HealthConnectManager(private val context: Context) {
                 lastSync == null || record.endTime >= lastSync
             }
             .map { record ->
-                val stages = record.stages?.map { stage ->
+                val stages = record.stages.map { stage ->
                     SleepStage(
                         stage = stage.stage.toString(),
                         startTime = stage.startTime,
                         endTime = stage.endTime,
                         duration = Duration.between(stage.startTime, stage.endTime)
                     )
-                } ?: emptyList()
+                }
 
                 SleepData(
                     sessionEndTime = record.endTime,
