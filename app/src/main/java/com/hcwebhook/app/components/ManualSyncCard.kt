@@ -13,6 +13,7 @@ import com.hcwebhook.app.HealthConnectManager
 import com.hcwebhook.app.PreferencesManager
 import com.hcwebhook.app.SyncManager
 import com.hcwebhook.app.SyncResult
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -140,6 +141,8 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                                         syncMessage = context.getString(R.string.manual_sync_failed, result.exceptionOrNull()?.message ?: "Unknown error")
                                     }
                                 }
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 syncMessage = context.getString(R.string.manual_sync_failed, e.message)
                             } finally {
