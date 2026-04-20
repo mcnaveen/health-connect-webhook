@@ -78,9 +78,6 @@ class WebhookManager(
             config.headers.forEach { (key, value) ->
                 requestBuilder.addHeader(key, value)
             }
-            for ((key, value) in config.headers) {
-                requestBuilder.addHeader(key, value)
-            }
             
             val request = requestBuilder.build()
 
