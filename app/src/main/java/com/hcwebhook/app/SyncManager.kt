@@ -417,6 +417,9 @@ class SyncManager(private val context: Context) {
                         put("start_time", it.startTime.toString())
                         put("end_time", it.endTime.toString())
                         put("duration_seconds", it.duration.seconds)
+                        it.distanceMeters?.let { distanceMeters ->
+                            put("distance_meters", distanceMeters)
+                        }
                     }) }
                 }
             }

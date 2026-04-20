@@ -202,7 +202,8 @@ data class ExerciseData(
     val type: String,
     val startTime: Instant,
     val endTime: Instant,
-    val duration: Duration
+    val duration: Duration,
+    val distanceMeters: Double? = null
 )
 
 data class HydrationData(
@@ -305,7 +306,12 @@ class HealthConnectManager(private val context: Context) {
             val restingHeartRateData = if (HealthDataType.RESTING_HEART_RATE in enabledTypes)
                 readRestingHeartRateData(startTime, endTime, lastSyncTimestamps[HealthDataType.RESTING_HEART_RATE]) else emptyList()
             val exerciseData = if (HealthDataType.EXERCISE in enabledTypes)
-                readExerciseData(startTime, endTime, lastSyncTimestamps[HealthDataType.EXERCISE]) else emptyList()
+                readExerciseData(
+                    startTime,
+                    endTime,
+                    lastSyncTimestamps[HealthDataType.EXERCISE],
+                    HealthDataType.DISTANCE in enabledTypes
+                ) else emptyList()
             val hydrationData = if (HealthDataType.HYDRATION in enabledTypes)
                 readHydrationData(startTime, endTime, lastSyncTimestamps[HealthDataType.HYDRATION]) else emptyList()
             val nutritionData = if (HealthDataType.NUTRITION in enabledTypes)
@@ -600,11 +606,29 @@ class HealthConnectManager(private val context: Context) {
             .map { RestingHeartRateData(it.beatsPerMinute, it.time) }
     }
 
-    private suspend fun readExerciseData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<ExerciseData> {
+    private suspend fun readExerciseData(startTime: Instant, endTime: Instant, lastSync: Instant?, includeDistance: Boolean): List<ExerciseData> {
         val request = ReadRecordsRequest(recordType = ExerciseSessionRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = healthConnectClient.readRecords(request)
         return response.records.filter { lastSync == null || it.endTime >= lastSync }
-            .map { ExerciseData(it.exerciseType.toString(), it.startTime, it.endTime, Duration.between(it.startTime, it.endTime)) }
+            .map {
+                ExerciseData(
+                    type = it.exerciseType.toString(),
+                    startTime = it.startTime,
+                    endTime = it.endTime,
+                    duration = Duration.between(it.startTime, it.endTime),
+                    distanceMeters = if (includeDistance) readDistanceTotal(it.startTime, it.endTime) else null
+                )
+            }
+    }
+
+    private suspend fun readDistanceTotal(startTime: Instant, endTime: Instant): Double? {
+        val request = AggregateRequest(
+            metrics = setOf(DistanceRecord.DISTANCE_TOTAL),
+            timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+        )
+        val response = healthConnectClient.aggregate(request)
+        val distanceMeters = response[DistanceRecord.DISTANCE_TOTAL]?.inMeters ?: return null
+        return distanceMeters.takeIf { it > 0.0 }
     }
 
     private suspend fun readHydrationData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<HydrationData> {
