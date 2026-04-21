@@ -92,7 +92,7 @@ The app supports reading and syncing the following health data types from Health
 15. **Resting Heart Rate** - Resting heart rate data
 16. **Exercise Sessions** - Workout and exercise data
 17. **Hydration** - Water intake tracking
-18. **Nutrition** - Nutritional information (calories, protein, carbs, fat)
+18. **Nutrition** - Nutritional information (calories, protein, carbs, fat, sugar, sodium, dietary fiber, name)
 19. **Basal Metabolic Rate** - Basal energy expenditure
 20. **Body Fat** - Body fat percentage measurements
 21. **Lean Body Mass** - Lean body mass measurements
@@ -206,6 +206,8 @@ The app sends health data to your webhooks in JSON format. Each webhook request 
 - Data type information
 - Health data records (filtered to only include new data since last sync)
 - Metadata about the sync operation
+
+For example, nutrition records include the existing calorie/macronutrient fields plus `sugar_grams`, `sodium_grams`, `dietary_fiber_grams`, and `name` when Health Connect provides them.
 
 > **Note**: Webhook delivery includes short retry handling (up to 3 attempts with exponential backoff). If delivery still fails, data is retried on the next successful sync trigger (manual, interval, or scheduled).
 
