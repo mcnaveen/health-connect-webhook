@@ -218,6 +218,10 @@ data class NutritionData(
     val protein: Double?,
     val carbs: Double?,
     val fat: Double?,
+    val sugar: Double?,
+    val sodium: Double?,
+    val dietaryFiber: Double?,
+    val name: String?,
     val startTime: Instant,
     val endTime: Instant
 )
@@ -645,7 +649,20 @@ class HealthConnectManager(private val context: Context) {
         val request = ReadRecordsRequest(recordType = NutritionRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = healthConnectClient.readRecords(request)
         return response.records.filter { lastSync == null || it.endTime >= lastSync }
-            .map { NutritionData(it.energy?.inKilocalories, it.protein?.inGrams, it.totalCarbohydrate?.inGrams, it.totalFat?.inGrams, it.startTime, it.endTime) }
+            .map {
+                NutritionData(
+                    calories = it.energy?.inKilocalories,
+                    protein = it.protein?.inGrams,
+                    carbs = it.totalCarbohydrate?.inGrams,
+                    fat = it.totalFat?.inGrams,
+                    sugar = it.sugar?.inGrams,
+                    sodium = it.sodium?.inGrams,
+                    dietaryFiber = it.dietaryFiber?.inGrams,
+                    name = it.name,
+                    startTime = it.startTime,
+                    endTime = it.endTime
+                )
+            }
     }
 
     private suspend fun readBasalMetabolicRateData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BasalMetabolicRateData> {
