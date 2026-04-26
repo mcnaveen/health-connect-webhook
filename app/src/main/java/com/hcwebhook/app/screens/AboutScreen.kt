@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -51,7 +52,10 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AboutScreen(onRestartOnboarding: () -> Unit = {}) {
+fun AboutScreen(
+    onRestartOnboarding: () -> Unit = {},
+    onOpenLocalHttpSettings: () -> Unit = {}
+) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -156,7 +160,6 @@ fun AboutScreen(onRestartOnboarding: () -> Unit = {}) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // App Header Card
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -329,9 +332,21 @@ fun AboutScreen(onRestartOnboarding: () -> Unit = {}) {
                 }
             }
 
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                LinkRow(
+                    label = stringResource(R.string.about_local_http_title),
+                    icon = Icons.Filled.Lan,
+                    onClick = { onOpenLocalHttpSettings() }
+                )
+            }
+
             LanguageSelectorCard()
 
-            // Links Card
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)

@@ -26,6 +26,41 @@ class SyncManager(private val context: Context) {
     private val preferencesManager = PreferencesManager(context)
     private val healthConnectManager = HealthConnectManager(context)
 
+    suspend fun getRealtimeJsonPayload(
+        timeRangeDays: Int? = null,
+        start: Instant? = null,
+        end: Instant? = null
+    ): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val enabledTypes = preferencesManager.getEnabledDataTypes()
+            if (enabledTypes.isEmpty()) {
+                return@withContext Result.failure(Exception("No data types enabled"))
+            }
+
+            // Fresh read: do not use last sync timestamps
+            val healthDataResult = healthConnectManager.readHealthData(
+                enabledTypes = enabledTypes,
+                lastSyncTimestamps = emptyMap(),
+                timeRangeDays = timeRangeDays,
+                start = start,
+                end = end
+            )
+            if (healthDataResult.isFailure) {
+                return@withContext Result.failure(
+                    healthDataResult.exceptionOrNull() ?: Exception("Failed to read health data")
+                )
+            }
+
+            val jsonPayload = buildJsonPayload(healthDataResult.getOrThrow())
+            LocalHttpServerManager.publishPayload(jsonPayload)
+            Result.success(jsonPayload)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun performSync(timeRangeDays: Int? = null, start: Instant? = null, end: Instant? = null): Result<SyncResult> = withContext(Dispatchers.IO) {
         /*
         Supports two modes:
@@ -36,9 +71,10 @@ class SyncManager(private val context: Context) {
 
         try {
             val webhookConfigs = preferencesManager.getWebhookConfigs()
+            val localTcpEnabled = preferencesManager.isLocalTcpEnabled()
 
-            if (webhookConfigs.isEmpty()) {
-                return@withContext Result.failure(Exception("No webhook URLs configured"))
+            if (webhookConfigs.isEmpty() && !localTcpEnabled) {
+                return@withContext Result.failure(Exception("No webhook URLs configured and local TCP server is disabled"))
             }
 
             val enabledTypes = preferencesManager.getEnabledDataTypes()
@@ -98,11 +134,14 @@ class SyncManager(private val context: Context) {
 
             // Build JSON payload
             val jsonPayload = buildJsonPayload(healthData)
+            LocalHttpServerManager.publishPayload(jsonPayload)
 
-            // Post to webhook
-            val postResult = webhookManager.postData(jsonPayload)
-            if (postResult.isFailure) {
-                return@withContext Result.failure(postResult.exceptionOrNull() ?: Exception("Failed to post to webhooks"))
+            if (webhookConfigs.isNotEmpty()) {
+                // Post to webhook
+                val postResult = webhookManager.postData(jsonPayload)
+                if (postResult.isFailure) {
+                    return@withContext Result.failure(postResult.exceptionOrNull() ?: Exception("Failed to post to webhooks"))
+                }
             }
 
             // Update last sync timestamps

@@ -5,9 +5,16 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
@@ -33,6 +40,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -54,6 +62,7 @@ fun ConfigurationScreen(
     hasPermissions: Boolean?,
     grantedPermissionsSet: Set<String>,
     sdkStatus: Int,
+    onOpenLocalHttpSettings: () -> Unit = {},
     @Suppress("UNUSED_PARAMETER")
     onPermissionsUpdated: (Boolean, Set<String>) -> Unit = { _, _ -> }
 ) {
@@ -71,6 +80,8 @@ fun ConfigurationScreen(
     var lastSyncTime by remember { mutableStateOf(preferencesManager.getLastSyncTime()) }
     var lastSyncSummary by remember { mutableStateOf(preferencesManager.getLastSyncSummary()) }
     var lastSyncRelativeTime by remember { mutableStateOf("") }
+    val isLocalHttpEnabled = preferencesManager.isLocalTcpEnabled()
+    val localHttpPort = preferencesManager.getLocalTcpPort()
 
     LaunchedEffect(lastSyncTime) {
         while (true) {
@@ -105,6 +116,16 @@ fun ConfigurationScreen(
     val isBackgroundGranted = HealthConnectManager.BACKGROUND_PERMISSION_STR in grantedPermissionsSet
 
     val scrollState = rememberScrollState()
+    val statusDotTransition = rememberInfiniteTransition(label = "local_http_status_dot")
+    val statusDotAlpha by statusDotTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.25f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 900, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "local_http_status_dot_alpha"
+    )
 
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
@@ -134,6 +155,60 @@ fun ConfigurationScreen(
                 .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (isLocalHttpEnabled) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpenLocalHttpSettings() }
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .alpha(statusDotAlpha)
+                                    .background(Color(0xFF22C55E), shape = androidx.compose.foundation.shape.CircleShape)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.config_local_http_status_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = stringResource(
+                                        R.string.config_local_http_status_desc,
+                                        localHttpPort
+                                    ),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = Icons.Filled.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+            }
+
             if (hasPermissions == null) {
                 OutlinedCard(
                     colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)

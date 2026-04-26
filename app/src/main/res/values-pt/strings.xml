@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">HC Webhook</string>
     <string name="onboarding_skip_dialog_title">Pular a introdução?</string>
-    <string name="onboarding_skip_dialog_text">Você pode visualizá-la novamente a qualquer momento na tela Sobre.</string>
+    <string name="onboarding_skip_dialog_text">Você pode visualizá-la novamente a qualquer momento na tela Configurações.</string>
     <string name="onboarding_skip">Pular</string>
     <string name="onboarding_cancel">Cancelar</string>
     <string name="onboarding_next">Próximo</string>
@@ -33,7 +33,7 @@
     <string name="onboarding_privacy_p3">Seus dados são enviados diretamente para seus próprios URLs de webhook — para nenhum outro lugar</string>
     <string name="onboarding_privacy_p4">Nada é armazenado em nenhum servidor externo</string>
     <string name="onboarding_privacy_p5">Seus dados nunca são vendidos ou compartilhados com ninguém</string>
-    <string name="onboarding_privacy_footer">Tem comentários ou sugestões? Acesse a guia Sobre a qualquer momento — adoraríamos ouvi-lo.</string>
+    <string name="onboarding_privacy_footer">Tem comentários ou sugestões? Acesse a guia Configurações a qualquer momento — adoraríamos ouvi-lo.</string>
     <string name="onboarding_privacy_warning_title">Use apenas a versão oficial</string>
     <string name="onboarding_privacy_warning_desc">Versões piratas ou modificadas deste aplicativo podem roubar seus URLs de webhook ou enviar seus dados de saúde para servidores desconhecidos. Baixe sempre do Google Play.</string>
     <string name="dt_steps_name">Passos</string>
@@ -162,6 +162,15 @@
     <string name="config_action_grant_short">Conceder</string>
     <string name="config_action_grant_missing">Conceder permissões ausentes</string>
     <string name="config_toast_error">Erro: %1$s</string>
+    <string name="config_local_tcp_title">Servidor HTTP local</string>
+    <string name="config_local_tcp_desc">Expõe JSON em tempo real do Health Connect via HTTP para agentes e ferramentas locais.</string>
+    <string name="config_local_tcp_port_label">Porta HTTP (1024-65535)</string>
+    <string name="config_local_tcp_saved">Configurações do servidor HTTP salvas</string>
+    <string name="config_local_tcp_invalid_port">A porta deve estar entre 1024 e 65535</string>
+    <string name="config_local_tcp_endpoint_enabled">Endpoint do servidor: http://0.0.0.0:%1$d/data (também: /ping, /latest)</string>
+    <string name="config_local_tcp_endpoint_disabled">Servidor desativado</string>
+    <string name="config_local_http_status_title">Servidor HTTP local ativo</string>
+    <string name="config_local_http_status_desc">Disponível na sua rede em http://&lt;device-ip&gt;:%1$d/data</string>
     <string name="about_toast_import_success">✅ Configurações importadas com sucesso</string>
     <string name="about_toast_import_failed">❌ Falha na importação: %1$s</string>
     <string name="about_toast_import_invalid">Arquivo inválido</string>
@@ -188,6 +197,11 @@
     <string name="about_link_github">Repositório GitHub</string>
     <string name="about_link_feedback">Fornecer comentários</string>
     <string name="about_link_intro">Ver introdução</string>
+    <string name="about_local_http_title">Servidor HTTP local</string>
+    <string name="local_http_server_notification_channel_name">Servidor HTTP local</string>
+    <string name="local_http_server_notification_channel_desc">Mantém o endpoint HTTP local ativo em segundo plano</string>
+    <string name="local_http_server_notification_title">O servidor HTTP local está em execução</string>
+    <string name="local_http_server_notification_text">Endpoint ativo na porta %1$d</string>
     <string name="perms_granted_summary">%1$d de %2$d permissões concedidas</string>
     <string name="action_close">Fechar</string>
     <string name="perms_rationale_desc">O Health Connect to Webhook requer acesso aos seus dados de saúde e condicionamento físico. Esses dados são usados ​​estritamente para cumprir a funcionalidade principal do aplicativo: transmitir com segurança as métricas de saúde escolhidas (como passos, sono e frequência cardíaca) diretamente para seus URLs de webhook pessoais. Não vendemos nem compartilhamos seus dados com terceiros. Somente os tipos de dados que você escolher explicitamente configurar abaixo serão solicitados e sincronizados.</string>
@@ -203,5 +217,5 @@
     <string name="nav_home">Lar</string>
     <string name="nav_webhooks">Webhooks</string>
     <string name="nav_logs">Registros</string>
-    <string name="nav_about">Sobre</string>
+    <string name="nav_about">Configurações</string>
 </resources>

@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">HC Webhook</string>
     <string name="onboarding_skip_dialog_title">அறிமுகத்தைத் தவிர்க்கவா?</string>
-    <string name="onboarding_skip_dialog_text">நீங்கள் எப்போது வேண்டுமானாலும் About திரையிலிருந்து மீண்டும் பார்க்க முடியும்.</string>
+    <string name="onboarding_skip_dialog_text">நீங்கள் எப்போது வேண்டுமானாலும் அமைப்புகள் திரையிலிருந்து மீண்டும் பார்க்க முடியும்.</string>
     <string name="onboarding_skip">தவிர்</string>
     <string name="onboarding_cancel">ரத்து</string>
     <string name="onboarding_next">அடுத்து</string>
@@ -33,7 +33,7 @@
     <string name="onboarding_privacy_p3">உங்கள் தரவு நேரடியாக உங்கள் webhook URL-களுக்கு மட்டுமே அனுப்பப்படும் — வேறு எங்கும் இல்லை</string>
     <string name="onboarding_privacy_p4">எந்த வெளி சர்வரிலும் எதுவும் சேமிக்கப்படுவதில்லை</string>
     <string name="onboarding_privacy_p5">உங்கள் தரவு ஒருபோதும் விற்கப்படுவதில்லை</string>
-    <string name="onboarding_privacy_footer">கருத்து அல்லது பரிந்துரைகள் உள்ளதா? About திரைக்கு எப்போது வேண்டுமானாலும் செல்லவும் — உங்களோடு பேச ஆர்வமாக உள்ளோம்.</string>
+    <string name="onboarding_privacy_footer">கருத்து அல்லது பரிந்துரைகள் உள்ளதா? அமைப்புகள் தாவலுக்கு எப்போது வேண்டுமானாலும் செல்லவும் — உங்களோடு பேச ஆர்வமாக உள்ளோம்.</string>
     <string name="onboarding_privacy_warning_title">அதிகாரப்பூர்வ பதிப்பை மட்டும் பயன்படுத்தவும்</string>
     <string name="onboarding_privacy_warning_desc">இந்த செயலியின் மாற்றியமைக்கப்பட்ட பதிப்புகள் உங்கள் webhook URL-களை திருடலாம் அல்லது உங்கள் சுகாதார தரவை தெரியாத சர்வருக்கு அனுப்பலாம். எப்போதும் Google Play-ல் இருந்து மட்டுமே பதிவிறக்கம் செய்யவும்.</string>
     <string name="dt_steps_name">நடைகள்</string>
@@ -162,6 +162,15 @@
     <string name="config_action_grant_short">மானியம்</string>
     <string name="config_action_grant_missing">விடுபட்ட அனுமதிகளை வழங்கவும்</string>
     <string name="config_toast_error">பிழை: %1$s</string>
+    <string name="config_local_tcp_title">Local HTTP Server</string>
+    <string name="config_local_tcp_desc">உள்ளூர் ஏஜென்ட்கள் மற்றும் கருவிகளுக்காக Health Connect realtime JSON ஐ HTTP வழியாக வெளியிடுகிறது.</string>
+    <string name="config_local_tcp_port_label">HTTP Port (1024-65535)</string>
+    <string name="config_local_tcp_saved">HTTP server அமைப்புகள் சேமிக்கப்பட்டன</string>
+    <string name="config_local_tcp_invalid_port">Port 1024 மற்றும் 65535 இடையில் இருக்க வேண்டும்</string>
+    <string name="config_local_tcp_endpoint_enabled">Server endpoint: http://0.0.0.0:%1$d/data (மேலும்: /ping, /latest)</string>
+    <string name="config_local_tcp_endpoint_disabled">Server முடக்கப்பட்டுள்ளது</string>
+    <string name="config_local_http_status_title">Local HTTP Server செயலில் உள்ளது</string>
+    <string name="config_local_http_status_desc">உங்கள் நெட்வொர்கில் கிடைக்கும் முகவரி: http://&lt;device-ip&gt;:%1$d/data</string>
     <string name="about_toast_import_success">✅ அமைப்புகள் வெற்றிகரமாக இறக்குமதி செய்யப்பட்டன</string>
     <string name="about_toast_import_failed">❌ இறக்குமதி தோல்வி: %1$s</string>
     <string name="about_toast_import_invalid">தவறான கோப்பு</string>
@@ -188,6 +197,11 @@
     <string name="about_link_github">கிட்ஹப் களஞ்சியம்</string>
     <string name="about_link_feedback">கருத்துக்களை வழங்கவும்</string>
     <string name="about_link_intro">அறிமுகத்தைப் பார்க்கவும்</string>
+    <string name="about_local_http_title">Local HTTP Server</string>
+    <string name="local_http_server_notification_channel_name">Local HTTP Server</string>
+    <string name="local_http_server_notification_channel_desc">Local HTTP endpoint ஐ பின்னணியில் செயலில் வைத்திருக்கிறது</string>
+    <string name="local_http_server_notification_title">Local HTTP server இயங்குகிறது</string>
+    <string name="local_http_server_notification_text">Endpoint port %1$d இல் செயலில் உள்ளது</string>
     <string name="perms_granted_summary">%2$d இல் %1$d அனுமதிகள் வழங்கப்பட்டன</string>
     <string name="action_close">மூடு</string>
     <string name="perms_rationale_desc">Webhook க்கு Health Connect க்கு உங்கள் உடல்நலம் மற்றும் உடற்பயிற்சி தரவை அணுக வேண்டும். பயன்பாட்டின் முக்கிய செயல்பாட்டைப் பூர்த்தி செய்ய இந்தத் தரவு கண்டிப்பாகப் பயன்படுத்தப்படுகிறது: நீங்கள் தேர்ந்தெடுத்த சுகாதார அளவீடுகளை (படிகள், தூக்கம் மற்றும் இதயத் துடிப்பு போன்றவை) உங்கள் தனிப்பட்ட வெப்ஹூக் URL களுக்கு நேரடியாக அனுப்புகிறது. உங்கள் தரவை எந்த மூன்றாம் தரப்பினருடனும் நாங்கள் விற்கவோ அல்லது பகிரவோ மாட்டோம். கீழே உள்ளமைக்க நீங்கள் வெளிப்படையாகத் தேர்ந்தெடுக்கும் தரவு வகைகள் மட்டுமே கோரப்பட்டு ஒத்திசைக்கப்படும்.</string>
@@ -203,5 +217,5 @@
     <string name="nav_home">வீடு</string>
     <string name="nav_webhooks">வெப்ஹூக்ஸ்</string>
     <string name="nav_logs">பதிவுகள்</string>
-    <string name="nav_about">பற்றி</string>
+    <string name="nav_about">அமைப்புகள்</string>
 </resources>
