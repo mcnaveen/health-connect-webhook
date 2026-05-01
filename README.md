@@ -2,7 +2,7 @@
 
 ![HC Webhook](image.png)
 
-<table role="presentation">
+<table role="presentation" border="0" cellspacing="0" cellpadding="0">
   <tr>
     <td valign="middle"><a href="https://play.google.com/store/apps/details?id=com.hcwebhook.app"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="90"></a></td>
     <td valign="middle">&nbsp;&nbsp;</td>
@@ -134,7 +134,7 @@ cd health-connect-webhook
 
 #### Easy (Recommended)
 
-<table role="presentation">
+<table role="presentation" border="0" cellspacing="0" cellpadding="0">
   <tr>
     <td valign="middle"><a href="https://play.google.com/store/apps/details?id=com.hcwebhook.app"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="90"></a></td>
     <td valign="middle">&nbsp;&nbsp;</td>
