@@ -2,7 +2,13 @@
 
 ![HC Webhook](image.png)
 
-<a href="https://play.google.com/store/apps/details?id=com.hcwebhook.app"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" width="160"></a>
+<table role="presentation">
+  <tr>
+    <td valign="middle"><a href="https://play.google.com/store/apps/details?id=com.hcwebhook.app"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="90"></a></td>
+    <td valign="middle">&nbsp;&nbsp;</td>
+    <td valign="middle"><a href="https://apps.apple.com/app/health-webhook/id6763619597"><img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" alt="Download on the App Store" height="60"></a></td>
+  </tr>
+</table>
 
 An Android app that bridges Google Fit, Samsung Health, Fitbit, and other health apps to your webhooks via Health Connect APIs, enabling seamless integration with your custom endpoints and services.
 
@@ -128,8 +134,13 @@ cd health-connect-webhook
 
 #### Easy (Recommended)
 
-<a href="https://play.google.com/store/apps/details?id=com.hcwebhook.app"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" width="160"></a>
-
+<table role="presentation">
+  <tr>
+    <td valign="middle"><a href="https://play.google.com/store/apps/details?id=com.hcwebhook.app"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="90"></a></td>
+    <td valign="middle">&nbsp;&nbsp;</td>
+    <td valign="middle"><a href="https://apps.apple.com/app/health-webhook/id6763619597"><img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" alt="Download on the App Store" height="60"></a></td>
+  </tr>
+</table>
 
 ### Install via Obtainium
 
