@@ -804,6 +804,9 @@ class HealthConnectManager(private val context: Context) {
             includeBackgroundPermission: Boolean = true
         ): Set<String> {
             val permissions = types.map { HealthPermission.getReadPermission(it.recordClass) }.toMutableSet()
+            if (HealthDataType.STEPS in types) {
+                permissions.add(HealthPermission.getReadPermission(StepsCadenceRecord::class))
+            }
             if (includeBackgroundPermission) {
                 permissions.add(BACKGROUND_PERMISSION_STR)
             }
@@ -818,6 +821,7 @@ class HealthConnectManager(private val context: Context) {
 
         val ALL_PERMISSIONS = setOf(
             HealthPermission.getReadPermission(StepsRecord::class),
+            HealthPermission.getReadPermission(StepsCadenceRecord::class),
             HealthPermission.getReadPermission(SleepSessionRecord::class),
             HealthPermission.getReadPermission(HeartRateRecord::class),
             HealthPermission.getReadPermission(HeartRateVariabilityRmssdRecord::class),
