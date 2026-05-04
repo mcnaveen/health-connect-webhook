@@ -204,7 +204,11 @@ data class ExerciseData(
     val startTime: Instant,
     val endTime: Instant,
     val duration: Duration,
-    val distanceMeters: Double? = null
+    val distanceMeters: Double? = null,
+    val steps: Long? = null,
+    val avgCadenceSpm: Double? = null,
+    val maxCadenceSpm: Double? = null,
+    val strideLengthMeters: Double? = null
 )
 
 data class HydrationData(
@@ -311,7 +315,8 @@ class HealthConnectManager(private val context: Context) {
                     startTime,
                     endTime,
                     lastSyncTimestamps[HealthDataType.EXERCISE],
-                    HealthDataType.DISTANCE in enabledTypes
+                    HealthDataType.DISTANCE in enabledTypes,
+                    HealthDataType.STEPS in enabledTypes
                 ) else emptyList()
             val hydrationData = if (HealthDataType.HYDRATION in enabledTypes)
                 readHydrationData(startTime, endTime, lastSyncTimestamps[HealthDataType.HYDRATION]) else emptyList()
@@ -609,19 +614,80 @@ class HealthConnectManager(private val context: Context) {
             .map { RestingHeartRateData(it.beatsPerMinute, it.time) }
     }
 
-    private suspend fun readExerciseData(startTime: Instant, endTime: Instant, lastSync: Instant?, includeDistance: Boolean): List<ExerciseData> {
+    private suspend fun readExerciseData(
+        startTime: Instant,
+        endTime: Instant,
+        lastSync: Instant?,
+        includeDistance: Boolean,
+        includeSteps: Boolean
+    ): List<ExerciseData> {
         val request = ReadRecordsRequest(recordType = ExerciseSessionRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
         return response.filter { lastSync == null || it.endTime >= lastSync }
             .map {
+                val duration = Duration.between(it.startTime, it.endTime)
+                val distanceMeters = if (includeDistance) readDistanceTotal(it.startTime, it.endTime) else null
+                val steps = if (includeSteps) readStepsTotal(it.startTime, it.endTime) else null
+                val cadenceMetrics = if (includeSteps) readStepsCadenceMetrics(it.startTime, it.endTime) else StepsCadenceMetrics()
                 ExerciseData(
                     type = it.exerciseType.toString(),
                     startTime = it.startTime,
                     endTime = it.endTime,
-                    duration = Duration.between(it.startTime, it.endTime),
-                    distanceMeters = if (includeDistance) readDistanceTotal(it.startTime, it.endTime) else null
+                    duration = duration,
+                    distanceMeters = distanceMeters,
+                    steps = steps,
+                    avgCadenceSpm = cadenceMetrics.avg ?: deriveAverageCadenceSpm(steps, duration),
+                    maxCadenceSpm = cadenceMetrics.max,
+                    strideLengthMeters = deriveStrideLengthMeters(distanceMeters, steps)
                 )
             }
+    }
+
+    private data class StepsCadenceMetrics(
+        val avg: Double? = null,
+        val max: Double? = null
+    )
+
+    private suspend fun readStepsTotal(startTime: Instant, endTime: Instant): Long? {
+        val request = AggregateRequest(
+            metrics = setOf(StepsRecord.COUNT_TOTAL),
+            timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+        )
+        val response = healthConnectClient.aggregate(request)
+        val steps = response[StepsRecord.COUNT_TOTAL] ?: return null
+        return steps.takeIf { it > 0L }
+    }
+
+    private suspend fun readStepsCadenceMetrics(startTime: Instant, endTime: Instant): StepsCadenceMetrics {
+        return try {
+            val request = AggregateRequest(
+                metrics = setOf(StepsCadenceRecord.RATE_AVG, StepsCadenceRecord.RATE_MAX),
+                timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+            )
+            val response = healthConnectClient.aggregate(request)
+            StepsCadenceMetrics(
+                avg = response[StepsCadenceRecord.RATE_AVG]?.takeIf { it > 0.0 },
+                max = response[StepsCadenceRecord.RATE_MAX]?.takeIf { it > 0.0 }
+            )
+        } catch (_: Exception) {
+            // Cadence is optional. Keep exercise sync working on providers that expose steps but not cadence.
+            StepsCadenceMetrics()
+        }
+    }
+
+    private fun deriveAverageCadenceSpm(steps: Long?, duration: Duration): Double? {
+        if (steps == null || steps <= 0L || duration.isZero || duration.isNegative) {
+            return null
+        }
+        val durationMinutes = duration.toMillis() / 60000.0
+        return (steps.toDouble() / durationMinutes).takeIf { it > 0.0 }
+    }
+
+    private fun deriveStrideLengthMeters(distanceMeters: Double?, steps: Long?): Double? {
+        if (distanceMeters == null || distanceMeters <= 0.0 || steps == null || steps <= 0L) {
+            return null
+        }
+        return distanceMeters / steps.toDouble()
     }
 
     private suspend fun readDistanceTotal(startTime: Instant, endTime: Instant): Double? {

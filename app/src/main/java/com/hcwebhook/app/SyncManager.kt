@@ -432,6 +432,18 @@ class SyncManager(private val context: Context) {
                         it.distanceMeters?.let { distanceMeters ->
                             put("distance_meters", distanceMeters)
                         }
+                        it.steps?.let { steps ->
+                            put("steps", steps)
+                        }
+                        it.avgCadenceSpm?.let { avgCadenceSpm ->
+                            put("avg_cadence_spm", avgCadenceSpm)
+                        }
+                        it.maxCadenceSpm?.let { maxCadenceSpm ->
+                            put("max_cadence_spm", maxCadenceSpm)
+                        }
+                        it.strideLengthMeters?.let { strideLengthMeters ->
+                            put("stride_length_m", strideLengthMeters)
+                        }
                     }) }
                 }
             }
