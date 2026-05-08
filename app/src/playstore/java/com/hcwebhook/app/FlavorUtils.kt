@@ -11,10 +11,6 @@ import com.google.android.vending.licensing.ServerManagedPolicy
 object FlavorUtils {
     val isPlayStore = true
 
-    // Replace with your Base64-encoded RSA public key from the Play Console
-    // (Developer Console → Your App → Monetization setup → Licensing)
-    private const val BASE64_PUBLIC_KEY = "REPLACE_WITH_YOUR_PLAY_CONSOLE_PUBLIC_KEY"
-
     // Random salt — do not change after publishing or cached licenses will break
     private val SALT = byteArrayOf(
         -46, 65, 30, -128, -103, -57, 74, -64, 51, 88,
@@ -25,7 +21,7 @@ object FlavorUtils {
         val deviceId = Settings.Secure.getString(activity.contentResolver, Settings.Secure.ANDROID_ID)
         val obfuscator = AESObfuscator(SALT, activity.packageName, deviceId)
         val policy = ServerManagedPolicy(activity, obfuscator)
-        val checker = LicenseChecker(activity, policy, BASE64_PUBLIC_KEY)
+        val checker = LicenseChecker(activity, policy, BuildConfig.PLAY_LICENSE_KEY)
 
         checker.checkAccess(object : LicenseCheckerCallback {
             override fun allow(reason: Int) {

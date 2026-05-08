@@ -36,6 +36,7 @@ android {
         }
         create("playstore") {
             dimension = "store"
+            buildConfigField("String", "PLAY_LICENSE_KEY", "\"${System.getenv("PLAY_LICENSE_KEY") ?: ""}\"")
         }
     }
 
@@ -70,6 +71,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
