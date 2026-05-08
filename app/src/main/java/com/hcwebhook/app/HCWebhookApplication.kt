@@ -30,6 +30,12 @@ class HCWebhookApplication : Application() {
                 ScheduledSyncManager(this).scheduleAllAlarms()
             }
         }
+
+        if (preferencesManager.isLocalTcpEnabled()) {
+            LocalHttpServerService.start(this)
+        } else {
+            LocalHttpServerService.stop(this)
+        }
     }
 
     fun scheduleSyncWork() {

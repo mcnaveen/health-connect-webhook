@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">HC Webhook</string>
     <string name="onboarding_skip_dialog_title">소개를 건너뛰시겠습니까?</string>
-    <string name="onboarding_skip_dialog_text">’정보’ 화면에서 언제든지 다시 볼 수 있습니다.</string>
+    <string name="onboarding_skip_dialog_text">’설정’ 화면에서 언제든지 다시 볼 수 있습니다.</string>
     <string name="onboarding_skip">건너뛰기</string>
     <string name="onboarding_cancel">취소</string>
     <string name="onboarding_next">다음</string>
@@ -33,7 +33,7 @@
     <string name="onboarding_privacy_p3">데이터는 구성된 웹훅 URL로만 직접 전송되며 다른 곳으로는 전송되지 않습니다.</string>
     <string name="onboarding_privacy_p4">외부 서버에 어떠한 데이터도 저장되지 않습니다.</string>
     <string name="onboarding_privacy_p5">사용자의 데이터는 제3자에게 판매되거나 공유되지 않습니다.</string>
-    <string name="onboarding_privacy_footer">의견이나 제안 사항이 있으신가요? 언제든지 ’정보’ 탭을 방문하여 알려주세요.</string>
+    <string name="onboarding_privacy_footer">의견이나 제안 사항이 있으신가요? 언제든지 ’설정’ 탭을 방문하여 알려주세요.</string>
     <string name="onboarding_privacy_warning_title">공식 버전만 사용하세요</string>
     <string name="onboarding_privacy_warning_desc">앱을 무단으로 변경한 버전은 웹훅 URL을 훔치거나 알 수 없는 서버로 모바일 건강 데이터를 전송할 수 있습니다. 항상 Google Play에서 다운로드하세요.</string>
     <string name="dt_steps_name">걸음 수</string>
@@ -162,6 +162,16 @@
     <string name="config_action_grant_short">승인하다</string>
     <string name="config_action_grant_missing">누락된 권한 부여</string>
     <string name="config_toast_error">오류: %1$s</string>
+    <string name="config_local_tcp_title">로컬 HTTP 서버</string>
+    <string name="config_local_tcp_desc">로컬 에이전트 및 도구를 위해 Health Connect 실시간 JSON을 HTTP로 제공합니다.</string>
+    <string name="config_local_tcp_port_label">HTTP 포트 (1024-65535)</string>
+    <string name="config_local_tcp_saved">HTTP 서버 설정이 저장되었습니다</string>
+    <string name="config_local_tcp_invalid_port">포트는 1024에서 65535 사이여야 합니다</string>
+    <string name="config_local_tcp_endpoint_enabled">서버 엔드포인트: http://0.0.0.0:%1$d/data (추가: /ping, /latest)</string>
+    <string name="config_local_tcp_endpoint_disabled">서버 비활성화됨</string>
+    <string name="config_local_http_status_title">로컬 HTTP 서버 활성화됨</string>
+    <string name="config_local_http_status_desc">네트워크에서 사용 가능: http://&lt;device-ip&gt;:%1$d/data</string>
+    <string name="config_local_http_off_hint">선택 사항: Wi-Fi에서 로컬 스크립트와 도구가 Health Connect JSON을 사용할 수 있게 합니다. 탭하여 켜거나 포트를 변경하세요.</string>
     <string name="about_toast_import_success">✅ 설정을 성공적으로 가져왔습니다</string>
     <string name="about_toast_import_failed">❌ 가져오기 실패: %1$s</string>
     <string name="about_toast_import_invalid">잘못된 파일</string>
@@ -188,6 +198,11 @@
     <string name="about_link_github">GitHub 저장소</string>
     <string name="about_link_feedback">피드백 제공</string>
     <string name="about_link_intro">소개 보기</string>
+    <string name="about_local_http_title">로컬 HTTP 서버</string>
+    <string name="local_http_server_notification_channel_name">로컬 HTTP 서버</string>
+    <string name="local_http_server_notification_channel_desc">백그라운드에서 로컬 HTTP 엔드포인트를 활성 상태로 유지합니다</string>
+    <string name="local_http_server_notification_title">로컬 HTTP 서버가 실행 중입니다</string>
+    <string name="local_http_server_notification_text">포트 %1$d에서 엔드포인트 활성화됨</string>
     <string name="perms_granted_summary">%2$d 권한 중 %1$d 권한이 부여됨</string>
     <string name="action_close">닫다</string>
     <string name="perms_rationale_desc">웹훅에 헬스 커넥트를 사용하려면 건강 및 피트니스 데이터에 액세스해야 합니다. 이 데이터는 앱의 핵심 기능을 수행하는 데 엄격하게 사용됩니다. 즉, 선택한 건강 지표(예: 걸음 수, 수면, 심박수)를 개인 웹훅 URL로 직접 안전하게 전송하는 것입니다. 우리는 귀하의 데이터를 제3자에게 판매하거나 공유하지 않습니다. 아래에서 구성하도록 명시적으로 선택한 데이터 유형만 요청되고 동기화됩니다.</string>
@@ -203,5 +218,5 @@
     <string name="nav_home">집</string>
     <string name="nav_webhooks">웹훅</string>
     <string name="nav_logs">로그</string>
-    <string name="nav_about">에 대한</string>
+    <string name="nav_about">설정</string>
 </resources>

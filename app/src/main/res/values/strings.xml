@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">HC Webhook</string>
     <string name="onboarding_skip_dialog_title">Skip Introduction?</string>
-    <string name="onboarding_skip_dialog_text">You can view it again anytime from the About screen.</string>
+    <string name="onboarding_skip_dialog_text">You can view it again anytime from the Settings screen.</string>
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_cancel">Cancel</string>
     <string name="onboarding_next">Next</string>
@@ -32,7 +32,7 @@
     <string name="onboarding_privacy_p3">Your data is sent directly to your own webhook URLs — nowhere else</string>
     <string name="onboarding_privacy_p4">Nothing is stored on any external server</string>
     <string name="onboarding_privacy_p5">Your data is never sold or shared with anyone</string>
-    <string name="onboarding_privacy_footer">Have feedback or suggestions? Head to the About tab anytime — we’d love to hear from you.</string>
+    <string name="onboarding_privacy_footer">Have feedback or suggestions? Head to the Settings tab anytime — we’d love to hear from you.</string>
     <string name="onboarding_privacy_warning_title">Use only the official version</string>
     <string name="onboarding_privacy_warning_desc">Cracked or modified versions of this app may steal your webhook URLs or send your health data to unknown servers. Always download from Google Play.</string>
     <string name="dt_steps_name">Steps</string>
@@ -166,6 +166,16 @@
     <string name="config_action_grant_short">Grant</string>
     <string name="config_action_grant_missing">Grant Missing Permissions</string>
     <string name="config_toast_error">Error: %1$s</string>
+    <string name="config_local_tcp_title">Local HTTP Server</string>
+    <string name="config_local_tcp_desc">Expose realtime Health Connect JSON over HTTP for local agents and tools.</string>
+    <string name="config_local_tcp_port_label">HTTP Port (1024-65535)</string>
+    <string name="config_local_tcp_saved">HTTP server settings saved</string>
+    <string name="config_local_tcp_invalid_port">Port must be between 1024 and 65535</string>
+    <string name="config_local_tcp_endpoint_enabled">Server endpoint: http://0.0.0.0:%1$d (also: /ping, /latest)</string>
+    <string name="config_local_tcp_endpoint_disabled">Server disabled</string>
+    <string name="config_local_http_status_title">Local HTTP Server Active</string>
+    <string name="config_local_http_status_desc">Available on your network at http://&lt;device-ip&gt;:%1$d</string>
+    <string name="config_local_http_off_hint">Optional: expose Health Connect JSON on your Wi-Fi for local scripts and tools. Tap to turn on or change the port.</string>
 
     <!-- About Screen -->
     <string name="about_toast_import_success">✅ Settings imported successfully</string>
@@ -194,6 +204,11 @@
     <string name="about_link_github">GitHub Repository</string>
     <string name="about_link_feedback">Provide Feedback</string>
     <string name="about_link_intro">View Introduction</string>
+    <string name="about_local_http_title">Local HTTP Server</string>
+    <string name="local_http_server_notification_channel_name">Local HTTP Server</string>
+    <string name="local_http_server_notification_channel_desc">Keeps local HTTP endpoint active in background</string>
+    <string name="local_http_server_notification_title">Local HTTP server is running</string>
+    <string name="local_http_server_notification_text">Endpoint active on port %1$d</string>
 
     <!-- Permissions Screen -->
     <string name="perms_granted_summary">%1$d of %2$d permissions granted</string>
@@ -215,7 +230,7 @@
     <string name="nav_home">Home</string>
     <string name="nav_webhooks">Webhooks</string>
     <string name="nav_logs">Logs</string>
-    <string name="nav_about">About</string>
+    <string name="nav_about">Settings</string>
 </resources>
 
 

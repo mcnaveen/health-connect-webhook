@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">HC Webhook</string>
     <string name="onboarding_skip_dialog_title">イントロダクションをスキップしますか？</string>
-    <string name="onboarding_skip_dialog_text">「情報」画面からいつでも再度表示できます。</string>
+    <string name="onboarding_skip_dialog_text">「設定」画面からいつでも再度表示できます。</string>
     <string name="onboarding_skip">スキップ</string>
     <string name="onboarding_cancel">キャンセル</string>
     <string name="onboarding_next">次へ</string>
@@ -33,7 +33,7 @@
     <string name="onboarding_privacy_p3">データは設定されたWebhook URLに直接送信され、他の場所には送信されません。</string>
     <string name="onboarding_privacy_p4">外部サーバーには一切保存されません。</string>
     <string name="onboarding_privacy_p5">あなたのデータが販売されたり他者と共有されることはありません。</string>
-    <string name="onboarding_privacy_footer">ご意見やご提案がありましたら、いつでも「情報」タブからお知らせください。</string>
+    <string name="onboarding_privacy_footer">ご意見やご提案がありましたら、いつでも「設定」タブからお知らせください。</string>
     <string name="onboarding_privacy_warning_title">公式版のみを使用してください</string>
     <string name="onboarding_privacy_warning_desc">このアプリの不正改造版などは、Webhook URLを盗んだり、健康データを未知のサーバーに送信するおそれがあります。必ずGoogle Playからダウンロードしてください。</string>
     <string name="dt_steps_name">歩数</string>
@@ -162,6 +162,16 @@
     <string name="config_action_grant_short">付与</string>
     <string name="config_action_grant_missing">不足している権限を付与する</string>
     <string name="config_toast_error">エラー: %1$s</string>
+    <string name="config_local_tcp_title">ローカル HTTP サーバー</string>
+    <string name="config_local_tcp_desc">ローカルエージェントやツール向けに、Health Connect のリアルタイム JSON を HTTP で公開します。</string>
+    <string name="config_local_tcp_port_label">HTTP ポート (1024-65535)</string>
+    <string name="config_local_tcp_saved">HTTP サーバー設定を保存しました</string>
+    <string name="config_local_tcp_invalid_port">ポートは 1024 から 65535 の間である必要があります</string>
+    <string name="config_local_tcp_endpoint_enabled">サーバーエンドポイント: http://0.0.0.0:%1$d/data (利用可能: /ping, /latest)</string>
+    <string name="config_local_tcp_endpoint_disabled">サーバー無効</string>
+    <string name="config_local_http_status_title">ローカル HTTP サーバー稼働中</string>
+    <string name="config_local_http_status_desc">ネットワーク上で利用可能: http://&lt;device-ip&gt;:%1$d/data</string>
+    <string name="config_local_http_off_hint">任意：ローカルのスクリプトやツール向けに、Wi-Fi 上で Health Connect の JSON を公開します。タップで有効化またはポートを変更します。</string>
     <string name="about_toast_import_success">✅ 設定が正常にインポートされました</string>
     <string name="about_toast_import_failed">❌ インポートに失敗しました: %1$s</string>
     <string name="about_toast_import_invalid">無効なファイル</string>
@@ -188,6 +198,11 @@
     <string name="about_link_github">GitHub リポジトリ</string>
     <string name="about_link_feedback">フィードバックを提供する</string>
     <string name="about_link_intro">概要を見る</string>
+    <string name="about_local_http_title">ローカル HTTP サーバー</string>
+    <string name="local_http_server_notification_channel_name">ローカル HTTP サーバー</string>
+    <string name="local_http_server_notification_channel_desc">ローカル HTTP エンドポイントをバックグラウンドで有効に保ちます</string>
+    <string name="local_http_server_notification_title">ローカル HTTP サーバーが実行中です</string>
+    <string name="local_http_server_notification_text">ポート %1$d でエンドポイントが有効です</string>
     <string name="perms_granted_summary">%2$d 個中 %1$d 個の権限が付与されました</string>
     <string name="action_close">近い</string>
     <string name="perms_rationale_desc">Webhook への Health Connect には、健康およびフィットネス データへのアクセスが必要です。このデータは、アプリの中核機能、つまり選択した健康指標 (歩数、睡眠、心拍数など) を個人の Webhook URL に直接安全に送信するためにのみ使用されます。当社はお客様のデータを第三者に販売したり共有したりすることはありません。以下で構成するために明示的に選択したデータ型のみが要求され、同期されます。</string>
@@ -203,5 +218,5 @@
     <string name="nav_home">家</string>
     <string name="nav_webhooks">Webhook</string>
     <string name="nav_logs">ログ</string>
-    <string name="nav_about">について</string>
+    <string name="nav_about">設定</string>
 </resources>

@@ -13,5 +13,7 @@ data class SettingsExport(
     val enabledDataTypes: List<String> = emptyList(),
     val syncMode: String = SyncMode.INTERVAL.name,
     val syncIntervalMinutes: Int = 60,
-    val scheduledSyncs: List<ScheduledSync> = emptyList()
+    val scheduledSyncs: List<ScheduledSync> = emptyList(),
+    val localTcpEnabled: Boolean = false,
+    val localTcpPort: Int = 8787
 )

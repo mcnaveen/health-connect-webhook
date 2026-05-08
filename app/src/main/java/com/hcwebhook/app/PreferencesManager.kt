@@ -37,6 +37,9 @@ class PreferencesManager(context: Context) {
         private const val KEY_SCHEDULED_SYNCS = "scheduled_syncs"
         private const val KEY_KNOWN_GRANTED_PERMISSIONS = "known_granted_permissions"
         private const val KEY_HAS_SEEN_ONBOARDING = "has_seen_onboarding"
+        private const val KEY_LOCAL_TCP_ENABLED = "local_tcp_enabled"
+        private const val KEY_LOCAL_TCP_PORT = "local_tcp_port"
+        private const val DEFAULT_LOCAL_TCP_PORT = 8787
     }
 
 
@@ -268,6 +271,24 @@ class PreferencesManager(context: Context) {
         prefs.edit().putBoolean(KEY_HAS_SEEN_ONBOARDING, true).apply()
     }
 
+    fun isLocalTcpEnabled(): Boolean {
+        return prefs.getBoolean(KEY_LOCAL_TCP_ENABLED, false)
+    }
+
+    fun setLocalTcpEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_LOCAL_TCP_ENABLED, enabled).apply()
+    }
+
+    fun getLocalTcpPort(): Int {
+        val configuredPort = prefs.getInt(KEY_LOCAL_TCP_PORT, DEFAULT_LOCAL_TCP_PORT)
+        return if (configuredPort in 1024..65535) configuredPort else DEFAULT_LOCAL_TCP_PORT
+    }
+
+    fun setLocalTcpPort(port: Int) {
+        val safePort = port.coerceIn(1024, 65535)
+        prefs.edit().putInt(KEY_LOCAL_TCP_PORT, safePort).apply()
+    }
+
     // -------------------------------------------------------------------------
     // Export / Import
     // -------------------------------------------------------------------------
@@ -282,7 +303,9 @@ class PreferencesManager(context: Context) {
             enabledDataTypes = getEnabledDataTypes().map { it.name },
             syncMode = getSyncMode().name,
             syncIntervalMinutes = getSyncIntervalMinutes(),
-            scheduledSyncs = getScheduledSyncs()
+            scheduledSyncs = getScheduledSyncs(),
+            localTcpEnabled = isLocalTcpEnabled(),
+            localTcpPort = getLocalTcpPort()
         )
     }
 
@@ -302,5 +325,7 @@ class PreferencesManager(context: Context) {
 
         setSyncIntervalMinutes(export.syncIntervalMinutes)
         setScheduledSyncs(export.scheduledSyncs)
+        setLocalTcpEnabled(export.localTcpEnabled)
+        setLocalTcpPort(export.localTcpPort)
     }
 }

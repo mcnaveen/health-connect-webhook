@@ -34,6 +34,7 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
     var showConfirmSheet by remember { mutableStateOf(false) }
     
     val webhookConfigs = preferencesManager.getWebhookConfigs()
+    val localTcpEnabled = preferencesManager.isLocalTcpEnabled()
 
     val timeRangeOptions = listOf(
         context.getString(R.string.manual_sync_default_range) to null,
@@ -358,7 +359,7 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
 
             Button(
                 onClick = { showConfirmSheet = true },
-                enabled = !isSyncing && webhookConfigs.isNotEmpty(),
+                enabled = !isSyncing && (webhookConfigs.isNotEmpty() || localTcpEnabled),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 if (isSyncing) {
