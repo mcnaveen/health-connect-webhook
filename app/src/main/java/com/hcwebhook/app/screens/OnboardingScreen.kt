@@ -10,6 +10,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.Warning
@@ -17,7 +19,6 @@ import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Bloodtype
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeviceThermostat
-import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Height
@@ -26,7 +27,6 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.WaterDrop
@@ -410,13 +410,13 @@ private fun PrivacyPage() {
 }
 
 fun iconForDataType(type: HealthDataType): ImageVector = when (type) {
-    HealthDataType.STEPS               -> Icons.Filled.DirectionsWalk
+    HealthDataType.STEPS               -> Icons.AutoMirrored.Filled.DirectionsWalk
     HealthDataType.DISTANCE            -> Icons.Filled.Straighten
     HealthDataType.ACTIVE_CALORIES     -> Icons.Filled.LocalFireDepartment
     HealthDataType.TOTAL_CALORIES      -> Icons.Filled.Whatshot
     HealthDataType.EXERCISE            -> Icons.Filled.FitnessCenter
     HealthDataType.HEART_RATE          -> Icons.Filled.MonitorHeart
-    HealthDataType.HEART_RATE_VARIABILITY -> Icons.Filled.ShowChart
+    HealthDataType.HEART_RATE_VARIABILITY -> Icons.AutoMirrored.Filled.ShowChart
     HealthDataType.RESTING_HEART_RATE  -> Icons.Filled.Favorite
     HealthDataType.BLOOD_PRESSURE      -> Icons.Filled.Bloodtype
     HealthDataType.BLOOD_GLUCOSE       -> Icons.Filled.Bloodtype

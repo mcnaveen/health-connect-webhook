@@ -6,7 +6,7 @@ plugins {
 
 val appVersionMajor = 1
 val appVersionMinor = 8
-val appVersionPatch = 2
+val appVersionPatch = 3
 val appVersionCode = (appVersionMajor * 10000) + (appVersionMinor * 100) + appVersionPatch
 val appVersionName = "$appVersionMajor.$appVersionMinor.$appVersionPatch"
 
@@ -36,7 +36,6 @@ android {
         }
         create("playstore") {
             dimension = "store"
-            buildConfigField("String", "PLAY_LICENSE_KEY", "\"${System.getenv("PLAY_LICENSE_KEY") ?: ""}\"")
         }
     }
 
@@ -71,7 +70,6 @@ android {
     }
     buildFeatures {
         compose = true
-        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
@@ -99,7 +97,6 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
-    "playstoreImplementation"(libs.play.licensing)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
