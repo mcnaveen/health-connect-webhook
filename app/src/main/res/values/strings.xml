@@ -175,6 +175,7 @@
     <string name="config_local_tcp_endpoint_disabled">Server disabled</string>
     <string name="config_local_http_status_title">Local HTTP Server Active</string>
     <string name="config_local_http_status_desc">Available on your network at http://&lt;device-ip&gt;:%1$d</string>
+    <string name="config_local_http_off_hint">Optional: expose Health Connect JSON on your Wi-Fi for local scripts and tools. Tap to turn on or change the port.</string>
 
     <!-- About Screen -->
     <string name="about_toast_import_success">✅ Settings imported successfully</string>

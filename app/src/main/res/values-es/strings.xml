@@ -171,6 +171,7 @@
     <string name="config_local_tcp_endpoint_disabled">Servidor desactivado</string>
     <string name="config_local_http_status_title">Servidor HTTP local activo</string>
     <string name="config_local_http_status_desc">Disponible en tu red en http://&lt;device-ip&gt;:%1$d/data</string>
+    <string name="config_local_http_off_hint">Opcional: expón el JSON de Health Connect en tu Wi-Fi para scripts y herramientas locales. Toca para activar o cambiar el puerto.</string>
     <string name="about_toast_import_success">✅ Configuración importada exitosamente</string>
     <string name="about_toast_import_failed">❌ Falló la importación: %1$s</string>
     <string name="about_toast_import_invalid">Archivo no válido</string>

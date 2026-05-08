@@ -171,6 +171,7 @@
     <string name="config_local_tcp_endpoint_disabled">서버 비활성화됨</string>
     <string name="config_local_http_status_title">로컬 HTTP 서버 활성화됨</string>
     <string name="config_local_http_status_desc">네트워크에서 사용 가능: http://&lt;device-ip&gt;:%1$d/data</string>
+    <string name="config_local_http_off_hint">선택 사항: Wi-Fi에서 로컬 스크립트와 도구가 Health Connect JSON을 사용할 수 있게 합니다. 탭하여 켜거나 포트를 변경하세요.</string>
     <string name="about_toast_import_success">✅ 설정을 성공적으로 가져왔습니다</string>
     <string name="about_toast_import_failed">❌ 가져오기 실패: %1$s</string>
     <string name="about_toast_import_invalid">잘못된 파일</string>
