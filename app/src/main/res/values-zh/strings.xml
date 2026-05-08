@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">HC Webhook</string>
     <string name="onboarding_skip_dialog_title">跳过介绍？</string>
-    <string name="onboarding_skip_dialog_text">您可以随时从“关于”屏幕再次查看。</string>
+    <string name="onboarding_skip_dialog_text">您可以随时在“设置”页面再次查看。</string>
     <string name="onboarding_skip">跳过</string>
     <string name="onboarding_cancel">取消</string>
     <string name="onboarding_next">下一步</string>
@@ -33,7 +33,7 @@
     <string name="onboarding_privacy_p3">您的数据直接发送到您自己的 webhook URL — 不会发往其他地方</string>
     <string name="onboarding_privacy_p4">没有任何数据存储在任何外部服务器上</string>
     <string name="onboarding_privacy_p5">您的数据绝不会出售或与任何人共享</string>
-    <string name="onboarding_privacy_footer">有反馈或建议？随时前往“关于”标签卡 — 我们很乐意收到您的意见。</string>
+    <string name="onboarding_privacy_footer">有反馈或建议？欢迎随时前往“设置”标签页 — 我们很乐意收到您的意见。</string>
     <string name="onboarding_privacy_warning_title">仅使用官方版本</string>
     <string name="onboarding_privacy_warning_desc">此应用的破解版或修改版可能会窃取您的 webhook URL 或将您的健康数据发送到未知服务器。请始终从 Google Play 下载。</string>
     <string name="dt_steps_name">步数</string>
@@ -162,6 +162,16 @@
     <string name="config_action_grant_short">授予</string>
     <string name="config_action_grant_missing">授予缺失的权限</string>
     <string name="config_toast_error">错误：%1$s</string>
+    <string name="config_local_tcp_title">本地 HTTP 服务器</string>
+    <string name="config_local_tcp_desc">通过 HTTP 为本地代理和工具提供 Health Connect 实时 JSON 数据。</string>
+    <string name="config_local_tcp_port_label">HTTP 端口 (1024-65535)</string>
+    <string name="config_local_tcp_saved">HTTP 服务器设置已保存</string>
+    <string name="config_local_tcp_invalid_port">端口必须在 1024 到 65535 之间</string>
+    <string name="config_local_tcp_endpoint_enabled">服务器端点: http://0.0.0.0:%1$d/data（也支持: /ping, /latest）</string>
+    <string name="config_local_tcp_endpoint_disabled">服务器已禁用</string>
+    <string name="config_local_http_status_title">本地 HTTP 服务器已启用</string>
+    <string name="config_local_http_status_desc">可在局域网中通过 http://&lt;device-ip&gt;:%1$d/data 访问</string>
+    <string name="config_local_http_off_hint">可选：在 Wi-Fi 上为本地脚本和工具提供 Health Connect JSON。点按以开启或更改端口。</string>
     <string name="about_toast_import_success">✅ 设置导入成功</string>
     <string name="about_toast_import_failed">❌ 导入失败：%1$s</string>
     <string name="about_toast_import_invalid">文件无效</string>
@@ -188,6 +198,11 @@
     <string name="about_link_github">GitHub 存储库</string>
     <string name="about_link_feedback">提供反馈</string>
     <string name="about_link_intro">查看简介</string>
+    <string name="about_local_http_title">本地 HTTP 服务器</string>
+    <string name="local_http_server_notification_channel_name">本地 HTTP 服务器</string>
+    <string name="local_http_server_notification_channel_desc">在后台保持本地 HTTP 端点处于活动状态</string>
+    <string name="local_http_server_notification_title">本地 HTTP 服务器正在运行</string>
+    <string name="local_http_server_notification_text">端点已在端口 %1$d 启用</string>
     <string name="perms_granted_summary">已授予 %1$d 个权限（共 %2$d 个）</string>
     <string name="action_close">关闭</string>
     <string name="perms_rationale_desc">Health Connect to Webhook 需要访问您的健康和健身数据。这些数据严格用于实现应用程序的核心功能：将您选择的健康指标（例如步数、睡眠和心率）直接安全地传输到您的个人 Webhook URL。我们不会向任何第三方出售或共享您的数据。只有您在下面明确选择配置的数据类型才会被请求和同步。</string>
@@ -203,5 +218,5 @@
     <string name="nav_home">家</string>
     <string name="nav_webhooks">网络钩子</string>
     <string name="nav_logs">日志</string>
-    <string name="nav_about">关于</string>
+    <string name="nav_about">设置</string>
 </resources>

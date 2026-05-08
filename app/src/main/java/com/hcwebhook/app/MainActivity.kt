@@ -13,6 +13,7 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.lifecycle.lifecycleScope
 import com.hcwebhook.app.screens.AboutScreen
 import com.hcwebhook.app.screens.ConfigurationScreen
+import com.hcwebhook.app.screens.LocalHttpSettingsScreen
 import com.hcwebhook.app.screens.LogsScreen
 import com.hcwebhook.app.screens.OnboardingScreen
 import com.hcwebhook.app.ui.theme.HCWebhookTheme
@@ -86,6 +87,7 @@ class MainActivity : AppCompatActivity() {
         onRestartOnboarding: () -> Unit = {}
     ) {
         var selectedScreen by remember { mutableStateOf<NavigationScreen>(NavigationScreen.Home) }
+        var showLocalHttpSettings by remember { mutableStateOf(false) }
 
         // Hoisted permission state — survives tab switches
         var hasPermissions by remember { mutableStateOf<Boolean?>(null) }
@@ -129,32 +131,42 @@ class MainActivity : AppCompatActivity() {
 
         Scaffold(
             bottomBar = {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                ) {
-                    bottomNavItems.forEach { screen ->
-                        NavigationBarItem(
-                            icon = { Icon(screen.icon, contentDescription = stringResource(screen.titleResId)) },
-                            label = { Text(stringResource(screen.titleResId)) },
-                            selected = selectedScreen == screen,
-                            onClick = { selectedScreen = screen }
-                        )
+                if (!showLocalHttpSettings) {
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ) {
+                        bottomNavItems.forEach { screen ->
+                            NavigationBarItem(
+                                icon = { Icon(screen.icon, contentDescription = stringResource(screen.titleResId)) },
+                                label = { Text(stringResource(screen.titleResId)) },
+                                selected = selectedScreen == screen,
+                                onClick = { selectedScreen = screen }
+                            )
+                        }
                     }
                 }
             }
         ) { padding ->
             Box(modifier = Modifier.padding(padding)) {
-                when (selectedScreen) {
-                    is NavigationScreen.Home -> ConfigurationScreen(
-                        activity = activity,
-                        permissionLauncher = permissionLauncher,
-                        hasPermissions = hasPermissions,
-                        grantedPermissionsSet = grantedPermissionsSet,
-                        sdkStatus = sdkStatus
-                    )
-                    is NavigationScreen.Webhooks -> com.hcwebhook.app.screens.WebhooksScreen()
-                    is NavigationScreen.Logs -> LogsScreen()
-                    is NavigationScreen.About -> AboutScreen(onRestartOnboarding = onRestartOnboarding)
+                if (showLocalHttpSettings) {
+                    LocalHttpSettingsScreen(onBack = { showLocalHttpSettings = false })
+                } else {
+                    when (selectedScreen) {
+                        is NavigationScreen.Home -> ConfigurationScreen(
+                            activity = activity,
+                            permissionLauncher = permissionLauncher,
+                            hasPermissions = hasPermissions,
+                            grantedPermissionsSet = grantedPermissionsSet,
+                            sdkStatus = sdkStatus,
+                            onOpenLocalHttpSettings = { showLocalHttpSettings = true }
+                        )
+                        is NavigationScreen.Webhooks -> com.hcwebhook.app.screens.WebhooksScreen()
+                        is NavigationScreen.Logs -> LogsScreen()
+                        is NavigationScreen.About -> AboutScreen(
+                            onRestartOnboarding = onRestartOnboarding,
+                            onOpenLocalHttpSettings = { showLocalHttpSettings = true }
+                        )
+                    }
                 }
             }
         }

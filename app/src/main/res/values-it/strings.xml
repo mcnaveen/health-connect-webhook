@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">HC Webhook</string>
     <string name="onboarding_skip_dialog_title">Salta l’introduzione?</string>
-    <string name="onboarding_skip_dialog_text">Puoi visualizzarla di nuovo in qualsiasi momento dalla schermata Informazioni.</string>
+    <string name="onboarding_skip_dialog_text">Puoi visualizzarla di nuovo in qualsiasi momento dalla schermata Impostazioni.</string>
     <string name="onboarding_skip">Salta</string>
     <string name="onboarding_cancel">Annulla</string>
     <string name="onboarding_next">Avanti</string>
@@ -33,7 +33,7 @@
     <string name="onboarding_privacy_p3">I tuoi dati vengono inviati direttamente agli URL webhook configurati — in nessun altro posto</string>
     <string name="onboarding_privacy_p4">Niente viene archiviato su server esterni</string>
     <string name="onboarding_privacy_p5">I tuoi dati non vengono mai venduti o condivisi con nessuno</string>
-    <string name="onboarding_privacy_footer">Hai feedback o suggerimenti? Vai alla scheda Informazioni in qualsiasi momento: ci piacerebbe ascoltarti.</string>
+    <string name="onboarding_privacy_footer">Hai feedback o suggerimenti? Vai alla scheda Impostazioni in qualsiasi momento: ci piacerebbe ascoltarti.</string>
     <string name="onboarding_privacy_warning_title">Usa solo la versione ufficiale</string>
     <string name="onboarding_privacy_warning_desc">Le versioni craccate o modificate di questa app possono rubare i tuoi URL webhook o inviare i tuoi dati sanitari a server sconosciuti. Scarica sempre da Google Play.</string>
     <string name="dt_steps_name">Passi</string>
@@ -162,6 +162,16 @@
     <string name="config_action_grant_short">Concessione</string>
     <string name="config_action_grant_missing">Concedere autorizzazioni mancanti</string>
     <string name="config_toast_error">Errore: %1$s</string>
+    <string name="config_local_tcp_title">Server HTTP locale</string>
+    <string name="config_local_tcp_desc">Espone JSON in tempo reale di Health Connect tramite HTTP per agenti e strumenti locali.</string>
+    <string name="config_local_tcp_port_label">Porta HTTP (1024-65535)</string>
+    <string name="config_local_tcp_saved">Impostazioni del server HTTP salvate</string>
+    <string name="config_local_tcp_invalid_port">La porta deve essere compresa tra 1024 e 65535</string>
+    <string name="config_local_tcp_endpoint_enabled">Endpoint server: http://0.0.0.0:%1$d/data (anche: /ping, /latest)</string>
+    <string name="config_local_tcp_endpoint_disabled">Server disabilitato</string>
+    <string name="config_local_http_status_title">Server HTTP locale attivo</string>
+    <string name="config_local_http_status_desc">Disponibile nella tua rete su http://&lt;device-ip&gt;:%1$d/data</string>
+    <string name="config_local_http_off_hint">Opzionale: espone il JSON di Health Connect sul Wi-Fi per script e strumenti locali. Tocca per attivare o modificare la porta.</string>
     <string name="about_toast_import_success">✅ Impostazioni importate con successo</string>
     <string name="about_toast_import_failed">❌ Importazione non riuscita: %1$s</string>
     <string name="about_toast_import_invalid">File non valido</string>
@@ -188,6 +198,11 @@
     <string name="about_link_github">Repository GitHub</string>
     <string name="about_link_feedback">Fornire feedback</string>
     <string name="about_link_intro">Visualizza l\'introduzione</string>
+    <string name="about_local_http_title">Server HTTP locale</string>
+    <string name="local_http_server_notification_channel_name">Server HTTP locale</string>
+    <string name="local_http_server_notification_channel_desc">Mantiene attivo in background l’endpoint HTTP locale</string>
+    <string name="local_http_server_notification_title">Il server HTTP locale è in esecuzione</string>
+    <string name="local_http_server_notification_text">Endpoint attivo sulla porta %1$d</string>
     <string name="perms_granted_summary">%1$d di %2$d autorizzazioni concesse</string>
     <string name="action_close">Vicino</string>
     <string name="perms_rationale_desc">Health Connect to Webhook richiede l\'accesso ai tuoi dati di salute e fitness. Questi dati vengono utilizzati esclusivamente per soddisfare la funzionalità principale dell\'app: trasmettere in modo sicuro i parametri di salute scelti (come passi, sonno e frequenza cardiaca) direttamente ai tuoi URL webhook personali. Non vendiamo né condividiamo i tuoi dati con terze parti. Verranno richiesti e sincronizzati solo i tipi di dati che scegli esplicitamente di configurare di seguito.</string>
@@ -203,5 +218,5 @@
     <string name="nav_home">Casa</string>
     <string name="nav_webhooks">Webhook</string>
     <string name="nav_logs">Registri</string>
-    <string name="nav_about">Di</string>
+    <string name="nav_about">Impostazioni</string>
 </resources>
