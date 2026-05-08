@@ -53,6 +53,9 @@ enum class HealthDataType(val nameResId: Int, val recordClass: KClass<out Record
     BODY_TEMPERATURE(
         R.string.dt_temp_name, BodyTemperatureRecord::class, R.string.dt_temp_rationale
     ),
+    SKIN_TEMPERATURE(
+        R.string.dt_skin_temp_name, SkinTemperatureRecord::class, R.string.dt_skin_temp_rationale
+    ),
     RESPIRATORY_RATE(
         R.string.dt_resp_name, RespiratoryRateRecord::class, R.string.dt_resp_rationale
     ),
@@ -99,6 +102,7 @@ data class HealthData(
     val bloodGlucose: List<BloodGlucoseData>,
     val oxygenSaturation: List<OxygenSaturationData>,
     val bodyTemperature: List<BodyTemperatureData>,
+    val skinTemperature: List<SkinTemperatureData>,
     val respiratoryRate: List<RespiratoryRateData>,
     val restingHeartRate: List<RestingHeartRateData>,
     val exercise: List<ExerciseData>,
@@ -187,6 +191,13 @@ data class OxygenSaturationData(
 data class BodyTemperatureData(
     val celsius: Double,
     val time: Instant
+)
+
+data class SkinTemperatureData(
+    val time: Instant,
+    val deltaCelsius: Double,
+    val baselineCelsius: Double?,
+    val measurementLocation: Int
 )
 
 data class RespiratoryRateData(
@@ -310,6 +321,8 @@ class HealthConnectManager(private val context: Context) {
                 readOxygenSaturationData(startTime, endTime, lastSyncTimestamps[HealthDataType.OXYGEN_SATURATION]) else emptyList()
             val bodyTemperatureData = if (HealthDataType.BODY_TEMPERATURE in enabledTypes)
                 readBodyTemperatureData(startTime, endTime, lastSyncTimestamps[HealthDataType.BODY_TEMPERATURE]) else emptyList()
+            val skinTemperatureData = if (HealthDataType.SKIN_TEMPERATURE in enabledTypes)
+                readSkinTemperatureData(startTime, endTime, lastSyncTimestamps[HealthDataType.SKIN_TEMPERATURE]) else emptyList()
             val respiratoryRateData = if (HealthDataType.RESPIRATORY_RATE in enabledTypes)
                 readRespiratoryRateData(startTime, endTime, lastSyncTimestamps[HealthDataType.RESPIRATORY_RATE]) else emptyList()
             val restingHeartRateData = if (HealthDataType.RESTING_HEART_RATE in enabledTypes)
@@ -351,6 +364,7 @@ class HealthConnectManager(private val context: Context) {
                 bloodGlucose = bloodGlucoseData,
                 oxygenSaturation = oxygenSaturationData,
                 bodyTemperature = bodyTemperatureData,
+                skinTemperature = skinTemperatureData,
                 respiratoryRate = respiratoryRateData,
                 restingHeartRate = restingHeartRateData,
                 exercise = exerciseData,
@@ -604,6 +618,23 @@ class HealthConnectManager(private val context: Context) {
             .map { BodyTemperatureData(it.temperature.inCelsius, it.time) }
     }
 
+    private suspend fun readSkinTemperatureData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<SkinTemperatureData> {
+        val request = ReadRecordsRequest(recordType = SkinTemperatureRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
+        val response = readAllRecords(request)
+        return response.flatMap { record ->
+            record.deltas
+                .filter { lastSync == null || it.time >= lastSync }
+                .map { delta ->
+                    SkinTemperatureData(
+                        time = delta.time,
+                        deltaCelsius = delta.delta.inCelsius,
+                        baselineCelsius = record.baseline?.inCelsius,
+                        measurementLocation = record.measurementLocation
+                    )
+                }
+        }
+    }
+
     private suspend fun readRespiratoryRateData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<RespiratoryRateData> {
         val request = ReadRecordsRequest(recordType = RespiratoryRateRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
@@ -851,6 +882,7 @@ class HealthConnectManager(private val context: Context) {
             HealthPermission.getReadPermission(BloodGlucoseRecord::class),
             HealthPermission.getReadPermission(OxygenSaturationRecord::class),
             HealthPermission.getReadPermission(BodyTemperatureRecord::class),
+            HealthPermission.getReadPermission(SkinTemperatureRecord::class),
             HealthPermission.getReadPermission(RespiratoryRateRecord::class),
             HealthPermission.getReadPermission(RestingHeartRateRecord::class),
             HealthPermission.getReadPermission(ExerciseSessionRecord::class),

@@ -62,6 +62,8 @@
     <string name="dt_oxy_rationale">Concentre las mediciones de SpO2 para obtener notificaciones del aparato respiratorio, así como niveles bajos de O₂.</string>
     <string name="dt_temp_name">Temperatura corporal</string>
     <string name="dt_temp_rationale">Monitoree en su webhook su temperatura para detección de picos por fiebre o variaciones que afecten el organismo.</string>
+    <string name="dt_skin_temp_name">Temperatura de la piel</string>
+    <string name="dt_skin_temp_rationale">Envíe deltas de temperatura cutánea desde wearables a su webhook para bienestar y seguimiento del sueño.</string>
     <string name="dt_resp_name">Frecuencia respiratoria</string>
     <string name="dt_resp_rationale">Súrtase de su frecuencia de la respiración regular en el webhook como modo de vigilar la buena salud u otras complicaciones.</string>
     <string name="dt_rhr_name">Frecuencia cardíaca en reposo</string>

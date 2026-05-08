@@ -62,6 +62,8 @@
     <string name="dt_oxy_rationale">SpO₂ 측정치를 전송하여 사용자의 호흡기 건강 지표를 점검하고 산소 부족 시 경보를 관리합니다.</string>
     <string name="dt_temp_name">체온</string>
     <string name="dt_temp_rationale">체온 수치 전달을 통하여 지속적인 신체 컨디션, 발열 기록과 감염성 징후의 추적을 Webhook에서 구성합니다.</string>
+    <string name="dt_skin_temp_name">피부 온도</string>
+    <string name="dt_skin_temp_rationale">착용형 기기의 피부 온도 변화를 웹훅으로 전달해 수면 및 웰니스 추적에 활용합니다.</string>
     <string name="dt_resp_name">호흡률</string>
     <string name="dt_resp_rationale">신체의 호흡률 데이터를 관리, 관찰하며 신체의 회복 정도나 호흡 기관의 잠재된 문제를 전송해 파악합니다.</string>
     <string name="dt_rhr_name">안정 시 심박수</string>
