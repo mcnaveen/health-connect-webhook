@@ -51,7 +51,7 @@ Health Connect aggregates data from these popular health and fitness apps:
 ## Features
 
 - 🔄 **Flexible Background Sync** - Choose between interval-based sync (WorkManager) or fixed-time scheduled syncs (AlarmManager)
-- 🎯 **Selective Data Types** - Choose which health data types to sync (23 supported types)
+- 🎯 **Selective Data Types** - Choose which health data types to sync (24 supported types)
 - 🔗 **Multiple Webhooks** - Send data to multiple webhook URLs simultaneously
 - 🖥️ **Local HTTP Server** - Expose realtime Health Connect JSON on your local network for agents, scripts, and automation tools
 - 📊 **Manual Sync** - Trigger immediate data synchronization on demand
@@ -95,16 +95,17 @@ The app supports reading and syncing the following health data types from Health
 11. **Blood Glucose** - Blood glucose levels
 12. **Oxygen Saturation** - SpO2 measurements
 13. **Body Temperature** - Body temperature readings
-14. **Respiratory Rate** - Breathing rate measurements
-15. **Resting Heart Rate** - Resting heart rate data
-16. **Exercise Sessions** - Workout and exercise data
-17. **Hydration** - Water intake tracking
-18. **Nutrition** - Nutritional information (calories, protein, carbs, fat, sugar, sodium, dietary fiber, name)
-19. **Basal Metabolic Rate** - Basal energy expenditure
-20. **Body Fat** - Body fat percentage measurements
-21. **Lean Body Mass** - Lean body mass measurements
-22. **VO2 Max** - Cardiorespiratory fitness measurements
-23. **Bone Mass** - Bone mass measurements
+14. **Skin Temperature** - Skin temperature deltas from wearables (for example overnight sleep readings from supported watches); each synced sample includes delta from baseline when Health Connect provides it
+15. **Respiratory Rate** - Breathing rate measurements
+16. **Resting Heart Rate** - Resting heart rate data
+17. **Exercise Sessions** - Workout and exercise data
+18. **Hydration** - Water intake tracking
+19. **Nutrition** - Nutritional information (calories, protein, carbs, fat, sugar, sodium, dietary fiber, name)
+20. **Basal Metabolic Rate** - Basal energy expenditure
+21. **Body Fat** - Body fat percentage measurements
+22. **Lean Body Mass** - Lean body mass measurements
+23. **VO2 Max** - Cardiorespiratory fitness measurements
+24. **Bone Mass** - Bone mass measurements
 
 ## Requirements
 
@@ -234,6 +235,8 @@ The app sends health data to your webhooks in JSON format. Each webhook request 
 - Metadata about the sync operation
 
 For example, nutrition records include the existing calorie/macronutrient fields plus `sugar_grams`, `sodium_grams`, `dietary_fiber_grams`, and `name` when Health Connect provides them.
+
+When **Skin Temperature** is enabled, payloads may include a `skin_temperature` array. Each element has `time` (ISO-8601 instant), `delta_celsius`, optional `baseline_celsius` when the source record includes a baseline, and `measurement_location` (integer: `0` unknown, `1` finger, `2` toe, `3` wrist; see [`SkinTemperatureRecord`](https://github.com/androidx/androidx/blob/androidx-main/health/connect/connect-client/src/main/java/androidx/health/connect/client/records/SkinTemperatureRecord.kt) in AndroidX). Health Connect stores skin temperature as interval records with multiple samples; the app emits one JSON object per sample time, repeating the parent baseline and measurement location where applicable.
 
 > **Note**: Webhook delivery includes short retry handling (up to 3 attempts with exponential backoff). If delivery still fails, data is retried on the next successful sync trigger (manual, interval, or scheduled).
 

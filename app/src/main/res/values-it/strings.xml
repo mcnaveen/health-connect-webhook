@@ -62,6 +62,8 @@
     <string name="dt_oxy_rationale">Inoltra l\’SpO₂ per monitorare apparato respiratorio e cali di ossigeno.</string>
     <string name="dt_temp_name">Temperatura corporea</string>
     <string name="dt_temp_rationale">Invia le misurazioni della temperatura alla tua webhook per rintracciare patologie o febbri.</string>
+    <string name="dt_skin_temp_name">Temperatura cutanea</string>
+    <string name="dt_skin_temp_rationale">Invia alla tua webhook i delta di temperatura cutanea dai dispositivi indossabili per benessere e analisi del sonno.</string>
     <string name="dt_resp_name">Frequenza respiratoria</string>
     <string name="dt_resp_rationale">Inoltra il tasso respiratorio per esaminare recuperi o anomalie via webhook.</string>
     <string name="dt_rhr_name">Frequenza cardiaca a riposo</string>

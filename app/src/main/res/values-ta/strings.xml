@@ -62,6 +62,8 @@
     <string name="dt_oxy_rationale">SpO2 அளவுகளை வழங்கி, சுவாச அமைப்பு ஆரோக்கியத்தை கண்காணிக்கவும் ஆக்சிஜன் குறைபாடுகளை எச்சரிக்கவும் செய்கிறது.</string>
     <string name="dt_temp_name">உடல் வெப்பநிலை</string>
     <string name="dt_temp_rationale">உடல் வெப்பநிலையின் அளவீடுகளை அனுப்பி காய்ச்சலைக் கண்டறியவும், நீண்டகால அடிப்படையில் உடல் ஆரோக்கியத்தை பதிவு செய்யவும் உதவுகிறது.</string>
+    <string name="dt_skin_temp_name">தோல் வெப்பநிலை</string>
+    <string name="dt_skin_temp_rationale">கண்காணிப்பு சாதனங்களில் இருந்து தோல் வெப்பநிலை மாறுபாடுகளை உங்கள் webhook க்கு அனுப்பி நல்வாழ்வு கண்காணிப்பை ஊக்குவிக்கவும்.</string>
     <string name="dt_resp_name">சுவாச விகிதம்</string>
     <string name="dt_resp_rationale">சுவாச விகித தரவை அனுப்பி சுவாசம் தொடர்பான ஆரோக்கியத்தைப் பற்றி கண்காணித்து, உங்கள் Webhook வாயிலாக உடல் முன்னேற்றத்தை அறியச் செய்கிறது.</string>
     <string name="dt_rhr_name">ஓய்வு இதயத் துடிப்பு</string>

@@ -62,6 +62,8 @@
     <string name="dt_oxy_rationale">Leiten Sie SpO₂-Informationen weiter, um Ihre Gesundheit der Atemwege oder Anomalien über einen bestimmten Zeitraum hinweg zu beobachten.</string>
     <string name="dt_temp_name">Körpertemperatur</string>
     <string name="dt_temp_rationale">Senden Sie Körpertemperaturmessungen an Ihren Webhook für Fiebererkennung oder langfriste Aufzeichnungen.</string>
+    <string name="dt_skin_temp_name">Hauttemperatur</string>
+    <string name="dt_skin_temp_rationale">Hauttemperatur-Differenzen von Wearables (z. B. nächtliche Messungen) an Ihren Webhook senden.</string>
     <string name="dt_resp_name">Atemfrequenz</string>
     <string name="dt_resp_rationale">Leiten Sie die Atemfrequenz weiter, um mit Ihrem Webhook Ihre Erholung und Atmungsgesundheit zu überwachen.</string>
     <string name="dt_rhr_name">Ruheherzfrequenz</string>

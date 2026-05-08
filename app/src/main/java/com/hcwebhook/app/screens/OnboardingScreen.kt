@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.MonitorWeight
+import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Straighten
@@ -240,6 +241,7 @@ private fun DataTypesPage() {
                 HealthDataType.OXYGEN_SATURATION,
                 HealthDataType.RESPIRATORY_RATE,
                 HealthDataType.BODY_TEMPERATURE,
+                HealthDataType.SKIN_TEMPERATURE,
                 HealthDataType.BLOOD_GLUCOSE
             ),
             stringResource(R.string.onboarding_group_sleep) to listOf(
@@ -423,6 +425,7 @@ fun iconForDataType(type: HealthDataType): ImageVector = when (type) {
     HealthDataType.OXYGEN_SATURATION   -> Icons.Filled.Air
     HealthDataType.RESPIRATORY_RATE    -> Icons.Filled.Air
     HealthDataType.BODY_TEMPERATURE    -> Icons.Filled.DeviceThermostat
+    HealthDataType.SKIN_TEMPERATURE    -> Icons.Filled.NightsStay
     HealthDataType.SLEEP               -> Icons.Filled.Bedtime
     HealthDataType.WEIGHT              -> Icons.Filled.MonitorWeight
     HealthDataType.HEIGHT              -> Icons.Filled.Height
