@@ -204,7 +204,11 @@ data class ExerciseData(
     val startTime: Instant,
     val endTime: Instant,
     val duration: Duration,
-    val distanceMeters: Double? = null
+    val distanceMeters: Double? = null,
+    val steps: Long? = null,
+    val avgCadenceSpm: Double? = null,
+    val maxCadenceSpm: Double? = null,
+    val strideLengthMeters: Double? = null
 )
 
 data class HydrationData(
@@ -315,7 +319,8 @@ class HealthConnectManager(private val context: Context) {
                     startTime,
                     endTime,
                     lastSyncTimestamps[HealthDataType.EXERCISE],
-                    HealthDataType.DISTANCE in enabledTypes
+                    HealthDataType.DISTANCE in enabledTypes,
+                    HealthDataType.STEPS in enabledTypes
                 ) else emptyList()
             val hydrationData = if (HealthDataType.HYDRATION in enabledTypes)
                 readHydrationData(startTime, endTime, lastSyncTimestamps[HealthDataType.HYDRATION]) else emptyList()
@@ -424,9 +429,9 @@ class HealthConnectManager(private val context: Context) {
             timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
         )
 
-        val response = healthConnectClient.readRecords(request)
+        val response = readAllRecords(request)
 
-        return response.records
+        return response
             .filter { record ->
                 lastSync == null || record.endTime >= lastSync
             }
@@ -450,8 +455,8 @@ class HealthConnectManager(private val context: Context) {
 
     private suspend fun readHeartRateData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<HeartRateData> {
         val request = ReadRecordsRequest(recordType = HeartRateRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records
+        val response = readAllRecords(request)
+        return response
             .flatMap { record ->
                 record.samples
                     .filter { lastSync == null || it.time >= lastSync }
@@ -461,8 +466,8 @@ class HealthConnectManager(private val context: Context) {
 
     private suspend fun readHeartRateVariabilityData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<HeartRateVariabilityData> {
         val request = ReadRecordsRequest(recordType = HeartRateVariabilityRmssdRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.time >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.time >= lastSync }
             .map { HeartRateVariabilityData(it.heartRateVariabilityMillis, it.time) }
     }
 
@@ -552,80 +557,141 @@ class HealthConnectManager(private val context: Context) {
 
     private suspend fun readTotalCaloriesData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<TotalCaloriesData> {
         val request = ReadRecordsRequest(recordType = TotalCaloriesBurnedRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.endTime >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.endTime >= lastSync }
             .map { TotalCaloriesData(it.energy.inKilocalories, it.startTime, it.endTime) }
     }
 
     private suspend fun readWeightData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<WeightData> {
         val request = ReadRecordsRequest(recordType = WeightRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.time >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.time >= lastSync }
             .map { WeightData(it.weight.inKilograms, it.time) }
     }
 
     private suspend fun readHeightData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<HeightData> {
         val request = ReadRecordsRequest(recordType = HeightRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.time >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.time >= lastSync }
             .map { HeightData(it.height.inMeters, it.time) }
     }
 
     private suspend fun readBloodPressureData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BloodPressureData> {
         val request = ReadRecordsRequest(recordType = BloodPressureRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.time >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.time >= lastSync }
             .map { BloodPressureData(it.systolic.inMillimetersOfMercury, it.diastolic.inMillimetersOfMercury, it.time) }
     }
 
     private suspend fun readBloodGlucoseData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BloodGlucoseData> {
         val request = ReadRecordsRequest(recordType = BloodGlucoseRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.time >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.time >= lastSync }
             .map { BloodGlucoseData(it.level.inMillimolesPerLiter, it.time) }
     }
 
     private suspend fun readOxygenSaturationData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<OxygenSaturationData> {
         val request = ReadRecordsRequest(recordType = OxygenSaturationRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.time >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.time >= lastSync }
             .map { OxygenSaturationData(it.percentage.value, it.time) }
     }
 
     private suspend fun readBodyTemperatureData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BodyTemperatureData> {
         val request = ReadRecordsRequest(recordType = BodyTemperatureRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.time >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.time >= lastSync }
             .map { BodyTemperatureData(it.temperature.inCelsius, it.time) }
     }
 
     private suspend fun readRespiratoryRateData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<RespiratoryRateData> {
         val request = ReadRecordsRequest(recordType = RespiratoryRateRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.time >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.time >= lastSync }
             .map { RespiratoryRateData(it.rate, it.time) }
     }
 
     private suspend fun readRestingHeartRateData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<RestingHeartRateData> {
         val request = ReadRecordsRequest(recordType = RestingHeartRateRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.time >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.time >= lastSync }
             .map { RestingHeartRateData(it.beatsPerMinute, it.time) }
     }
 
-    private suspend fun readExerciseData(startTime: Instant, endTime: Instant, lastSync: Instant?, includeDistance: Boolean): List<ExerciseData> {
+    private suspend fun readExerciseData(
+        startTime: Instant,
+        endTime: Instant,
+        lastSync: Instant?,
+        includeDistance: Boolean,
+        includeSteps: Boolean
+    ): List<ExerciseData> {
         val request = ReadRecordsRequest(recordType = ExerciseSessionRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.endTime >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.endTime >= lastSync }
             .map {
+                val duration = Duration.between(it.startTime, it.endTime)
+                val distanceMeters = if (includeDistance) readDistanceTotal(it.startTime, it.endTime) else null
+                val steps = if (includeSteps) readStepsTotal(it.startTime, it.endTime) else null
+                val cadenceMetrics = if (includeSteps) readStepsCadenceMetrics(it.startTime, it.endTime) else StepsCadenceMetrics()
                 ExerciseData(
                     type = it.exerciseType.toString(),
                     startTime = it.startTime,
                     endTime = it.endTime,
-                    duration = Duration.between(it.startTime, it.endTime),
-                    distanceMeters = if (includeDistance) readDistanceTotal(it.startTime, it.endTime) else null
+                    duration = duration,
+                    distanceMeters = distanceMeters,
+                    steps = steps,
+                    avgCadenceSpm = cadenceMetrics.avg ?: deriveAverageCadenceSpm(steps, duration),
+                    maxCadenceSpm = cadenceMetrics.max,
+                    strideLengthMeters = deriveStrideLengthMeters(distanceMeters, steps)
                 )
             }
+    }
+
+    private data class StepsCadenceMetrics(
+        val avg: Double? = null,
+        val max: Double? = null
+    )
+
+    private suspend fun readStepsTotal(startTime: Instant, endTime: Instant): Long? {
+        val request = AggregateRequest(
+            metrics = setOf(StepsRecord.COUNT_TOTAL),
+            timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+        )
+        val response = healthConnectClient.aggregate(request)
+        val steps = response[StepsRecord.COUNT_TOTAL] ?: return null
+        return steps.takeIf { it > 0L }
+    }
+
+    private suspend fun readStepsCadenceMetrics(startTime: Instant, endTime: Instant): StepsCadenceMetrics {
+        return try {
+            val request = AggregateRequest(
+                metrics = setOf(StepsCadenceRecord.RATE_AVG, StepsCadenceRecord.RATE_MAX),
+                timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+            )
+            val response = healthConnectClient.aggregate(request)
+            StepsCadenceMetrics(
+                avg = response[StepsCadenceRecord.RATE_AVG]?.takeIf { it > 0.0 },
+                max = response[StepsCadenceRecord.RATE_MAX]?.takeIf { it > 0.0 }
+            )
+        } catch (_: Exception) {
+            // Cadence is optional. Keep exercise sync working on providers that expose steps but not cadence.
+            StepsCadenceMetrics()
+        }
+    }
+
+    private fun deriveAverageCadenceSpm(steps: Long?, duration: Duration): Double? {
+        if (steps == null || steps <= 0L || duration.isZero || duration.isNegative) {
+            return null
+        }
+        val durationMinutes = duration.toMillis() / 60000.0
+        return (steps.toDouble() / durationMinutes).takeIf { it > 0.0 }
+    }
+
+    private fun deriveStrideLengthMeters(distanceMeters: Double?, steps: Long?): Double? {
+        if (distanceMeters == null || distanceMeters <= 0.0 || steps == null || steps <= 0L) {
+            return null
+        }
+        return distanceMeters / steps.toDouble()
     }
 
     private suspend fun readDistanceTotal(startTime: Instant, endTime: Instant): Double? {
@@ -640,15 +706,15 @@ class HealthConnectManager(private val context: Context) {
 
     private suspend fun readHydrationData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<HydrationData> {
         val request = ReadRecordsRequest(recordType = HydrationRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.endTime >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.endTime >= lastSync }
             .map { HydrationData(it.volume.inLiters, it.startTime, it.endTime) }
     }
 
     private suspend fun readNutritionData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<NutritionData> {
         val request = ReadRecordsRequest(recordType = NutritionRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.endTime >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.endTime >= lastSync }
             .map {
                 NutritionData(
                     calories = it.energy?.inKilocalories,
@@ -667,37 +733,56 @@ class HealthConnectManager(private val context: Context) {
 
     private suspend fun readBasalMetabolicRateData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BasalMetabolicRateData> {
         val request = ReadRecordsRequest(recordType = BasalMetabolicRateRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.time >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.time >= lastSync }
             .map { BasalMetabolicRateData(it.basalMetabolicRate.inWatts, it.time) }
     }
 
     private suspend fun readBodyFatData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BodyFatData> {
         val request = ReadRecordsRequest(recordType = BodyFatRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.time >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.time >= lastSync }
             .map { BodyFatData(it.percentage.value, it.time) }
     }
 
     private suspend fun readLeanBodyMassData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<LeanBodyMassData> {
         val request = ReadRecordsRequest(recordType = LeanBodyMassRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.time >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.time >= lastSync }
             .map { LeanBodyMassData(it.mass.inKilograms, it.time) }
     }
 
     private suspend fun readVo2MaxData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<Vo2MaxData> {
         val request = ReadRecordsRequest(recordType = Vo2MaxRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.time >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.time >= lastSync }
             .map { Vo2MaxData(it.vo2MillilitersPerMinuteKilogram, it.time) }
     }
 
     private suspend fun readBoneMassData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BoneMassData> {
         val request = ReadRecordsRequest(recordType = BoneMassRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
-        val response = healthConnectClient.readRecords(request)
-        return response.records.filter { lastSync == null || it.time >= lastSync }
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.time >= lastSync }
             .map { BoneMassData(it.mass.inKilograms, it.time) }
+    }
+
+    private suspend fun <T : Record> readAllRecords(request: ReadRecordsRequest<T>): List<T> {
+        val all = mutableListOf<T>()
+        var token: String? = null
+        do {
+            val current = if (token == null) request else ReadRecordsRequest(
+                recordType = request.recordType,
+                timeRangeFilter = request.timeRangeFilter,
+                dataOriginFilter = request.dataOriginFilter,
+                ascendingOrder = request.ascendingOrder,
+                pageSize = request.pageSize,
+                pageToken = token,
+            )
+            val page = healthConnectClient.readRecords(current)
+            all.addAll(page.records)
+            token = page.pageToken
+        } while (token != null)
+        return all
     }
 
     fun isHealthConnectAvailable(): Boolean {
@@ -736,6 +821,9 @@ class HealthConnectManager(private val context: Context) {
             includeBackgroundPermission: Boolean = true
         ): Set<String> {
             val permissions = types.map { HealthPermission.getReadPermission(it.recordClass) }.toMutableSet()
+            if (HealthDataType.STEPS in types) {
+                permissions.add(HealthPermission.getReadPermission(StepsCadenceRecord::class))
+            }
             if (includeBackgroundPermission) {
                 permissions.add(BACKGROUND_PERMISSION_STR)
             }
@@ -750,6 +838,7 @@ class HealthConnectManager(private val context: Context) {
 
         val ALL_PERMISSIONS = setOf(
             HealthPermission.getReadPermission(StepsRecord::class),
+            HealthPermission.getReadPermission(StepsCadenceRecord::class),
             HealthPermission.getReadPermission(SleepSessionRecord::class),
             HealthPermission.getReadPermission(HeartRateRecord::class),
             HealthPermission.getReadPermission(HeartRateVariabilityRmssdRecord::class),

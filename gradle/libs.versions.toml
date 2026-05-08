@@ -14,6 +14,7 @@ okhttp = "4.12.0"
 kotlinxSerialization = "1.6.3"
 appcompat = "1.6.1"
 splashScreen = "1.0.1"
+playLicensing = "1.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -37,6 +38,7 @@ androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx"
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashScreen" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+play-licensing = { group = "com.google.android.vending", name = "licensing", version.ref = "playLicensing" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

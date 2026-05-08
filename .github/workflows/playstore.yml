@@ -38,6 +38,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          PLAY_LICENSE_KEY: ${{ secrets.PLAY_LICENSE_KEY }}
         run: ./gradlew bundlePlaystoreRelease
 
       - name: Upload AAB Artifact
