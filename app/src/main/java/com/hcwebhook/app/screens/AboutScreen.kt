@@ -19,7 +19,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Upload
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -340,6 +339,7 @@ fun AboutScreen(
             ) {
                 LinkRow(
                     label = stringResource(R.string.about_local_http_title),
+                    subtitle = stringResource(R.string.config_local_tcp_desc),
                     icon = Icons.Filled.Lan,
                     onClick = { onOpenLocalHttpSettings() }
                 )
@@ -405,22 +405,33 @@ fun AboutScreen(
 private fun LinkRow(
     label: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    subtitle: String? = null
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .heightIn(min = 48.dp)
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 16.dp, vertical = if (subtitle != null) 12.dp else 0.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
+        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            if (subtitle != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
         Icon(
             imageVector = icon,
             contentDescription = null,

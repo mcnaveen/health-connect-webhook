@@ -162,15 +162,16 @@
     <string name="config_action_grant_short">மானியம்</string>
     <string name="config_action_grant_missing">விடுபட்ட அனுமதிகளை வழங்கவும்</string>
     <string name="config_toast_error">பிழை: %1$s</string>
-    <string name="config_local_tcp_title">Local HTTP Server</string>
+    <string name="config_local_tcp_title">உள்ளூர் HTTP சேவையகம்</string>
     <string name="config_local_tcp_desc">உள்ளூர் ஏஜென்ட்கள் மற்றும் கருவிகளுக்காக Health Connect realtime JSON ஐ HTTP வழியாக வெளியிடுகிறது.</string>
     <string name="config_local_tcp_port_label">HTTP Port (1024-65535)</string>
     <string name="config_local_tcp_saved">HTTP server அமைப்புகள் சேமிக்கப்பட்டன</string>
     <string name="config_local_tcp_invalid_port">Port 1024 மற்றும் 65535 இடையில் இருக்க வேண்டும்</string>
     <string name="config_local_tcp_endpoint_enabled">Server endpoint: http://0.0.0.0:%1$d/data (மேலும்: /ping, /latest)</string>
     <string name="config_local_tcp_endpoint_disabled">Server முடக்கப்பட்டுள்ளது</string>
-    <string name="config_local_http_status_title">Local HTTP Server செயலில் உள்ளது</string>
+    <string name="config_local_http_status_title">உள்ளூர் HTTP சேவையகம் செயலில் உள்ளது</string>
     <string name="config_local_http_status_desc">உங்கள் நெட்வொர்கில் கிடைக்கும் முகவரி: http://&lt;device-ip&gt;:%1$d/data</string>
+    <string name="config_local_http_off_hint">விருப்பம்: உள்ளூர் ஸ்கிரிப்ட்களும் கருவிகளும் உங்கள் Wi-Fi வழியாக Health Connect JSON ஐப் பயன்படுத்தலாம். இயக்கவோ போர்ட்டை மாற்றவோ தட்டவும்.</string>
     <string name="about_toast_import_success">✅ அமைப்புகள் வெற்றிகரமாக இறக்குமதி செய்யப்பட்டன</string>
     <string name="about_toast_import_failed">❌ இறக்குமதி தோல்வி: %1$s</string>
     <string name="about_toast_import_invalid">தவறான கோப்பு</string>
@@ -197,7 +198,7 @@
     <string name="about_link_github">கிட்ஹப் களஞ்சியம்</string>
     <string name="about_link_feedback">கருத்துக்களை வழங்கவும்</string>
     <string name="about_link_intro">அறிமுகத்தைப் பார்க்கவும்</string>
-    <string name="about_local_http_title">Local HTTP Server</string>
+    <string name="about_local_http_title">உள்ளூர் HTTP சேவையகம்</string>
     <string name="local_http_server_notification_channel_name">Local HTTP Server</string>
     <string name="local_http_server_notification_channel_desc">Local HTTP endpoint ஐ பின்னணியில் செயலில் வைத்திருக்கிறது</string>
     <string name="local_http_server_notification_title">Local HTTP server இயங்குகிறது</string>

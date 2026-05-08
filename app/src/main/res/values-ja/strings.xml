@@ -171,6 +171,7 @@
     <string name="config_local_tcp_endpoint_disabled">サーバー無効</string>
     <string name="config_local_http_status_title">ローカル HTTP サーバー稼働中</string>
     <string name="config_local_http_status_desc">ネットワーク上で利用可能: http://&lt;device-ip&gt;:%1$d/data</string>
+    <string name="config_local_http_off_hint">任意：ローカルのスクリプトやツール向けに、Wi-Fi 上で Health Connect の JSON を公開します。タップで有効化またはポートを変更します。</string>
     <string name="about_toast_import_success">✅ 設定が正常にインポートされました</string>
     <string name="about_toast_import_failed">❌ インポートに失敗しました: %1$s</string>
     <string name="about_toast_import_invalid">無効なファイル</string>

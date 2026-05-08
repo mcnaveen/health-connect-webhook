@@ -171,6 +171,7 @@
     <string name="config_local_tcp_endpoint_disabled">服务器已禁用</string>
     <string name="config_local_http_status_title">本地 HTTP 服务器已启用</string>
     <string name="config_local_http_status_desc">可在局域网中通过 http://&lt;device-ip&gt;:%1$d/data 访问</string>
+    <string name="config_local_http_off_hint">可选：在 Wi-Fi 上为本地脚本和工具提供 Health Connect JSON。点按以开启或更改端口。</string>
     <string name="about_toast_import_success">✅ 设置导入成功</string>
     <string name="about_toast_import_failed">❌ 导入失败：%1$s</string>
     <string name="about_toast_import_invalid">文件无效</string>
