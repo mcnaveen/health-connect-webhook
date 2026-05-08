@@ -61,6 +61,8 @@
     <string name="dt_oxy_rationale">Forward SpO₂ readings to monitor respiratory health, flag low-oxygen events, and integrate with wellness dashboards.</string>
     <string name="dt_temp_name">Body Temperature</string>
     <string name="dt_temp_rationale">Send body temperature readings to your webhook for illness detection, fever tracking, and long-term health logging.</string>
+    <string name="dt_skin_temp_name">Skin Temperature</string>
+    <string name="dt_skin_temp_rationale">Forward skin temperature deltas from wearables (for example overnight readings) to your webhook for cycle tracking and wellness dashboards.</string>
     <string name="dt_resp_name">Respiratory Rate</string>
     <string name="dt_resp_rationale">Forward breathing rate data to track respiratory health, monitor recovery, and detect anomalies via your webhook.</string>
     <string name="dt_rhr_name">Resting Heart Rate</string>

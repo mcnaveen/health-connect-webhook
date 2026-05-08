@@ -62,6 +62,8 @@
     <string name="dt_oxy_rationale">运用血氧饱和(SpO₂)所捕获出的实时记录与分析转交给外部系统来进行低血氧危机反应预防与整体身体情况展现的全面功能应用。</string>
     <string name="dt_temp_name">体温</string>
     <string name="dt_temp_rationale">输送有关身体体温表现与测得变化等关键资料参数入局您的后台或者管理工具来预防和及时针对像发烧之类的预警状况进行健康建档记录。</string>
+    <string name="dt_skin_temp_name">皮肤温度</string>
+    <string name="dt_skin_temp_rationale">将可穿戴设备的皮肤温度变化发送到您的 Webhook，用于健康与睡眠分析。</string>
     <string name="dt_resp_name">呼吸频率</string>
     <string name="dt_resp_rationale">将记录使用者的生理呼吸频次传回所选接收方端口帮助自身恢复阶段作评估观测同时可以利用接口提前甄别那些可被预见的潜在并发征兆的规律表现。</string>
     <string name="dt_rhr_name">静息心率</string>
