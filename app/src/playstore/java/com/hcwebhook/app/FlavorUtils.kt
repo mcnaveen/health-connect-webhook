@@ -1,27 +1,36 @@
 package com.hcwebhook.app
 
 import android.app.Activity
+import android.os.Build
 import android.widget.Toast
 
 object FlavorUtils {
     val isPlayStore = true
 
-    fun verifyPlayStoreInstallation(activity: Activity) {
-        try {
-            val installer = activity.packageManager.getInstallerPackageName(activity.packageName)
-            // 'com.android.vending' is the Google Play Store
-            if (installer != "com.android.vending") {
-                Toast.makeText(
-                    activity,
-                    "Unlicensed Play Store build. Please purchase on Play Store.",
-                    Toast.LENGTH_LONG
-                ).show()
+    private const val PLAY_STORE_PACKAGE = "com.android.vending"
 
-                // Close the app so they can't use the unpaid Play Store version
-                activity.finishAffinity()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
+    fun verifyPlayStoreInstallation(activity: Activity) {
+        if (isInstalledFromPlayStore(activity)) return
+
+        Toast.makeText(
+            activity,
+            "Please install this version from the Play Store.",
+            Toast.LENGTH_LONG
+        ).show()
+        activity.finishAffinity()
+    }
+
+    private fun isInstalledFromPlayStore(activity: Activity): Boolean {
+        val packageManager = activity.packageManager
+        val packageName = activity.packageName
+
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val installSourceInfo = packageManager.getInstallSourceInfo(packageName)
+            installSourceInfo.installingPackageName == PLAY_STORE_PACKAGE ||
+                installSourceInfo.initiatingPackageName == PLAY_STORE_PACKAGE
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.getInstallerPackageName(packageName) == PLAY_STORE_PACKAGE
         }
     }
 }

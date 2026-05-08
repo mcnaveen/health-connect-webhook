@@ -2,7 +2,13 @@
 
 ![HC Webhook](image.png)
 
-<a href="https://play.google.com/store/apps/details?id=com.hcwebhook.app"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" width="160"></a>
+<table role="presentation" border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td valign="middle"><a href="https://play.google.com/store/apps/details?id=com.hcwebhook.app"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="90"></a></td>
+    <td valign="middle">&nbsp;&nbsp;</td>
+    <td valign="middle"><a href="https://apps.apple.com/app/health-webhook/id6763619597"><img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" alt="Download on the App Store" height="60"></a></td>
+  </tr>
+</table>
 
 An Android app that bridges Google Fit, Samsung Health, Fitbit, and other health apps to your webhooks via Health Connect APIs, enabling seamless integration with your custom endpoints and services.
 
@@ -92,7 +98,7 @@ The app supports reading and syncing the following health data types from Health
 15. **Resting Heart Rate** - Resting heart rate data
 16. **Exercise Sessions** - Workout and exercise data
 17. **Hydration** - Water intake tracking
-18. **Nutrition** - Nutritional information (calories, protein, carbs, fat)
+18. **Nutrition** - Nutritional information (calories, protein, carbs, fat, sugar, sodium, dietary fiber, name)
 19. **Basal Metabolic Rate** - Basal energy expenditure
 20. **Body Fat** - Body fat percentage measurements
 21. **Lean Body Mass** - Lean body mass measurements
@@ -128,8 +134,13 @@ cd health-connect-webhook
 
 #### Easy (Recommended)
 
-<a href="https://play.google.com/store/apps/details?id=com.hcwebhook.app"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" width="160"></a>
-
+<table role="presentation" border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td valign="middle"><a href="https://play.google.com/store/apps/details?id=com.hcwebhook.app"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="90"></a></td>
+    <td valign="middle">&nbsp;&nbsp;</td>
+    <td valign="middle"><a href="https://apps.apple.com/app/health-webhook/id6763619597"><img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" alt="Download on the App Store" height="60"></a></td>
+  </tr>
+</table>
 
 ### Install via Obtainium
 
@@ -206,6 +217,8 @@ The app sends health data to your webhooks in JSON format. Each webhook request 
 - Data type information
 - Health data records (filtered to only include new data since last sync)
 - Metadata about the sync operation
+
+For example, nutrition records include the existing calorie/macronutrient fields plus `sugar_grams`, `sodium_grams`, `dietary_fiber_grams`, and `name` when Health Connect provides them.
 
 > **Note**: Webhook delivery includes short retry handling (up to 3 attempts with exponential backoff). If delivery still fails, data is retried on the next successful sync trigger (manual, interval, or scheduled).
 

@@ -471,6 +471,18 @@ class SyncManager(private val context: Context) {
                         it.distanceMeters?.let { distanceMeters ->
                             put("distance_meters", distanceMeters)
                         }
+                        it.steps?.let { steps ->
+                            put("steps", steps)
+                        }
+                        it.avgCadenceSpm?.let { avgCadenceSpm ->
+                            put("avg_cadence_spm", avgCadenceSpm)
+                        }
+                        it.maxCadenceSpm?.let { maxCadenceSpm ->
+                            put("max_cadence_spm", maxCadenceSpm)
+                        }
+                        it.strideLengthMeters?.let { strideLengthMeters ->
+                            put("stride_length_m", strideLengthMeters)
+                        }
                     }) }
                 }
             }
@@ -492,6 +504,10 @@ class SyncManager(private val context: Context) {
                         it.protein?.let { prot -> put("protein_grams", prot) }
                         it.carbs?.let { carb -> put("carbs_grams", carb) }
                         it.fat?.let { f -> put("fat_grams", f) }
+                        it.sugar?.let { sugar -> put("sugar_grams", sugar) }
+                        it.sodium?.let { sodium -> put("sodium_grams", sodium) }
+                        it.dietaryFiber?.let { fiber -> put("dietary_fiber_grams", fiber) }
+                        it.name?.let { name -> put("name", name) }
                         put("start_time", it.startTime.toString())
                         put("end_time", it.endTime.toString())
                     }) }
