@@ -97,6 +97,7 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
+    "playstoreImplementation"(libs.play.licensing)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
