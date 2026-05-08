@@ -62,6 +62,8 @@
     <string name="dt_oxy_rationale">Transmettez les taux de SpO₂ pour surveiller votre santé respiratoire et identifier les éventuels épisodes de faible oxygène.</string>
     <string name="dt_temp_name">Température corporelle</string>
     <string name="dt_temp_rationale">Envoyez les relevés de température à votre webhook pour la détection de maladies, la surveillance de la fièvre, etc.</string>
+    <string name="dt_skin_temp_name">Température cutanée</string>
+    <string name="dt_skin_temp_rationale">Transmettez les écarts de température cutanée des bracelets à votre webhook pour le bien-être et le suivi du sommeil.</string>
     <string name="dt_resp_name">Fréquence respiratoire</string>
     <string name="dt_resp_rationale">Transmettez les données du rythme respiratoire pour suivre la santé et surveiller la récupération via votre webhook.</string>
     <string name="dt_rhr_name">Fréquence cardiaque au repos</string>

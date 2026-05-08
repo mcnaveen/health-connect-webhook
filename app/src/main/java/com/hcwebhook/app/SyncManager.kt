@@ -120,6 +120,7 @@ class SyncManager(private val context: Context) {
                     healthData.distance.size + healthData.activeCalories.size + healthData.totalCalories.size +
                     healthData.weight.size + healthData.height.size + healthData.bloodPressure.size +
                     healthData.bloodGlucose.size + healthData.oxygenSaturation.size + healthData.bodyTemperature.size +
+                    healthData.skinTemperature.size +
                     healthData.respiratoryRate.size + healthData.restingHeartRate.size + healthData.exercise.size +
                     healthData.hydration.size + healthData.nutrition.size +
                     healthData.basalMetabolicRate.size + healthData.bodyFat.size + healthData.leanBodyMass.size +
@@ -167,6 +168,7 @@ class SyncManager(private val context: Context) {
                 data.distance.isEmpty() && data.activeCalories.isEmpty() && data.totalCalories.isEmpty() &&
                 data.weight.isEmpty() && data.height.isEmpty() && data.bloodPressure.isEmpty() &&
                 data.bloodGlucose.isEmpty() && data.oxygenSaturation.isEmpty() && data.bodyTemperature.isEmpty() &&
+                data.skinTemperature.isEmpty() &&
                 data.respiratoryRate.isEmpty() && data.restingHeartRate.isEmpty() && data.exercise.isEmpty() &&
                 data.hydration.isEmpty() && data.nutrition.isEmpty() &&
                 data.basalMetabolicRate.isEmpty() && data.bodyFat.isEmpty() && data.leanBodyMass.isEmpty() &&
@@ -225,6 +227,10 @@ class SyncManager(private val context: Context) {
         if (data.bodyTemperature.isNotEmpty()) {
             preferencesManager.setLastSyncTimestamp(HealthDataType.BODY_TEMPERATURE, data.bodyTemperature.maxOf { it.time }.toEpochMilli())
             syncCounts[HealthDataType.BODY_TEMPERATURE] = data.bodyTemperature.size
+        }
+        if (data.skinTemperature.isNotEmpty()) {
+            preferencesManager.setLastSyncTimestamp(HealthDataType.SKIN_TEMPERATURE, data.skinTemperature.maxOf { it.time }.toEpochMilli())
+            syncCounts[HealthDataType.SKIN_TEMPERATURE] = data.skinTemperature.size
         }
         if (data.respiratoryRate.isNotEmpty()) {
             preferencesManager.setLastSyncTimestamp(HealthDataType.RESPIRATORY_RATE, data.respiratoryRate.maxOf { it.time }.toEpochMilli())
@@ -439,6 +445,17 @@ class SyncManager(private val context: Context) {
                     healthData.bodyTemperature.forEach { add(buildJsonObject {
                         put("celsius", it.celsius)
                         put("time", it.time.toString())
+                    }) }
+                }
+            }
+
+            if (healthData.skinTemperature.isNotEmpty()) {
+                putJsonArray("skin_temperature") {
+                    healthData.skinTemperature.forEach { add(buildJsonObject {
+                        put("time", it.time.toString())
+                        put("delta_celsius", it.deltaCelsius)
+                        it.baselineCelsius?.let { baseline -> put("baseline_celsius", baseline) }
+                        put("measurement_location", it.measurementLocation)
                     }) }
                 }
             }

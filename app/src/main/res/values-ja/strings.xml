@@ -62,6 +62,8 @@
     <string name="dt_oxy_rationale">SpO₂数値を前方に送信し、呼吸器の健康監視や低酸素イベントへのフラグ付け、ウェルネスダッシュボードへ統合します。</string>
     <string name="dt_temp_name">体温</string>
     <string name="dt_temp_rationale">体温の測定値を送信し、病気の検出や発熱の記録から長期的な健康維持までの自動化を行うのに用いられます。</string>
+    <string name="dt_skin_temp_name">皮膚温</string>
+    <string name="dt_skin_temp_rationale">ウェアラブルからの皮膚温の変化をWebhookへ送り、ウェルネスや睡眠の分析に活用します。</string>
     <string name="dt_resp_name">呼吸数</string>
     <string name="dt_resp_rationale">呼吸率の記録をWebhook経由で送信し、回復の確認や異常パターンの検知などに繋げます。</string>
     <string name="dt_rhr_name">安静時心拍数</string>

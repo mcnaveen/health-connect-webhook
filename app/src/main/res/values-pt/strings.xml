@@ -62,6 +62,8 @@
     <string name="dt_oxy_rationale">Empréstimo da taxa lida ao painel das vias de sua mecânica em envios constantes automatizados a teu webhook.</string>
     <string name="dt_temp_name">Temperatura Corporal</string>
     <string name="dt_temp_rationale">Alimente dores sintomáticas avaliados pelo webhook no controle contínuo durante seus percursos febris monitorando-se.</string>
+    <string name="dt_skin_temp_name">Temperatura da pele</string>
+    <string name="dt_skin_temp_rationale">Envie variações de temperatura da pele de dispositivos vestíveis para o seu webhook para bem-estar e análise do sono.</string>
     <string name="dt_resp_name">Frequência Respiratória</string>
     <string name="dt_resp_rationale">O balanço inspiratório gerido via webhook acompanhando recuperações para relatórios integrados baseados ou físicos da saúde.</string>
     <string name="dt_rhr_name">Frequência Cardíaca de Repouso</string>
