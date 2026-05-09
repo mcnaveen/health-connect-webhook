@@ -1,6 +1,11 @@
 package com.hcwebhook.app.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -36,6 +41,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.activity.compose.BackHandler
+import androidx.core.content.ContextCompat
 import com.hcwebhook.app.LocalHttpServerService
 import com.hcwebhook.app.PreferencesManager
 import com.hcwebhook.app.R
@@ -48,6 +54,21 @@ fun LocalHttpSettingsScreen(onBack: () -> Unit) {
     var localTcpEnabled by remember { mutableStateOf(preferencesManager.isLocalTcpEnabled()) }
     var localTcpPort by remember { mutableStateOf(preferencesManager.getLocalTcpPort().toString()) }
     BackHandler(onBack = onBack)
+
+    // Runtime notification permission launcher (Android 13+)
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* permission result handled silently; service already started */ }
+
+    fun startServerWithPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        LocalHttpServerService.start(context)
+    }
 
     Scaffold(
         topBar = {
@@ -92,7 +113,7 @@ fun LocalHttpSettingsScreen(onBack: () -> Unit) {
                                 localTcpEnabled = enabled
                                 preferencesManager.setLocalTcpEnabled(enabled)
                                 if (enabled) {
-                                    LocalHttpServerService.start(context)
+                                    startServerWithPermission()
                                 } else {
                                     LocalHttpServerService.stop(context)
                                 }
