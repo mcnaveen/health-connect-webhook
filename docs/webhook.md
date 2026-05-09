@@ -268,7 +268,7 @@ Shape varies with your enabled types and data:
 
 ## Local HTTP server
 
-Endpoints such as `http://<device-ip>:<port>/` return JSON built with the **same** `buildJsonPayload` logic (possibly over a different time window). See the main [README](../README.md) for URL patterns (`/`, `/?days=…`, `/latest`, `/ping`).
+The optional on-device server uses the **same JSON** as webhooks but over **GET** on your LAN. Endpoints, query parameters, binding, and how `/` differs from incremental webhook sync are documented in **[local-http.md](./local-http.md)**.
 
 ## Schema stability
 

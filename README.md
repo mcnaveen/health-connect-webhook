@@ -63,6 +63,13 @@ Health Connect aggregates data from these popular health and fitness apps:
 - ⚡ **Real-time Status** - Visual indicators for permission status and sync state
 - 💬 **Feedback** - Easy access to provide feedback and suggestions through the app menu
 
+## API reference
+
+Integrations and automations can rely on these specs (kept in sync with the app code):
+
+- **[Webhook payload](docs/webhook.md)** — `POST` JSON body: root fields, every data-type array, incremental sync vs explicit ranges, units, and examples.
+- **[Local HTTP server](docs/local-http.md)** — `GET` endpoints (`/`, `/latest`, `/ping`), query parameters, listen binding, default port **8787**, and how pull-based reads differ from webhook sync.
+
 ## Supported Languages
 
 The app is fully localized and supports 10 languages. You can manually override the app language from the **About** screen:
@@ -197,14 +204,15 @@ The APK will be generated at: `app/build/outputs/apk/debug/app-debug.apk`
 
 ### Local HTTP Server
 
-Enable the local HTTP server from the configuration screen to expose Health Connect JSON to tools on the same network. The app keeps the server active through a foreground service while the feature is enabled.
+Enable the local HTTP server from the configuration screen to expose Health Connect JSON to tools on the same network. The app keeps the server active through a **foreground service** while the feature is enabled. Only **GET** is supported; there is no authentication—use on a trusted LAN.
 
-- `http://<device-ip>:<port>/` - Read realtime Health Connect JSON for the configured data types
-- `http://<device-ip>:<port>/?days=7` - Read realtime Health Connect JSON with a custom day range
-- `http://<device-ip>:<port>/latest` - Return the latest payload produced by a sync, or `{"status":"no_data"}` if nothing has been published yet
-- `http://<device-ip>:<port>/ping` - Health check endpoint that returns `{"status":"ok"}`
+Quick endpoint map (details in **[docs/local-http.md](docs/local-http.md)**):
 
-Use your phone's Wi-Fi IP address in place of `<device-ip>`. For example, if your device IP is `192.168.1.25` and the configured port is `8080`, call `http://192.168.1.25:8080/`.
+- `http://<device-ip>:<port>/` — On-demand read from Health Connect (default **48-hour** window; optional `?days=N` for **N** full days).
+- `http://<device-ip>:<port>/latest` — Last published JSON from a successful `GET /` or webhook sync, or `{"status":"no_data"}`.
+- `http://<device-ip>:<port>/ping` — `{"status":"ok"}` health check.
+
+Default port is **8787** (configurable **1024–65535**). Example: `http://192.168.1.25:8787/`.
 
 > **Note**: Local HTTP access depends on Android background execution, Wi-Fi availability, and device battery optimization settings. For best reliability, keep the phone awake/charging or exclude HC Webhook from aggressive battery optimization on devices that restrict foreground services.
 
@@ -225,26 +233,15 @@ Use your phone's Wi-Fi IP address in place of `<device-ip>`. For example, if you
   - Add, remove, and toggle individual schedule entries
   - Uses exact alarms when available (Android 12+ permission dependent), with safe fallback
 
-### Webhook Format
+### Webhook format
 
-The app sends health data to your webhooks in JSON format. Each webhook request includes:
+Delivery is **`POST`** with **`Content-Type: application/json; charset=utf-8`**. The body is one JSON object: always **`timestamp`** (when the payload was built) and **`app_version`**, plus optional **snake_case** arrays per data type (each key omitted if there are no records in that batch). Background sync reads a rolling **48-hour** window and, by default, only records **new since the last successful sync** per type (first run has no prior watermark).
 
-- Timestamp of the sync
-- Data type information
-- Health data records (filtered to only include new data since last sync)
-- Metadata about the sync operation
-
-For example, nutrition records include the existing calorie/macronutrient fields plus `sugar_grams`, `sodium_grams`, `dietary_fiber_grams`, and `name` when Health Connect provides them.
-
-When **Skin Temperature** is enabled, payloads may include a `skin_temperature` array. Each element has `time` (ISO-8601 instant), `delta_celsius`, optional `baseline_celsius` when the source record includes a baseline, and `measurement_location` (integer: `0` unknown, `1` finger, `2` toe, `3` wrist; see [`SkinTemperatureRecord`](https://github.com/androidx/androidx/blob/androidx-main/health/connect/connect-client/src/main/java/androidx/health/connect/client/records/SkinTemperatureRecord.kt) in AndroidX). Health Connect stores skin temperature as interval records with multiple samples; the app emits one JSON object per sample time, repeating the parent baseline and measurement location where applicable.
+Full field tables, units, nutrition/skin-temperature notes, and examples: **[docs/webhook.md](docs/webhook.md)**.
 
 > **Note**: Webhook delivery includes short retry handling (up to 3 attempts with exponential backoff). If delivery still fails, data is retried on the next successful sync trigger (manual, interval, or scheduled).
 
-### Local HTTP Server Format
-
-The local HTTP server returns the same JSON data structure used for webhook delivery. Unlike webhook sync, local HTTP requests are pull-based: your local script, automation, or agent requests the data when it needs it.
-
-The server listens on the configured port and is reachable from other devices on the same network using your Android device's local IP address. It is intended for trusted local networks and does not provide authentication.
+The local server returns the **same JSON schema** via **`GET`**; semantics (incremental webhook vs on-demand full-window `GET /`) are described in **[docs/local-http.md](docs/local-http.md)**.
 
 ### Data Privacy
 
@@ -306,6 +303,9 @@ The app requires the following permissions:
 ### Project Structure
 
 ```
+docs/
+├── webhook.md      # Webhook POST JSON schema
+├── local-http.md   # Local HTTP GET API
 app/
 ├── src/
 │   ├── main/
