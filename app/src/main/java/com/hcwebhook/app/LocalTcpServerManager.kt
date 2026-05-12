@@ -172,6 +172,7 @@ object LocalHttpServerManager {
         val bodyBytes = body.toByteArray(Charsets.UTF_8)
         writer.write("HTTP/1.1 $statusCode $statusText\r\n")
         writer.write("Content-Type: application/json; charset=utf-8\r\n")
+        writer.write("Cache-Control: no-store\r\n")
         writer.write("Content-Length: ${bodyBytes.size}\r\n")
         writer.write("Connection: close\r\n")
         writer.write("\r\n")

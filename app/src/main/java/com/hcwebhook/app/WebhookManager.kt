@@ -40,14 +40,15 @@ class WebhookManager(
             return Result.failure(IllegalStateException("No webhook URLs configured"))
         }
 
-        var lastFailure: Throwable? = null
+        var atLeastOneSuccess = false
         var retryableFailure: IOException? = null
+        var lastFailure: Throwable? = null
 
-        // Try posting to all configured webhooks
+        // Post to ALL configured webhooks — do not short-circuit on success
         for (config in webhookConfigs) {
             val result = postToUrl(config, jsonPayload)
             if (result.isSuccess) {
-                return result // Success if at least one webhook succeeds
+                atLeastOneSuccess = true
             } else {
                 val ex = result.exceptionOrNull()
                 lastFailure = ex
@@ -55,6 +56,11 @@ class WebhookManager(
                     retryableFailure = ex
                 }
             }
+        }
+
+        // Return success if at least one webhook succeeded
+        if (atLeastOneSuccess) {
+            return Result.success(Unit)
         }
 
         // Prefer a retryable exception so that SyncWorker can schedule a retry

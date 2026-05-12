@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class LocalHttpServerService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -53,7 +54,9 @@ class LocalHttpServerService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        serviceScope.launch {
+        // Must not schedule stop() on serviceScope then cancel() — the job is cancelled
+        // before the socket closes, so the port stays open until the process dies.
+        runBlocking(Dispatchers.IO) {
             LocalHttpServerManager.stop()
         }
         serviceScope.cancel()
