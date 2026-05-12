@@ -82,6 +82,7 @@ fun AboutScreen(
                 val inputStream = context.contentResolver.openInputStream(uri)
                     ?: throw IllegalStateException("Cannot open file")
                 val jsonText = inputStream.bufferedReader().use { it.readText() }
+                
                 val export = Json.decodeFromString<SettingsExport>(jsonText)
                 prefsManager.importSettings(export)
                 Toast.makeText(context, context.getString(R.string.about_toast_import_success), Toast.LENGTH_SHORT).show()
