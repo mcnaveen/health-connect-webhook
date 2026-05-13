@@ -35,6 +35,7 @@ import com.hcwebhook.app.PreferencesManager
 import com.hcwebhook.app.R
 import com.hcwebhook.app.SettingsExport
 import android.widget.Toast
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.PlayArrow
 import com.hcwebhook.app.ui.theme.IconBackgroundBlue
@@ -53,7 +54,8 @@ import java.util.Locale
 @Composable
 fun AboutScreen(
     onRestartOnboarding: () -> Unit = {},
-    onOpenLocalHttpSettings: () -> Unit = {}
+    onOpenLocalHttpSettings: () -> Unit = {},
+    onOpenNotificationsSettings: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -219,50 +221,6 @@ fun AboutScreen(
                 }
             }
 
-            // Privacy & Security Card
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(IconBackgroundGreen),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Security,
-                            contentDescription = null,
-                            tint = IconTintGreen,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            text = stringResource(R.string.about_privacy_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = stringResource(R.string.about_privacy_desc),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-            }
-
             // ── Settings (Export / Import) Card ───────────────────────────────
             Card(
                 colors = CardDefaults.cardColors(
@@ -338,15 +296,68 @@ fun AboutScreen(
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                LinkRow(
-                    label = stringResource(R.string.about_local_http_title),
-                    subtitle = stringResource(R.string.config_local_tcp_desc),
-                    icon = Icons.Filled.Lan,
-                    onClick = { onOpenLocalHttpSettings() }
-                )
+                Column {
+                    LinkRow(
+                        label = stringResource(R.string.about_local_http_title),
+                        subtitle = stringResource(R.string.config_local_tcp_desc),
+                        icon = Icons.Filled.Lan,
+                        onClick = { onOpenLocalHttpSettings() }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    LinkRow(
+                        label = stringResource(R.string.about_notifications_title),
+                        subtitle = stringResource(R.string.about_notifications_desc),
+                        icon = Icons.Filled.Add,
+                        onClick = { onOpenNotificationsSettings() }
+                    )
+                }
             }
 
             LanguageSelectorCard()
+
+                        // Privacy & Security Card
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(IconBackgroundGreen),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Security,
+                            contentDescription = null,
+                            tint = IconTintGreen,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = stringResource(R.string.about_privacy_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.about_privacy_desc),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
 
             Card(
                 colors = CardDefaults.cardColors(

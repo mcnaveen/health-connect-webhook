@@ -10,6 +10,9 @@
 
     <string name="onboarding_welcome_title">Health Connect an Webhook</string>
     <string name="onboarding_welcome_subtitle">Leiten Sie Ihre Gesundheitsdaten automatisch an einen beliebigen Webhook weiter.</string>
+    <string name="onboarding_thank_you">Danke für Ihre Unterstützung!</string>
+    <string name="onboarding_thank_you_title">Vielen Dank!</string>
+    <string name="onboarding_thank_you_desc">Ihre Unterstützung hilft dabei, diese App am Leben zu erhalten und zu verbessern. Viel Spaß beim Synchronisieren Ihrer Gesundheitsdaten!</string>
     
     <string name="onboarding_feature1_title">Sie entscheiden, was synchronisiert wird</string>
     <string name="onboarding_feature1_desc">Wählen Sie nur die Gesundheitsdaten aus, die Sie weiterleiten möchten.</string>
@@ -221,4 +224,40 @@
     <string name="nav_webhooks">Webhooks</string>
     <string name="nav_logs">Protokolle</string>
     <string name="nav_about">Einstellungen</string>
+    <string name="manual_sync_send_to">Senden an</string>
+    <string name="manual_sync_all_webhooks">Alle Webhooks</string>
+    <string name="manual_sync_no_matching_data">Keine Daten entsprachen den Webhook-Filtern</string>
+    <string name="webhooks_toggle_enable">Webhook aktivieren</string>
+    <string name="webhooks_toggle_disable">Webhook deaktivieren</string>
+    <string name="webhooks_status_active">Aktiv</string>
+    <string name="webhooks_status_disabled">Deaktiviert</string>
+    <string name="webhooks_edit_title">Webhook bearbeiten</string>
+    <string name="webhooks_data_types_section">Datentypen</string>
+    <string name="webhooks_data_types_desc">Wählen Sie, welche Datentypen dieser Webhook empfängt. Standardmäßig empfängt er alle global aktivierten Typen.</string>
+    <string name="webhooks_data_types_send_all">Alle aktivierten Typen senden</string>
+    <string name="webhooks_data_types_none_global">Keine Datentypen sind global aktiviert.</string>
+    <string name="webhooks_data_types_filter_count">%1$d Typ(en) gefiltert</string>
+    <string name="webhooks_headers_tab_form">Formular</string>
+    <string name="webhooks_headers_tab_json">JSON</string>
+    <string name="webhooks_headers_json_label">JSON-Objekt einfügen</string>
+    <string name="webhooks_headers_json_apply">JSON anwenden</string>
+    <string name="webhooks_headers_json_error">Ungültiges JSON — erwartet ein Objekt mit String-Werten</string>
+    <string name="webhooks_unsaved_changes">Nicht gespeicherte Änderungen</string>
+    <string name="webhooks_action_test">Webhook testen</string>
+    <string name="webhooks_test_success">Test erfolgreich: %1$s</string>
+    <string name="webhooks_test_failed">Test fehlgeschlagen: %1$s</string>
+    <string name="webhooks_test_retry">Wiederholen</string>
+    <string name="webhooks_retry_success">✓ Wiederholung erfolgreich gesendet</string>
+    <string name="webhooks_retry_failed">Wiederholung fehlgeschlagen: %1$s</string>
+    <string name="logs_filter_all">Alle</string>
+    <string name="logs_filter_success">Erfolgreich</string>
+    <string name="logs_filter_error">Fehler</string>
+    <string name="logs_limit_label">%1$d anzeigen</string>
+    <string name="logs_response_time">%1$d ms</string>
+    <string name="logs_sync_manual">Manuell</string>
+    <string name="logs_sync_auto">Auto</string>
+    <string name="logs_sync_test">Test</string>
+    <string name="logs_action_export">Protokolle exportieren</string>
+    <string name="logs_export_intent_title">Webhook-Protokolle exportieren</string>
+    <string name="logs_count">%1$d Protokolle</string>
 </resources>

@@ -40,6 +40,9 @@ class PreferencesManager(context: Context) {
         private const val KEY_LOCAL_TCP_ENABLED = "local_tcp_enabled"
         private const val KEY_LOCAL_TCP_PORT = "local_tcp_port"
         private const val DEFAULT_LOCAL_TCP_PORT = 8787
+        private const val KEY_LOCAL_HTTP_AUTH_ENABLED = "local_http_auth_enabled"
+        private const val KEY_LOCAL_HTTP_TOKEN = "local_http_token"
+        private const val KEY_NOTIFICATION_CONFIGS = "notification_configs"
     }
 
 
@@ -157,6 +160,17 @@ class PreferencesManager(context: Context) {
 
         val logsJson = Json.encodeToString(trimmedLogs)
         prefs.edit().putString(KEY_WEBHOOK_LOGS, logsJson).apply()
+    }
+
+    fun removeWebhookLog(id: String) {
+        val updated = getWebhookLogs().filter { it.id != id }
+        val logsJson = Json.encodeToString(updated)
+        prefs.edit().putString(KEY_WEBHOOK_LOGS, logsJson).apply()
+    }
+
+    fun removeWebhookLogs(ids: Set<String>) {
+        val updated = getWebhookLogs().filter { it.id !in ids }
+        prefs.edit().putString(KEY_WEBHOOK_LOGS, Json.encodeToString(updated)).apply()
     }
 
     fun clearWebhookLogs() {
@@ -289,6 +303,43 @@ class PreferencesManager(context: Context) {
         prefs.edit().putInt(KEY_LOCAL_TCP_PORT, safePort).apply()
     }
 
+    fun isLocalHttpAuthEnabled(): Boolean = prefs.getBoolean(KEY_LOCAL_HTTP_AUTH_ENABLED, false)
+
+    fun setLocalHttpAuthEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_LOCAL_HTTP_AUTH_ENABLED, enabled).apply()
+    }
+
+    fun getLocalHttpToken(): String {
+        val existing = prefs.getString(KEY_LOCAL_HTTP_TOKEN, null)
+        if (!existing.isNullOrBlank()) return existing
+        val generated = java.util.UUID.randomUUID().toString()
+        prefs.edit().putString(KEY_LOCAL_HTTP_TOKEN, generated).apply()
+        return generated
+    }
+
+    fun regenerateLocalHttpToken(): String {
+        val token = java.util.UUID.randomUUID().toString()
+        prefs.edit().putString(KEY_LOCAL_HTTP_TOKEN, token).apply()
+        return token
+    }
+
+    fun getNotificationConfigs(): List<NotificationConfig> {
+        val configsJson = prefs.getString(KEY_NOTIFICATION_CONFIGS, null)
+        if (configsJson != null) {
+            return try {
+                Json.decodeFromString<List<NotificationConfig>>(configsJson)
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }
+        return emptyList()
+    }
+
+    fun setNotificationConfigs(configs: List<NotificationConfig>) {
+        val configsJson = Json.encodeToString(configs)
+        prefs.edit().putString(KEY_NOTIFICATION_CONFIGS, configsJson).apply()
+    }
+
     // -------------------------------------------------------------------------
     // Export / Import
     // -------------------------------------------------------------------------
@@ -305,7 +356,8 @@ class PreferencesManager(context: Context) {
             syncIntervalMinutes = getSyncIntervalMinutes(),
             scheduledSyncs = getScheduledSyncs(),
             localTcpEnabled = isLocalTcpEnabled(),
-            localTcpPort = getLocalTcpPort()
+            localTcpPort = getLocalTcpPort(),
+            notificationConfigs = getNotificationConfigs()
         )
     }
 
@@ -327,5 +379,6 @@ class PreferencesManager(context: Context) {
         setScheduledSyncs(export.scheduledSyncs)
         setLocalTcpEnabled(export.localTcpEnabled)
         setLocalTcpPort(export.localTcpPort)
+        setNotificationConfigs(export.notificationConfigs)
     }
 }

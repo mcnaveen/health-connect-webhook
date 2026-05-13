@@ -98,10 +98,26 @@ object LocalHttpServerManager {
                     return
                 }
 
-                // Consume remaining headers
+                var authorizationHeader: String? = null
                 while (true) {
                     val headerLine = reader.readLine() ?: break
                     if (headerLine.isBlank()) break
+                    val lower = headerLine.lowercase()
+                    if (lower.startsWith("authorization:")) {
+                        authorizationHeader = headerLine.substringAfter(":").trim()
+                    }
+                }
+
+                val ctx = appContext
+                if (ctx != null) {
+                    val prefs = PreferencesManager(ctx)
+                    if (prefs.isLocalHttpAuthEnabled()) {
+                        val expected = "Bearer ${prefs.getLocalHttpToken()}"
+                        if (authorizationHeader != expected) {
+                            writeHttpResponse(writer, 401, """{"status":"error","message":"Unauthorized"}""")
+                            return
+                        }
+                    }
                 }
 
                 val parts = requestLine.split(" ")
@@ -165,6 +181,7 @@ object LocalHttpServerManager {
         val statusText = when (statusCode) {
             200 -> "OK"
             400 -> "Bad Request"
+            401 -> "Unauthorized"
             404 -> "Not Found"
             405 -> "Method Not Allowed"
             else -> "Internal Server Error"

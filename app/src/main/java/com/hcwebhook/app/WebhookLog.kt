@@ -11,5 +11,8 @@ data class WebhookLog(
     val success: Boolean,
     val errorMessage: String?,
     val dataType: String?,
-    val recordCount: Int?
+    val recordCount: Int?,
+    val responseTimeMs: Long? = null,
+    val syncType: String? = null,
+    val payload: String? = null
 )

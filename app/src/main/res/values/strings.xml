@@ -9,6 +9,9 @@
 
     <string name="onboarding_welcome_title">Health Connect to Webhook</string>
     <string name="onboarding_welcome_subtitle">Forward your health data to any webhook — automatically.</string>
+    <string name="onboarding_thank_you">Thank you for your support!</string>
+    <string name="onboarding_thank_you_title">Thank You!</string>
+    <string name="onboarding_thank_you_desc">Your support helps keep this app alive and improving. Enjoy syncing your health data!</string>
     
     <string name="onboarding_feature1_title">You choose what to sync</string>
     <string name="onboarding_feature1_desc">Select only the health data types you want to forward.</string>
@@ -101,6 +104,8 @@
     <string name="manual_sync_end_label">End Date: %1$s</string>
     <string name="manual_sync_confirm_title">Sync Now?</string>
     <string name="manual_sync_confirm_desc">This will immediately send your health data to all configured webhooks.</string>
+    <string name="manual_sync_send_to">Send to</string>
+    <string name="manual_sync_all_webhooks">All webhooks</string>
     <string name="manual_sync_btn">Sync Now</string>
     <string name="action_ok">OK</string>
     <string name="action_cancel">Cancel</string>
@@ -114,6 +119,7 @@
     <string name="err_permissions_required">Permissions required for sync.</string>
     <string name="manual_sync_progress">Syncing data from %1$s to %2$s...</string>
     <string name="manual_sync_no_data">No new data to sync</string>
+    <string name="manual_sync_no_matching_data">No data matched the webhook filters</string>
     <string name="manual_sync_success_empty">Sync completed successfully</string>
     <string name="manual_sync_success_items">Synced %1$s</string>
     <string name="manual_sync_failed">Sync failed: %1$s</string>
@@ -141,6 +147,28 @@
     <string name="webhooks_headers_action_add_title">Add Header</string>
     <string name="webhooks_headers_key_label">Key</string>
     <string name="webhooks_headers_value_label">Value</string>
+    <string name="webhooks_toggle_enable">Enable webhook</string>
+    <string name="webhooks_toggle_disable">Disable webhook</string>
+    <string name="webhooks_status_active">Active</string>
+    <string name="webhooks_status_disabled">Disabled</string>
+    <string name="webhooks_edit_title">Edit Webhook</string>
+    <string name="webhooks_data_types_section">Data Types</string>
+    <string name="webhooks_data_types_desc">Choose which data types this webhook receives. By default it receives all globally enabled types.</string>
+    <string name="webhooks_data_types_send_all">Send all enabled types</string>
+    <string name="webhooks_data_types_none_global">No data types are globally enabled.</string>
+    <string name="webhooks_data_types_filter_count">%1$d type(s) filtered</string>
+    <string name="webhooks_headers_tab_form">Form</string>
+    <string name="webhooks_headers_tab_json">JSON</string>
+    <string name="webhooks_headers_json_label">Paste JSON object</string>
+    <string name="webhooks_headers_json_apply">Apply JSON</string>
+    <string name="webhooks_headers_json_error">Invalid JSON — expected an object with string values</string>
+    <string name="webhooks_unsaved_changes">Unsaved changes</string>
+    <string name="webhooks_action_test">Test Webhook</string>
+    <string name="webhooks_test_success">Test successful: %1$s</string>
+    <string name="webhooks_test_failed">Test failed: %1$s</string>
+    <string name="webhooks_test_retry">Retry</string>
+    <string name="webhooks_retry_success">✓ Retry sent successfully</string>
+    <string name="webhooks_retry_failed">Retry failed: %1$s</string>
     <string name="action_save">Save</string>
 
     <!-- Configuration Screen -->
@@ -227,12 +255,29 @@
     <string name="action_clear">Clear</string>
     <string name="logs_empty">No logs yet</string>
     <string name="logs_status_err">ERR</string>
+    <string name="logs_filter_all">All</string>
+    <string name="logs_filter_success">Success</string>
+    <string name="logs_filter_error">Error</string>
+    <string name="logs_limit_label">Show %1$d</string>
+    <string name="logs_response_time">%1$d ms</string>
+    <string name="logs_sync_manual">Manual</string>
+    <string name="logs_sync_auto">Auto</string>
+    <string name="logs_sync_test">Test</string>
+    <string name="logs_action_export">Export Logs</string>
+    <string name="logs_export_intent_title">Export Webhook Logs</string>
+    <string name="logs_count">%1$d logs</string>
 
     <!-- Navigation Items -->
     <string name="nav_home">Home</string>
     <string name="nav_webhooks">Webhooks</string>
     <string name="nav_logs">Logs</string>
     <string name="nav_about">Settings</string>
+    
+    <!-- Notifications -->
+    <string name="about_notifications_title">Notifications</string>
+    <string name="about_notifications_desc">Configure Gotify, ntfy, Telegram, Discord, Pushover</string>
+    <string name="webhooks_notification_section">Notification Provider</string>
+    <string name="webhooks_notification_none">None</string>
 </resources>
 
 

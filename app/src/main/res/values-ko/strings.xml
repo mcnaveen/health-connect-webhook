@@ -10,6 +10,9 @@
 
     <string name="onboarding_welcome_title">Health Connect에서 Webhook으로</string>
     <string name="onboarding_welcome_subtitle">건강 데이터를 모든 웹훅에 자동으로 전달합니다.</string>
+    <string name="onboarding_thank_you">지원해 주셔서 감사합니다!</string>
+    <string name="onboarding_thank_you_title">감사합니다!</string>
+    <string name="onboarding_thank_you_desc">여러분의 지원 덕분에 이 앱이 계속 발전할 수 있습니다. 건강 데이터 동기화를 즐기세요!</string>
     
     <string name="onboarding_feature1_title">동기화할 내용 선택</string>
     <string name="onboarding_feature1_desc">전달할 건강 데이터 유형만 선택하세요.</string>
@@ -221,4 +224,40 @@
     <string name="nav_webhooks">웹훅</string>
     <string name="nav_logs">로그</string>
     <string name="nav_about">설정</string>
+    <string name="manual_sync_send_to">보내기 대상</string>
+    <string name="manual_sync_all_webhooks">모든 웹훅</string>
+    <string name="manual_sync_no_matching_data">웹훅 필터와 일치하는 데이터가 없습니다</string>
+    <string name="webhooks_toggle_enable">웹훅 활성화</string>
+    <string name="webhooks_toggle_disable">웹훅 비활성화</string>
+    <string name="webhooks_status_active">활성</string>
+    <string name="webhooks_status_disabled">비활성</string>
+    <string name="webhooks_edit_title">웹훅 편집</string>
+    <string name="webhooks_data_types_section">데이터 유형</string>
+    <string name="webhooks_data_types_desc">이 웹훅이 수신할 데이터 유형을 선택하세요. 기본적으로 전역으로 활성화된 모든 유형을 수신합니다.</string>
+    <string name="webhooks_data_types_send_all">활성화된 모든 유형 보내기</string>
+    <string name="webhooks_data_types_none_global">전역으로 활성화된 데이터 유형이 없습니다.</string>
+    <string name="webhooks_data_types_filter_count">%1$d 유형 필터됨</string>
+    <string name="webhooks_headers_tab_form">양식</string>
+    <string name="webhooks_headers_tab_json">JSON</string>
+    <string name="webhooks_headers_json_label">JSON 객체 붙여넣기</string>
+    <string name="webhooks_headers_json_apply">JSON 적용</string>
+    <string name="webhooks_headers_json_error">잘못된 JSON — 문자열 값을 가진 객체가 필요합니다</string>
+    <string name="webhooks_unsaved_changes">저장되지 않은 변경사항</string>
+    <string name="webhooks_action_test">웹훅 테스트</string>
+    <string name="webhooks_test_success">테스트 성공: %1$s</string>
+    <string name="webhooks_test_failed">테스트 실패: %1$s</string>
+    <string name="webhooks_test_retry">다시 시도</string>
+    <string name="webhooks_retry_success">✓ 재시도가 성공적으로 전송되었습니다</string>
+    <string name="webhooks_retry_failed">재시도 실패: %1$s</string>
+    <string name="logs_filter_all">전체</string>
+    <string name="logs_filter_success">성공</string>
+    <string name="logs_filter_error">오류</string>
+    <string name="logs_limit_label">%1$d 개 표시</string>
+    <string name="logs_response_time">%1$d ms</string>
+    <string name="logs_sync_manual">수동</string>
+    <string name="logs_sync_auto">자동</string>
+    <string name="logs_sync_test">테스트</string>
+    <string name="logs_action_export">로그 내보내기</string>
+    <string name="logs_export_intent_title">웹훅 로그 내보내기</string>
+    <string name="logs_count">%1$d 개 로그</string>
 </resources>

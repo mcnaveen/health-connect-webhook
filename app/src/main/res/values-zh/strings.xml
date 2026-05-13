@@ -10,6 +10,9 @@
 
     <string name="onboarding_welcome_title">Health Connect 到 Webhook</string>
     <string name="onboarding_welcome_subtitle">自动将您的健康数据转发到任何 webhook。</string>
+    <string name="onboarding_thank_you">感谢您的支持！</string>
+    <string name="onboarding_thank_you_title">谢谢！</string>
+    <string name="onboarding_thank_you_desc">您的支持帮助这款应用持续改进。祝您健康数据同步愉快！</string>
     
     <string name="onboarding_feature1_title">您选择要同步的内容</string>
     <string name="onboarding_feature1_desc">仅选择您想要转发的健康数据类型。</string>
@@ -221,4 +224,40 @@
     <string name="nav_webhooks">网络钩子</string>
     <string name="nav_logs">日志</string>
     <string name="nav_about">设置</string>
+    <string name="manual_sync_send_to">发送至</string>
+    <string name="manual_sync_all_webhooks">所有Webhook</string>
+    <string name="manual_sync_no_matching_data">没有数据匹配Webhook筛选条件</string>
+    <string name="webhooks_toggle_enable">启用Webhook</string>
+    <string name="webhooks_toggle_disable">禁用Webhook</string>
+    <string name="webhooks_status_active">活跃</string>
+    <string name="webhooks_status_disabled">已禁用</string>
+    <string name="webhooks_edit_title">编辑Webhook</string>
+    <string name="webhooks_data_types_section">数据类型</string>
+    <string name="webhooks_data_types_desc">选择此Webhook接收的数据类型。默认情况下，它接收所有全局启用的类型。</string>
+    <string name="webhooks_data_types_send_all">发送所有已启用的类型</string>
+    <string name="webhooks_data_types_none_global">没有全局启用的数据类型。</string>
+    <string name="webhooks_data_types_filter_count">已筛选 %1$d 种类型</string>
+    <string name="webhooks_headers_tab_form">表单</string>
+    <string name="webhooks_headers_tab_json">JSON</string>
+    <string name="webhooks_headers_json_label">粘贴JSON对象</string>
+    <string name="webhooks_headers_json_apply">应用JSON</string>
+    <string name="webhooks_headers_json_error">无效的JSON — 需要具有字符串值的对象</string>
+    <string name="webhooks_unsaved_changes">未保存的更改</string>
+    <string name="webhooks_action_test">测试Webhook</string>
+    <string name="webhooks_test_success">测试成功: %1$s</string>
+    <string name="webhooks_test_failed">测试失败: %1$s</string>
+    <string name="webhooks_test_retry">重试</string>
+    <string name="webhooks_retry_success">✓ 重试发送成功</string>
+    <string name="webhooks_retry_failed">重试失败: %1$s</string>
+    <string name="logs_filter_all">全部</string>
+    <string name="logs_filter_success">成功</string>
+    <string name="logs_filter_error">错误</string>
+    <string name="logs_limit_label">显示 %1$d</string>
+    <string name="logs_response_time">%1$d ms</string>
+    <string name="logs_sync_manual">手动</string>
+    <string name="logs_sync_auto">自动</string>
+    <string name="logs_sync_test">测试</string>
+    <string name="logs_action_export">导出日志</string>
+    <string name="logs_export_intent_title">导出Webhook日志</string>
+    <string name="logs_count">%1$d 条日志</string>
 </resources>

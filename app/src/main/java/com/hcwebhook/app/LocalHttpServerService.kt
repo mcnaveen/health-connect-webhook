@@ -3,6 +3,7 @@ package com.hcwebhook.app
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -79,10 +80,19 @@ class LocalHttpServerService : Service() {
 
     private fun buildNotification(): Notification {
         val port = PreferencesManager(this).getLocalTcpPort()
+        val openIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra(EXTRA_OPEN_LOCAL_HTTP, true)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(getString(R.string.local_http_server_notification_title))
             .setContentText(getString(R.string.local_http_server_notification_text, port))
+            .setContentIntent(pendingIntent)
             .setOngoing(true)
             .build()
     }
@@ -92,6 +102,7 @@ class LocalHttpServerService : Service() {
         private const val NOTIFICATION_ID = 1742
         private const val ACTION_START = "com.hcwebhook.app.action.LOCAL_HTTP_SERVER_START"
         private const val ACTION_STOP = "com.hcwebhook.app.action.LOCAL_HTTP_SERVER_STOP"
+        const val EXTRA_OPEN_LOCAL_HTTP = "extra_open_local_http"
 
         fun start(context: Context) {
             val intent = Intent(context, LocalHttpServerService::class.java).apply {

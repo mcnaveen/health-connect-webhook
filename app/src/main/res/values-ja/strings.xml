@@ -10,6 +10,9 @@
 
     <string name="onboarding_welcome_title">Health Connect から Webhook へ</string>
     <string name="onboarding_welcome_subtitle">健康データを任意の Webhook に自動的に転送します。</string>
+    <string name="onboarding_thank_you">ご支援ありがとうございます！</string>
+    <string name="onboarding_thank_you_title">ありがとうございます！</string>
+    <string name="onboarding_thank_you_desc">あなたのサポートがこのアプリの継続と改善を支えています。健康データの同期をお楽しみください！</string>
     
     <string name="onboarding_feature1_title">同期するデータを選択できます</string>
     <string name="onboarding_feature1_desc">転送したい健康データの種類だけを選択してください。</string>
@@ -221,4 +224,40 @@
     <string name="nav_webhooks">Webhook</string>
     <string name="nav_logs">ログ</string>
     <string name="nav_about">設定</string>
+    <string name="manual_sync_send_to">送信先</string>
+    <string name="manual_sync_all_webhooks">すべてのWebhook</string>
+    <string name="manual_sync_no_matching_data">Webhookフィルターに一致するデータがありません</string>
+    <string name="webhooks_toggle_enable">Webhookを有効にする</string>
+    <string name="webhooks_toggle_disable">Webhookを無効にする</string>
+    <string name="webhooks_status_active">アクティブ</string>
+    <string name="webhooks_status_disabled">無効</string>
+    <string name="webhooks_edit_title">Webhookを編集</string>
+    <string name="webhooks_data_types_section">データタイプ</string>
+    <string name="webhooks_data_types_desc">このWebhookが受信するデータタイプを選択します。デフォルトでは、グローバルで有効なすべてのタイプを受信します。</string>
+    <string name="webhooks_data_types_send_all">有効なすべてのタイプを送信</string>
+    <string name="webhooks_data_types_none_global">グローバルで有効なデータタイプがありません。</string>
+    <string name="webhooks_data_types_filter_count">%1$d タイプでフィルター中</string>
+    <string name="webhooks_headers_tab_form">フォーム</string>
+    <string name="webhooks_headers_tab_json">JSON</string>
+    <string name="webhooks_headers_json_label">JSONオブジェクトを貼り付け</string>
+    <string name="webhooks_headers_json_apply">JSONを適用</string>
+    <string name="webhooks_headers_json_error">無効なJSON — 文字列値を持つオブジェクトが必要です</string>
+    <string name="webhooks_unsaved_changes">未保存の変更</string>
+    <string name="webhooks_action_test">Webhookをテスト</string>
+    <string name="webhooks_test_success">テスト成功: %1$s</string>
+    <string name="webhooks_test_failed">テスト失敗: %1$s</string>
+    <string name="webhooks_test_retry">再試行</string>
+    <string name="webhooks_retry_success">✓ 再試行が正常に送信されました</string>
+    <string name="webhooks_retry_failed">再試行失敗: %1$s</string>
+    <string name="logs_filter_all">すべて</string>
+    <string name="logs_filter_success">成功</string>
+    <string name="logs_filter_error">エラー</string>
+    <string name="logs_limit_label">%1$d 件表示</string>
+    <string name="logs_response_time">%1$d ms</string>
+    <string name="logs_sync_manual">手動</string>
+    <string name="logs_sync_auto">自動</string>
+    <string name="logs_sync_test">テスト</string>
+    <string name="logs_action_export">ログをエクスポート</string>
+    <string name="logs_export_intent_title">Webhookログをエクスポート</string>
+    <string name="logs_count">%1$d 件のログ</string>
 </resources>

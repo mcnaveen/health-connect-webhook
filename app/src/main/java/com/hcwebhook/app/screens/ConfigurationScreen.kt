@@ -151,33 +151,46 @@ fun ConfigurationScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
                 .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // ── App header ────────────────────────────────────────────────────
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Health Connect", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    if (lastSyncTime != null) {
+                        Text(
+                            text = "Last sync $lastSyncRelativeTime",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                if (lastSyncSummary != null) {
+                    Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(20.dp))
+                }
+            }
+
+            // ── Local HTTP server banner ──────────────────────────────────────
             if (isLocalHttpEnabled) {
                 Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onOpenLocalHttpSettings() }
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                    modifier = Modifier.fillMaxWidth().clickable { onOpenLocalHttpSettings() }
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.weight(1f),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
-                                    .size(10.dp)
+                                    .size(8.dp)
                                     .alpha(statusDotAlpha)
                                     .background(Color(0xFF22C55E), shape = androidx.compose.foundation.shape.CircleShape)
                             )
@@ -185,161 +198,129 @@ fun ConfigurationScreen(
                             Column {
                                 Text(
                                     text = stringResource(R.string.config_local_http_status_title),
-                                    style = MaterialTheme.typography.titleMedium,
+                                    style = MaterialTheme.typography.titleSmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
-                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = stringResource(
-                                        R.string.config_local_http_status_desc,
-                                        localHttpPort
-                                    ),
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    text = stringResource(R.string.config_local_http_status_desc, localHttpPort),
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(
-                            imageVector = Icons.Filled.ChevronRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                        Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
                     }
                 }
             } else {
                 OutlinedCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onOpenLocalHttpSettings() }
+                    modifier = Modifier.fillMaxWidth().clickable { onOpenLocalHttpSettings() }
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.weight(1f),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Info,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Icon(Icons.Filled.Android, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = stringResource(R.string.config_local_tcp_title),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+                        Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+
+            // ── Permission status ─────────────────────────────────────────────
+            when {
+                hasPermissions == null -> {
+                    Row(modifier = Modifier.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.config_perms_checking), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                sdkStatus != HealthConnectClient.SDK_AVAILABLE -> {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Filled.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
-                                Text(
-                                    text = stringResource(R.string.config_local_tcp_title),
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = stringResource(R.string.config_local_http_off_hint),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(
-                            imageVector = Icons.Filled.ChevronRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            if (hasPermissions == null) {
-                OutlinedCard(
-                    colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.config_perms_checking), style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-            } else if (sdkStatus != HealthConnectClient.SDK_AVAILABLE) {
-                 OutlinedCard(
-                    colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
-                ) {
-                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text(stringResource(R.string.config_hc_not_found_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onErrorContainer)
-                            Text(stringResource(R.string.config_hc_not_found_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
-                        }
-                    }
-                }
-            } else if (hasPermissions == false) {
-                OutlinedCard(
-                    colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text(stringResource(R.string.config_perms_zero_title), fontWeight = FontWeight.Bold)
-                                Text(stringResource(R.string.config_perms_zero_desc), style = MaterialTheme.typography.bodySmall)
+                                Text(stringResource(R.string.config_hc_not_found_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onErrorContainer)
+                                Text(stringResource(R.string.config_hc_not_found_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
                             }
                         }
                     }
                 }
-                Button(onClick = { showDataTypesSheet = true }, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.config_action_select_datatypes))
-                }
-            } else if (hasPermissions == true) {
-                val grantedPermCount = HealthDataType.entries.count { type ->
-                    HealthPermission.getReadPermission(type.recordClass) in grantedPermissionsSet
-                }
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                    modifier = Modifier.fillMaxWidth().clickable { showPermissionsSheet = true }
-                ) {
-                    Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Check, null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.config_permissions_granted), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                            Text(stringResource(id = R.string.datatypes_granted_summary, grantedPermCount, HealthDataType.entries.size), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                hasPermissions == false -> {
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(stringResource(R.string.config_perms_zero_title), style = MaterialTheme.typography.titleSmall)
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(stringResource(R.string.config_perms_zero_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(onClick = { showDataTypesSheet = true }, modifier = Modifier.fillMaxWidth()) {
+                                Text(stringResource(R.string.config_action_select_datatypes))
+                            }
                         }
-                        TextButton(onClick = { showPermissionsSheet = true }) {
-                            Text(stringResource(R.string.config_action_view_perms))
+                    }
+                }
+                hasPermissions == true -> {
+                    val grantedPermCount = HealthDataType.entries.count { type ->
+                        HealthPermission.getReadPermission(type.recordClass) in grantedPermissionsSet
+                    }
+                    OutlinedCard(
+                        modifier = Modifier.fillMaxWidth().clickable { showPermissionsSheet = true }
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Filled.CheckCircle, null, tint = Color(0xFF4CAF50), modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.config_permissions_granted), style = MaterialTheme.typography.titleSmall)
+                                Text(stringResource(id = R.string.datatypes_granted_summary, grantedPermCount, HealthDataType.entries.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
             }
 
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            // ── Data types ────────────────────────────────────────────────────
+            OutlinedCard(
                 modifier = Modifier.fillMaxWidth().clickable { showDataTypesSheet = true }
             ) {
-                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.config_data_types), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(stringResource(id = R.string.datatypes_selected_summary, enabledDataTypes.size), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.config_data_types), style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(id = R.string.datatypes_selected_summary, enabledDataTypes.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                 }
             }
 
+            // ── Sync schedule ─────────────────────────────────────────────────
             if (isBackgroundGranted) {
-                Card {
+                Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Icon(Icons.Filled.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.config_sync_schedule_title), style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.config_sync_schedule_title), style = MaterialTheme.typography.titleSmall)
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
+                        Spacer(modifier = Modifier.height(12.dp))
                         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                             SegmentedButton(
                                 selected = syncMode == SyncMode.INTERVAL,
@@ -352,10 +333,8 @@ fun ConfigurationScreen(
                                 shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
                             ) { Text(stringResource(R.string.config_sync_mode_scheduled)) }
                         }
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        AnimatedVisibility(visible = syncMode == SyncMode.INTERVAL) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        AnimatedVisibility(visible = syncMode == SyncMode.INTERVAL, enter = expandVertically(), exit = shrinkVertically()) {
                             Column {
                                 OutlinedTextField(
                                     value = syncInterval,
@@ -380,12 +359,11 @@ fun ConfigurationScreen(
                                 ) { Text(stringResource(R.string.config_action_update_interval)) }
                             }
                         }
-
-                        AnimatedVisibility(visible = syncMode == SyncMode.SCHEDULED) {
+                        AnimatedVisibility(visible = syncMode == SyncMode.SCHEDULED, enter = expandVertically(), exit = shrinkVertically()) {
                             Column {
                                 scheduledSyncs.forEach { schedule ->
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                        Text(text = schedule.getDisplayTime(), style = MaterialTheme.typography.titleMedium)
+                                        Text(text = schedule.getDisplayTime(), style = MaterialTheme.typography.bodyMedium)
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Switch(checked = schedule.enabled, onCheckedChange = { enabled ->
                                                 val updatedList = scheduledSyncs.map { if (it.id == schedule.id) it.copy(enabled = enabled) else it }
@@ -399,26 +377,23 @@ fun ConfigurationScreen(
                                                 scheduledSyncs = updatedList
                                                 preferencesManager.setScheduledSyncs(updatedList)
                                                 ScheduledSyncManager(context).cancelAlarm(schedule.id)
-                                            }) { Icon(Icons.Filled.Delete, "Delete") }
+                                            }) { Icon(Icons.Filled.Delete, "Delete", modifier = Modifier.size(18.dp)) }
                                         }
                                     }
-                                    HorizontalDivider()
+                                    HorizontalDivider(thickness = 0.5.dp)
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Button(
-                                    onClick = {
-                                        val calendar = Calendar.getInstance()
-                                        TimePickerDialog(context, { _, hour, minute ->
-                                            val newSchedule = ScheduledSync.create(hour, minute)
-                                            val updatedList = scheduledSyncs + newSchedule
-                                            scheduledSyncs = updatedList
-                                            preferencesManager.setScheduledSyncs(updatedList)
-                                            ScheduledSyncManager(context).scheduleAlarm(newSchedule)
-                                        }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true).show()
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Icon(Icons.Filled.Add, null)
+                                Button(onClick = {
+                                    val calendar = Calendar.getInstance()
+                                    TimePickerDialog(context, { _, hour, minute ->
+                                        val newSchedule = ScheduledSync.create(hour, minute)
+                                        val updatedList = scheduledSyncs + newSchedule
+                                        scheduledSyncs = updatedList
+                                        preferencesManager.setScheduledSyncs(updatedList)
+                                        ScheduledSyncManager(context).scheduleAlarm(newSchedule)
+                                    }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true).show()
+                                }, modifier = Modifier.fillMaxWidth()) {
+                                    Icon(Icons.Filled.Add, null, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(stringResource(R.string.config_action_add_schedule))
                                 }
@@ -427,43 +402,32 @@ fun ConfigurationScreen(
                     }
                 }
             } else if (hasPermissions == true) {
-                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+                OutlinedCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.onErrorContainer)
+                            Icon(Icons.Filled.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.config_bg_perm_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onErrorContainer)
+                            Text(stringResource(R.string.config_bg_perm_title), style = MaterialTheme.typography.titleSmall)
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(stringResource(R.string.config_bg_perm_desc), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onErrorContainer)
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(stringResource(R.string.config_bg_perm_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(modifier = Modifier.height(10.dp))
                         Button(onClick = {
-                            try { permissionLauncher.launch(setOf(HealthConnectManager.BACKGROUND_PERMISSION_STR)) } catch(e: Exception) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
-                        }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onErrorContainer, contentColor = MaterialTheme.colorScheme.errorContainer)) {
+                            try { permissionLauncher.launch(setOf(HealthConnectManager.BACKGROUND_PERMISSION_STR)) } catch (e: Exception) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
+                        }, modifier = Modifier.fillMaxWidth()) {
                             Text(stringResource(R.string.config_action_grant_bg))
                         }
                     }
                 }
             }
 
-            if (lastSyncTime != null) {
-                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.config_last_sync_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(lastSyncRelativeTime, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        if (lastSyncSummary != null) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(lastSyncSummary!!, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
-            }
-
+            // ── Manual sync ───────────────────────────────────────────────────
             com.hcwebhook.app.components.ManualSyncCard(onSyncCompleted = {
-                 lastSyncTime = preferencesManager.getLastSyncTime()
-                 lastSyncSummary = preferencesManager.getLastSyncSummary()
+                lastSyncTime = preferencesManager.getLastSyncTime()
+                lastSyncSummary = preferencesManager.getLastSyncSummary()
             })
         }
 
