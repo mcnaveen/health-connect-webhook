@@ -10,6 +10,9 @@
 
     <string name="onboarding_welcome_title">Health Connect から Webhook へ</string>
     <string name="onboarding_welcome_subtitle">健康データを任意の Webhook に自動的に転送します。</string>
+    <string name="onboarding_thank_you">ご支援ありがとうございます！</string>
+    <string name="onboarding_thank_you_title">ありがとうございます！</string>
+    <string name="onboarding_thank_you_desc">あなたのサポートがこのアプリの継続と改善を支えています。健康データの同期をお楽しみください！</string>
     
     <string name="onboarding_feature1_title">同期するデータを選択できます</string>
     <string name="onboarding_feature1_desc">転送したい健康データの種類だけを選択してください。</string>

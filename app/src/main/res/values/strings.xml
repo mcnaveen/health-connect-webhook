@@ -9,6 +9,9 @@
 
     <string name="onboarding_welcome_title">Health Connect to Webhook</string>
     <string name="onboarding_welcome_subtitle">Forward your health data to any webhook — automatically.</string>
+    <string name="onboarding_thank_you">Thank you for your support!</string>
+    <string name="onboarding_thank_you_title">Thank You!</string>
+    <string name="onboarding_thank_you_desc">Your support helps keep this app alive and improving. Enjoy syncing your health data!</string>
     
     <string name="onboarding_feature1_title">You choose what to sync</string>
     <string name="onboarding_feature1_desc">Select only the health data types you want to forward.</string>

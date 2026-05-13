@@ -10,6 +10,9 @@
 
     <string name="onboarding_welcome_title">Health Connect an Webhook</string>
     <string name="onboarding_welcome_subtitle">Leiten Sie Ihre Gesundheitsdaten automatisch an einen beliebigen Webhook weiter.</string>
+    <string name="onboarding_thank_you">Danke für Ihre Unterstützung!</string>
+    <string name="onboarding_thank_you_title">Vielen Dank!</string>
+    <string name="onboarding_thank_you_desc">Ihre Unterstützung hilft dabei, diese App am Leben zu erhalten und zu verbessern. Viel Spaß beim Synchronisieren Ihrer Gesundheitsdaten!</string>
     
     <string name="onboarding_feature1_title">Sie entscheiden, was synchronisiert wird</string>
     <string name="onboarding_feature1_desc">Wählen Sie nur die Gesundheitsdaten aus, die Sie weiterleiten möchten.</string>

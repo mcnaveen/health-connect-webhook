@@ -10,6 +10,9 @@
 
     <string name="onboarding_welcome_title">Health Connect லிருந்து Webhook க்கு</string>
     <string name="onboarding_welcome_subtitle">உங்கள் சுகாதாரத் தரவை எந்தவொரு webhook-க்கும் தானாகவே பகிரவும்.</string>
+    <string name="onboarding_thank_you">உங்கள் ஆதரவிற்கு நன்றி!</string>
+    <string name="onboarding_thank_you_title">நன்றி!</string>
+    <string name="onboarding_thank_you_desc">உங்கள் ஆதரவு இந்த பயன்பாட்டை தொடர்ந்து வளர்க்க உதவுகிறது. உங்கள் உடல்நல தரவை ஒத்திசைக்க மகிழுங்கள்!</string>
     
     <string name="onboarding_feature1_title">நீங்கள் பகிர விரும்புவதை நீங்களே தேர்வு செய்யலாம்</string>
     <string name="onboarding_feature1_desc">நீங்கள் பகிர விரும்பும் சுகாதார தரவு வகைகளை மட்டும் தேர்ந்தெடுக்கவும்.</string>

@@ -10,6 +10,9 @@
 
     <string name="onboarding_welcome_title">Health Connect 到 Webhook</string>
     <string name="onboarding_welcome_subtitle">自动将您的健康数据转发到任何 webhook。</string>
+    <string name="onboarding_thank_you">感谢您的支持！</string>
+    <string name="onboarding_thank_you_title">谢谢！</string>
+    <string name="onboarding_thank_you_desc">您的支持帮助这款应用持续改进。祝您健康数据同步愉快！</string>
     
     <string name="onboarding_feature1_title">您选择要同步的内容</string>
     <string name="onboarding_feature1_desc">仅选择您想要转发的健康数据类型。</string>

@@ -53,7 +53,9 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OnboardingScreen(onFinish: () -> Unit) {
-    val pagerState = rememberPagerState(pageCount = { 3 })
+    val pageCount = if (FlavorUtils.isPlayStore) 4 else 3
+    val lastPage = pageCount - 1
+    val pagerState = rememberPagerState(pageCount = { pageCount })
     val scope = rememberCoroutineScope()
     var showSkipDialog by remember { mutableStateOf(false) }
 
@@ -96,9 +98,8 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Page dots
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    repeat(3) { index ->
+                    repeat(pageCount) { index ->
                         val color by animateColorAsState(
                             targetValue = if (pagerState.currentPage == index)
                                 MaterialTheme.colorScheme.primary
@@ -116,7 +117,7 @@ fun OnboardingScreen(onFinish: () -> Unit) {
 
                 Button(
                     onClick = {
-                        if (pagerState.currentPage < 2) {
+                        if (pagerState.currentPage < lastPage) {
                             scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
                         } else {
                             onFinish()
@@ -124,10 +125,10 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(if (pagerState.currentPage < 2) stringResource(R.string.onboarding_next) else stringResource(R.string.onboarding_get_started))
+                    Text(if (pagerState.currentPage < lastPage) stringResource(R.string.onboarding_next) else stringResource(R.string.onboarding_get_started))
                 }
 
-                if (pagerState.currentPage < 2) {
+                if (pagerState.currentPage < lastPage) {
                     TextButton(onClick = { showSkipDialog = true }) {
                         Text(stringResource(R.string.onboarding_skip), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -146,6 +147,7 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                 0 -> WelcomePage()
                 1 -> DataTypesPage()
                 2 -> PrivacyPage()
+                3 -> ThankYouPage()
             }
         }
     }
@@ -408,6 +410,39 @@ private fun PrivacyPage() {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ThankYouPage() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 32.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Favorite,
+            contentDescription = null,
+            modifier = Modifier.size(72.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = stringResource(R.string.onboarding_thank_you_title),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = stringResource(R.string.onboarding_thank_you_desc),
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
