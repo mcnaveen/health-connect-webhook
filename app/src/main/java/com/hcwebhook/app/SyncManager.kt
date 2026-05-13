@@ -61,7 +61,7 @@ class SyncManager(private val context: Context) {
         }
     }
 
-    suspend fun performSync(timeRangeDays: Int? = null, start: Instant? = null, end: Instant? = null): Result<SyncResult> = withContext(Dispatchers.IO) {
+    suspend fun performSync(timeRangeDays: Int? = null, start: Instant? = null, end: Instant? = null, syncType: String = "auto"): Result<SyncResult> = withContext(Dispatchers.IO) {
         /*
         Supports two modes:
         - timeRangeDays: the amount of days in the past to sync.
@@ -137,7 +137,9 @@ class SyncManager(private val context: Context) {
                         webhookConfigs = listOf(config),
                         context = context,
                         dataType = "all",
-                        recordCount = totalRecords
+                        recordCount = totalRecords,
+                        syncType = syncType,
+                        payload = payload
                     )
                     val result = manager.postData(payload)
                     if (result.isSuccess) atLeastOneSuccess = true

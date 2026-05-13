@@ -242,6 +242,16 @@
     <string name="action_clear">Clear</string>
     <string name="logs_empty">No logs yet</string>
     <string name="logs_status_err">ERR</string>
+    <string name="logs_filter_all">All</string>
+    <string name="logs_filter_success">Success</string>
+    <string name="logs_filter_error">Error</string>
+    <string name="logs_limit_label">Show %1$d</string>
+    <string name="logs_response_time">%1$d ms</string>
+    <string name="logs_sync_manual">Manual</string>
+    <string name="logs_sync_auto">Auto</string>
+    <string name="logs_action_export">Export Logs</string>
+    <string name="logs_export_intent_title">Export Webhook Logs</string>
+    <string name="logs_count">%1$d logs</string>
 
     <!-- Navigation Items -->
     <string name="nav_home">Home</string>

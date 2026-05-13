@@ -24,7 +24,9 @@ class WebhookManager(
     private val webhookConfigs: List<WebhookConfig>,
     private val context: Context? = null,
     private val dataType: String? = null,
-    private val recordCount: Int? = null
+    private val recordCount: Int? = null,
+    private val syncType: String? = null,
+    private val payload: String? = null
 ) {
 
     private val client = OkHttpClient.Builder()
@@ -79,12 +81,11 @@ class WebhookManager(
             val requestBuilder = Request.Builder()
                 .url(config.url)
                 .post(requestBody)
-            
-            // Add custom headers
+
             config.headers.forEach { (key, value) ->
                 requestBuilder.addHeader(key, value)
             }
-            
+
             val request = requestBuilder.build()
 
             var lastException: Exception? = null
@@ -94,7 +95,7 @@ class WebhookManager(
                     client.newCall(request).execute().use { response ->
                         statusCode = response.code
                         if (response.isSuccessful) {
-                            logWebhookCall(config.url, timestamp, statusCode, true, null)
+                            logWebhookCall(config.url, timestamp, statusCode, true, null, System.currentTimeMillis() - timestamp)
                             return Result.success(Unit)
                         } else {
                             val httpException = HttpResponseException(
@@ -121,18 +122,17 @@ class WebhookManager(
                 }
 
                 if (attempt < MAX_RETRIES) {
-                    // Exponential backoff
                     val delayMs = INITIAL_RETRY_DELAY_MS * (2.0.pow(attempt - 1).toLong())
                     kotlinx.coroutines.delay(delayMs)
                 }
             }
 
-            logWebhookCall(config.url, timestamp, statusCode, false, errorMessage)
+            logWebhookCall(config.url, timestamp, statusCode, false, errorMessage, System.currentTimeMillis() - timestamp)
             Result.failure(lastException ?: IOException("Max retries exceeded"))
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            logWebhookCall(config.url, timestamp, null, false, e.message)
+            logWebhookCall(config.url, timestamp, null, false, e.message, System.currentTimeMillis() - timestamp)
             Result.failure(e)
         }
     }
@@ -142,7 +142,8 @@ class WebhookManager(
         timestamp: Long,
         statusCode: Int?,
         success: Boolean,
-        errorMessage: String?
+        errorMessage: String?,
+        responseTimeMs: Long
     ) {
         context?.let {
             val preferencesManager = PreferencesManager(it)
@@ -154,7 +155,10 @@ class WebhookManager(
                 success = success,
                 errorMessage = errorMessage,
                 dataType = dataType,
-                recordCount = recordCount
+                recordCount = recordCount,
+                responseTimeMs = responseTimeMs,
+                syncType = syncType,
+                payload = payload?.take(MAX_PAYLOAD_CHARS)
             )
             preferencesManager.addWebhookLog(log)
         }
@@ -164,6 +168,7 @@ class WebhookManager(
         private const val TIMEOUT_SECONDS = 60L
         private const val MAX_RETRIES = 3
         private const val INITIAL_RETRY_DELAY_MS = 1000L
+        private const val MAX_PAYLOAD_CHARS = 8000
 
         internal fun isRetryableException(exception: IOException): Boolean {
             return when (exception) {
