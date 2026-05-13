@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -48,10 +50,14 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
         context.getString(R.string.manual_sync_past_30_days) to 30,
         context.getString(R.string.manual_sync_custom) to -1
     )
+    val localDateSaver = Saver<LocalDate?, String>(
+        save = { it?.toString() ?: "" },
+        restore = { if (it.isEmpty()) null else LocalDate.parse(it) }
+    )
     var expanded by remember { mutableStateOf(false) }
-    var selectedOptionIndex by remember { mutableStateOf(0) }
-    var startDate by remember { mutableStateOf<LocalDate?>(null) }
-    var endDate by remember { mutableStateOf<LocalDate?>(null) }
+    var selectedOptionIndex by rememberSaveable { mutableStateOf(0) }
+    var startDate by rememberSaveable(stateSaver = localDateSaver) { mutableStateOf(null) }
+    var endDate by rememberSaveable(stateSaver = localDateSaver) { mutableStateOf(null) }
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showEndDatePicker by remember { mutableStateOf(false) }
 

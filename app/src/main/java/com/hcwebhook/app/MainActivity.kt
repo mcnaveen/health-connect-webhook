@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.health.connect.client.HealthConnectClient
@@ -166,25 +167,28 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         ) { padding ->
+            val saveableStateHolder = rememberSaveableStateHolder()
             Box(modifier = Modifier.padding(padding)) {
                 if (showLocalHttpSettings) {
                     LocalHttpSettingsScreen(onBack = { showLocalHttpSettings = false })
                 } else {
-                    when (selectedScreen) {
-                        is NavigationScreen.Home -> ConfigurationScreen(
-                            activity = activity,
-                            permissionLauncher = permissionLauncher,
-                            hasPermissions = hasPermissions,
-                            grantedPermissionsSet = grantedPermissionsSet,
-                            sdkStatus = sdkStatus,
-                            onOpenLocalHttpSettings = { showLocalHttpSettings = true }
-                        )
-                        is NavigationScreen.Webhooks -> com.hcwebhook.app.screens.WebhooksScreen()
-                        is NavigationScreen.Logs -> LogsScreen()
-                        is NavigationScreen.About -> AboutScreen(
-                            onRestartOnboarding = onRestartOnboarding,
-                            onOpenLocalHttpSettings = { showLocalHttpSettings = true }
-                        )
+                    saveableStateHolder.SaveableStateProvider(selectedScreen.toString()) {
+                        when (selectedScreen) {
+                            is NavigationScreen.Home -> ConfigurationScreen(
+                                activity = activity,
+                                permissionLauncher = permissionLauncher,
+                                hasPermissions = hasPermissions,
+                                grantedPermissionsSet = grantedPermissionsSet,
+                                sdkStatus = sdkStatus,
+                                onOpenLocalHttpSettings = { showLocalHttpSettings = true }
+                            )
+                            is NavigationScreen.Webhooks -> com.hcwebhook.app.screens.WebhooksScreen()
+                            is NavigationScreen.Logs -> LogsScreen()
+                            is NavigationScreen.About -> AboutScreen(
+                                onRestartOnboarding = onRestartOnboarding,
+                                onOpenLocalHttpSettings = { showLocalHttpSettings = true }
+                            )
+                        }
                     }
                 }
             }
