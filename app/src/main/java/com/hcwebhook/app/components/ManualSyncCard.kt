@@ -168,13 +168,8 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
     // ── Card UI ───────────────────────────────────────────────────────────────
     Card {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(stringResource(R.string.manual_sync_title), style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.manual_sync_desc),
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+            Text(stringResource(R.string.manual_sync_title), style = MaterialTheme.typography.titleSmall)
+            Spacer(modifier = Modifier.height(12.dp))
 
             ExposedDropdownMenuBox(
                 expanded = expanded,

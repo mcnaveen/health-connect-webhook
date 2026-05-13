@@ -40,6 +40,8 @@ class PreferencesManager(context: Context) {
         private const val KEY_LOCAL_TCP_ENABLED = "local_tcp_enabled"
         private const val KEY_LOCAL_TCP_PORT = "local_tcp_port"
         private const val DEFAULT_LOCAL_TCP_PORT = 8787
+        private const val KEY_LOCAL_HTTP_AUTH_ENABLED = "local_http_auth_enabled"
+        private const val KEY_LOCAL_HTTP_TOKEN = "local_http_token"
     }
 
 
@@ -298,6 +300,26 @@ class PreferencesManager(context: Context) {
     fun setLocalTcpPort(port: Int) {
         val safePort = port.coerceIn(1024, 65535)
         prefs.edit().putInt(KEY_LOCAL_TCP_PORT, safePort).apply()
+    }
+
+    fun isLocalHttpAuthEnabled(): Boolean = prefs.getBoolean(KEY_LOCAL_HTTP_AUTH_ENABLED, false)
+
+    fun setLocalHttpAuthEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_LOCAL_HTTP_AUTH_ENABLED, enabled).apply()
+    }
+
+    fun getLocalHttpToken(): String {
+        val existing = prefs.getString(KEY_LOCAL_HTTP_TOKEN, null)
+        if (!existing.isNullOrBlank()) return existing
+        val generated = java.util.UUID.randomUUID().toString()
+        prefs.edit().putString(KEY_LOCAL_HTTP_TOKEN, generated).apply()
+        return generated
+    }
+
+    fun regenerateLocalHttpToken(): String {
+        val token = java.util.UUID.randomUUID().toString()
+        prefs.edit().putString(KEY_LOCAL_HTTP_TOKEN, token).apply()
+        return token
     }
 
     // -------------------------------------------------------------------------

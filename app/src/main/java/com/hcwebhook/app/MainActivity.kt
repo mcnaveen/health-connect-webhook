@@ -26,6 +26,7 @@ class MainActivity : AppCompatActivity() {
     internal var pendingSyncCallback: (() -> Unit)? = null
     internal var permissionStatusCallback: ((Boolean) -> Unit)? = null
     private lateinit var permissionLauncher: androidx.activity.result.ActivityResultLauncher<Set<String>>
+    internal val openLocalHttpRequest = mutableStateOf(false)
 
     private fun initializePermissionLauncher() {
         val requestPermissionActivityContract = androidx.health.connect.client.PermissionController.createRequestPermissionResultContract()
@@ -60,6 +61,9 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         preferencesManager = PreferencesManager(this)
         initializePermissionLauncher()
+        if (intent?.getBooleanExtra(LocalHttpServerService.EXTRA_OPEN_LOCAL_HTTP, false) == true) {
+            openLocalHttpRequest.value = true
+        }
 
         setContent {
             HCWebhookTheme {
@@ -80,6 +84,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.getBooleanExtra(LocalHttpServerService.EXTRA_OPEN_LOCAL_HTTP, false)) {
+            openLocalHttpRequest.value = true
+        }
+    }
+
     @Composable
     fun MainScreenWithNav(
         activity: MainActivity,
@@ -88,6 +100,13 @@ class MainActivity : AppCompatActivity() {
     ) {
         var selectedScreen by remember { mutableStateOf<NavigationScreen>(NavigationScreen.Home) }
         var showLocalHttpSettings by remember { mutableStateOf(false) }
+
+        LaunchedEffect(activity.openLocalHttpRequest.value) {
+            if (activity.openLocalHttpRequest.value) {
+                showLocalHttpSettings = true
+                activity.openLocalHttpRequest.value = false
+            }
+        }
 
         // Hoisted permission state — survives tab switches
         var hasPermissions by remember { mutableStateOf<Boolean?>(null) }
