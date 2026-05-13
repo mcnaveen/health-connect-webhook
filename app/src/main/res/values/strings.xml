@@ -141,6 +141,21 @@
     <string name="webhooks_headers_action_add_title">Add Header</string>
     <string name="webhooks_headers_key_label">Key</string>
     <string name="webhooks_headers_value_label">Value</string>
+    <string name="webhooks_toggle_enable">Enable webhook</string>
+    <string name="webhooks_toggle_disable">Disable webhook</string>
+    <string name="webhooks_status_active">Active</string>
+    <string name="webhooks_status_disabled">Disabled</string>
+    <string name="webhooks_edit_title">Edit Webhook</string>
+    <string name="webhooks_data_types_section">Data Types</string>
+    <string name="webhooks_data_types_desc">Choose which data types this webhook receives. By default it receives all globally enabled types.</string>
+    <string name="webhooks_data_types_send_all">Send all enabled types</string>
+    <string name="webhooks_data_types_none_global">No data types are globally enabled.</string>
+    <string name="webhooks_data_types_filter_count">%1$d type(s) filtered</string>
+    <string name="webhooks_headers_tab_form">Form</string>
+    <string name="webhooks_headers_tab_json">JSON</string>
+    <string name="webhooks_headers_json_label">Paste JSON object</string>
+    <string name="webhooks_headers_json_apply">Apply JSON</string>
+    <string name="webhooks_headers_json_error">Invalid JSON — expected an object with string values</string>
     <string name="action_save">Save</string>
 
     <!-- Configuration Screen -->

@@ -5,116 +5,388 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import com.hcwebhook.app.R
 import com.hcwebhook.app.*
+import org.json.JSONObject
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun WebhooksScreen() {
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context) }
-    
-    // State
+    val globalEnabledTypes = remember { preferencesManager.getEnabledDataTypes().map { it.name }.toSet() }
+
     var webhookConfigs by remember { mutableStateOf(preferencesManager.getWebhookConfigs()) }
     var newUrl by remember { mutableStateOf("") }
-    
-    // Dialog State
-    var showHeaderDialog by remember { mutableStateOf(false) }
-    var selectedConfigIndex by remember { mutableStateOf(-1) }
+    var sheetIndex by remember { mutableStateOf(-1) }
+    val showSheet = sheetIndex >= 0 && sheetIndex in webhookConfigs.indices
 
-    // Delete confirmation bottom sheet state
-    var showDeleteSheet by remember { mutableStateOf(false) }
-    var pendingDeleteIndex by remember { mutableStateOf(-1) }
-
-    // Save changes when webhookConfigs changes
     LaunchedEffect(webhookConfigs) {
         preferencesManager.setWebhookConfigs(webhookConfigs)
     }
 
-    val scrollState = rememberScrollState()
+    // ── Edit Bottom Sheet ─────────────────────────────────────────────────────
+    if (showSheet) {
+        val config = webhookConfigs[sheetIndex]
+        val capturedIndex = sheetIndex
 
-    // ── Delete Confirmation Bottom Sheet ──────────────────────────────────────
-    if (showDeleteSheet && pendingDeleteIndex in webhookConfigs.indices) {
-        val urlToDelete = webhookConfigs[pendingDeleteIndex].url
+        var editUrl by remember(capturedIndex) { mutableStateOf(config.url) }
+        var currentHeaders by remember(capturedIndex) { mutableStateOf(config.headers) }
+        var newKey by remember(capturedIndex) { mutableStateOf("") }
+        var newValue by remember(capturedIndex) { mutableStateOf("") }
+        var jsonPaste by remember(capturedIndex) { mutableStateOf("") }
+        var headerTab by remember(capturedIndex) { mutableIntStateOf(0) } // 0=Form, 1=JSON
+        var filterAll by remember(capturedIndex) { mutableStateOf(config.dataTypeFilter == null) }
+        var selectedTypes by remember(capturedIndex) {
+            mutableStateOf(config.dataTypeFilter ?: globalEnabledTypes)
+        }
+        var showDeleteConfirm by remember(capturedIndex) { mutableStateOf(false) }
+
         ModalBottomSheet(
-            onDismissRequest = {
-                showDeleteSheet = false
-                pendingDeleteIndex = -1
-            }
+            onDismissRequest = { sheetIndex = -1 },
+            dragHandle = { BottomSheetDefaults.DragHandle() },
+            containerColor = MaterialTheme.colorScheme.surface
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 36.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Warning,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(40.dp)
-                )
-                Text(stringResource(R.string.webhooks_delete_title), style = MaterialTheme.typography.titleLarge)
                 Text(
-                    stringResource(R.string.webhooks_delete_desc, urlToDelete),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    stringResource(R.string.webhooks_edit_title),
+                    style = MaterialTheme.typography.titleMedium
                 )
+
+                // ── URL edit ─────────────────────────────────────────────────
+                OutlinedTextField(
+                    value = editUrl,
+                    onValueChange = { editUrl = it },
+                    label = { Text(stringResource(R.string.webhooks_new_url_label)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodySmall,
+                    isError = editUrl.isNotBlank() && !editUrl.startsWith("http://") && !editUrl.startsWith("https://")
+                )
+
+                // ── Status — updates immediately, no Save needed ──────────────
+                SheetSection {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                stringResource(R.string.webhooks_toggle_enable),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                if (config.isEnabled) stringResource(R.string.webhooks_status_active)
+                                else stringResource(R.string.webhooks_status_disabled),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (config.isEnabled) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = config.isEnabled,
+                            onCheckedChange = { enabled ->
+                                // Apply immediately so the list updates without needing Save
+                                val list = webhookConfigs.toMutableList()
+                                list[capturedIndex] = config.copy(isEnabled = enabled)
+                                webhookConfigs = list
+                            }
+                        )
+                    }
+                }
+
+                // ── Data Types ───────────────────────────────────────────────
+                SheetSection {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                                Text(
+                                    stringResource(R.string.webhooks_data_types_section),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    stringResource(R.string.webhooks_data_types_send_all),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = filterAll,
+                                onCheckedChange = { all ->
+                                    filterAll = all
+                                    if (all) selectedTypes = globalEnabledTypes
+                                }
+                            )
+                        }
+
+                        if (!filterAll) {
+                            if (globalEnabledTypes.isEmpty()) {
+                                Text(
+                                    stringResource(R.string.webhooks_data_types_none_global),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            } else {
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    globalEnabledTypes.sorted().forEach { typeName ->
+                                        val label = typeName.replace('_', ' ').lowercase()
+                                            .replaceFirstChar { it.uppercase() }
+                                        FilterChip(
+                                            selected = typeName in selectedTypes,
+                                            onClick = {
+                                                selectedTypes = if (typeName in selectedTypes)
+                                                    selectedTypes - typeName
+                                                else
+                                                    selectedTypes + typeName
+                                            },
+                                            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                                            leadingIcon = if (typeName in selectedTypes) {
+                                                { Icon(Icons.Filled.Check, null, Modifier.size(14.dp)) }
+                                            } else null
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ── Headers ───────────────────────────────────────────────────
+                SheetSection {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            stringResource(R.string.webhooks_headers_manage_title),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+
+                        if (currentHeaders.isEmpty()) {
+                            Text(
+                                stringResource(R.string.webhooks_headers_empty),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontStyle = FontStyle.Italic,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            currentHeaders.forEach { (key, value) ->
+                                Surface(
+                                    shape = MaterialTheme.shapes.small,
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(key, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                            Text(value, style = MaterialTheme.typography.bodySmall)
+                                        }
+                                        IconButton(
+                                            onClick = { currentHeaders = currentHeaders - key },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Filled.Close,
+                                                contentDescription = stringResource(R.string.webhooks_headers_action_remove),
+                                                modifier = Modifier.size(16.dp),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                        TabRow(
+                            selectedTabIndex = headerTab,
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0f)
+                        ) {
+                            Tab(selected = headerTab == 0, onClick = { headerTab = 0 }) {
+                                Text(
+                                    stringResource(R.string.webhooks_headers_tab_form),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    modifier = Modifier.padding(vertical = 10.dp)
+                                )
+                            }
+                            Tab(selected = headerTab == 1, onClick = { headerTab = 1 }) {
+                                Text(
+                                    stringResource(R.string.webhooks_headers_tab_json),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    modifier = Modifier.padding(vertical = 10.dp)
+                                )
+                            }
+                        }
+
+                        if (headerTab == 0) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = newKey,
+                                    onValueChange = { newKey = it },
+                                    label = { Text(stringResource(R.string.webhooks_headers_key_label)) },
+                                    modifier = Modifier.weight(1f),
+                                    singleLine = true,
+                                    textStyle = MaterialTheme.typography.bodySmall
+                                )
+                                OutlinedTextField(
+                                    value = newValue,
+                                    onValueChange = { newValue = it },
+                                    label = { Text(stringResource(R.string.webhooks_headers_value_label)) },
+                                    modifier = Modifier.weight(1f),
+                                    singleLine = true,
+                                    textStyle = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    if (newKey.isNotBlank() && newValue.isNotBlank()) {
+                                        currentHeaders = currentHeaders + (newKey.trim() to newValue.trim())
+                                        newKey = ""
+                                        newValue = ""
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.webhooks_headers_action_add_title))
+                            }
+                        } else {
+                            OutlinedTextField(
+                                value = jsonPaste,
+                                onValueChange = { jsonPaste = it },
+                                label = { Text(stringResource(R.string.webhooks_headers_json_label)) },
+                                placeholder = { Text("{\"Authorization\": \"Bearer token\"}", style = MaterialTheme.typography.bodySmall) },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 3,
+                                maxLines = 6,
+                                textStyle = MaterialTheme.typography.bodySmall
+                            )
+                            OutlinedButton(
+                                onClick = {
+                                    try {
+                                        val obj = JSONObject(jsonPaste.trim())
+                                        val parsed = mutableMapOf<String, String>()
+                                        obj.keys().forEach { key -> parsed[key] = obj.getString(key) }
+                                        currentHeaders = currentHeaders + parsed
+                                        jsonPaste = ""
+                                        headerTab = 0
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, context.getString(R.string.webhooks_headers_json_error), Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.webhooks_headers_json_apply))
+                            }
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(4.dp))
+
+                // ── Save ─────────────────────────────────────────────────────
                 Button(
                     onClick = {
-                        webhookConfigs = webhookConfigs.toMutableList().apply { removeAt(pendingDeleteIndex) }
-                        showDeleteSheet = false
-                        pendingDeleteIndex = -1
+                        val trimmedUrl = editUrl.trim()
+                        if (trimmedUrl.isEmpty() || (!trimmedUrl.startsWith("http://") && !trimmedUrl.startsWith("https://"))) {
+                            Toast.makeText(context, context.getString(R.string.webhooks_toast_invalid_url), Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        val newFilter = if (filterAll) null else selectedTypes.ifEmpty { null }
+                        val list = webhookConfigs.toMutableList()
+                        list[capturedIndex] = webhookConfigs[capturedIndex].copy(
+                            url = trimmedUrl,
+                            headers = currentHeaders,
+                            dataTypeFilter = newFilter
+                        )
+                        webhookConfigs = list
+                        sheetIndex = -1
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
-                    ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(stringResource(R.string.action_delete))
+                    Text(stringResource(R.string.action_save))
                 }
-                OutlinedButton(
-                    onClick = {
-                        showDeleteSheet = false
-                        pendingDeleteIndex = -1
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(stringResource(R.string.action_cancel))
+
+                // ── Delete ────────────────────────────────────────────────────
+                if (showDeleteConfirm) {
+                    Button(
+                        onClick = {
+                            webhookConfigs = webhookConfigs.toMutableList().apply { removeAt(capturedIndex) }
+                            sheetIndex = -1
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Filled.Delete, null, Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.webhooks_delete_title))
+                    }
+                } else {
+                    TextButton(
+                        onClick = { showDeleteConfirm = true },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.action_delete))
+                    }
                 }
             }
         }
     }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0.dp)
-    ) { padding ->
+    // ── Main List ─────────────────────────────────────────────────────────────
+    Scaffold(contentWindowInsets = WindowInsets(0.dp)) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp)
-                .verticalScroll(scrollState),
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            
-            // Webhook URLs Section
             Card {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(stringResource(R.string.webhooks_section_title), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.webhooks_section_title),
+                        style = MaterialTheme.typography.titleMedium
+                    )
                     Spacer(modifier = Modifier.height(16.dp))
 
                     if (webhookConfigs.isEmpty()) {
@@ -126,45 +398,62 @@ fun WebhooksScreen() {
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 
-                    // Current URLs
                     webhookConfigs.forEachIndexed { index, config ->
                         Column {
-                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                                     Text(
                                         text = config.url,
-                                        style = MaterialTheme.typography.bodyMedium
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        color = if (config.isEnabled)
+                                            MaterialTheme.colorScheme.onSurface
+                                        else
+                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                                     )
-                                    val headerCount = config.getHeaderCount()
-                                    if (headerCount > 0) {
+                                    val meta = buildList {
+                                        val h = config.getHeaderCount()
+                                        val f = config.dataTypeFilter?.size
+                                        if (h > 0) add(stringResource(R.string.webhooks_headers_count, h))
+                                        if (f != null) add(stringResource(R.string.webhooks_data_types_filter_count, f))
+                                    }.joinToString(" · ")
+                                    if (meta.isNotEmpty()) {
                                         Text(
-                                            text = stringResource(R.string.webhooks_headers_count, headerCount),
+                                            text = meta,
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.primary
+                                            color = MaterialTheme.colorScheme.primary.copy(
+                                                alpha = if (config.isEnabled) 1f else 0.4f
+                                            )
                                         )
                                     }
                                 }
-                                Row {
-                                    IconButton(onClick = {
-                                        selectedConfigIndex = index
-                                        showHeaderDialog = true
-                                    }) {
-                                        Icon(Icons.Filled.Edit, stringResource(R.string.webhooks_action_edit_headers))
-                                    }
-                                    IconButton(onClick = {
-                                        pendingDeleteIndex = index
-                                        showDeleteSheet = true
-                                    }) {
-                                        Icon(
-                                            Icons.Filled.Delete,
-                                            stringResource(R.string.action_delete),
-                                            tint = MaterialTheme.colorScheme.error
-                                        )
-                                    }
+
+                                Box(modifier = Modifier.graphicsLayer(scaleX = 0.75f, scaleY = 0.75f)) {
+                                    Switch(
+                                        checked = config.isEnabled,
+                                        onCheckedChange = { enabled ->
+                                            val updated = webhookConfigs.toMutableList()
+                                            updated[index] = config.copy(isEnabled = enabled)
+                                            webhookConfigs = updated
+                                        }
+                                    )
+                                }
+
+                                IconButton(
+                                    onClick = { sheetIndex = index },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Edit,
+                                        contentDescription = stringResource(R.string.webhooks_action_edit_headers),
+                                        modifier = Modifier.size(18.dp)
+                                    )
                                 }
                             }
                             HorizontalDivider()
@@ -173,7 +462,6 @@ fun WebhooksScreen() {
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Add new URL
                     OutlinedTextField(
                         value = newUrl,
                         onValueChange = { newUrl = it },
@@ -199,95 +487,17 @@ fun WebhooksScreen() {
             }
         }
     }
-    
-    // Header Dialog
-    if (showHeaderDialog && selectedConfigIndex in webhookConfigs.indices) {
-        val config = webhookConfigs[selectedConfigIndex]
-        var currentHeaders by remember { mutableStateOf(config.headers) }
-        var newKey by remember { mutableStateOf("") }
-        var newValue by remember { mutableStateOf("") }
-        
-        AlertDialog(
-            onDismissRequest = { showHeaderDialog = false },
-            title = { Text(stringResource(R.string.webhooks_headers_manage_title)) },
-            text = {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    Text(stringResource(R.string.webhooks_headers_for_url, config.url), style = MaterialTheme.typography.bodySmall)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    // Existing Headers
-                    if (currentHeaders.isEmpty()) {
-                        Text(stringResource(R.string.webhooks_headers_empty), style = MaterialTheme.typography.bodySmall, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
-                    }
-                    
-                    currentHeaders.forEach { (key, value) ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(key, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                Text(value, style = MaterialTheme.typography.bodySmall) 
-                            }
-                            IconButton(onClick = {
-                                currentHeaders = currentHeaders - key
-                            }) {
-                                Icon(Icons.Filled.Delete, stringResource(R.string.webhooks_headers_action_remove), modifier = Modifier.size(20.dp))
-                            }
-                        }
-                        HorizontalDivider()
-                    }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(stringResource(R.string.webhooks_headers_action_add_title), style = MaterialTheme.typography.labelLarge)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    OutlinedTextField(
-                        value = newKey,
-                        onValueChange = { newKey = it },
-                        label = { Text(stringResource(R.string.webhooks_headers_key_label)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    OutlinedTextField(
-                        value = newValue,
-                        onValueChange = { newValue = it },
-                        label = { Text(stringResource(R.string.webhooks_headers_value_label)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedButton(
-                        onClick = {
-                            if (newKey.isNotBlank() && newValue.isNotBlank()) {
-                                currentHeaders = currentHeaders + (newKey.trim() to newValue.trim())
-                                newKey = ""
-                                newValue = ""
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.webhooks_headers_action_add_title))
-                    }
-                }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    val updatedConfig = config.copy(headers = currentHeaders)
-                    val newList = webhookConfigs.toMutableList()
-                    newList[selectedConfigIndex] = updatedConfig
-                    webhookConfigs = newList
-                    showHeaderDialog = false
-                }) {
-                    Text(stringResource(R.string.action_save))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showHeaderDialog = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            }
-        )
+}
+
+@Composable
+private fun SheetSection(content: @Composable () -> Unit) {
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Box(modifier = Modifier.padding(16.dp)) {
+            content()
+        }
     }
 }
