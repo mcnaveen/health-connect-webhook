@@ -1,10 +1,7 @@
 package com.hcwebhook.app.screens
 
 import android.widget.Toast
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -16,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -67,9 +63,16 @@ fun WebhooksScreen() {
         }
         var showDeleteConfirm by remember(capturedIndex) { mutableStateOf(false) }
         var testLoading by remember(capturedIndex) { mutableStateOf(false) }
-        var testResult by remember(capturedIndex) { mutableStateOf<Boolean?>(null) }
-        var testMessage by remember(capturedIndex) { mutableStateOf("") }
         val scope = rememberCoroutineScope()
+
+        val hasUnsavedChanges by remember(editUrl, currentHeaders, filterAll, selectedTypes) {
+            derivedStateOf {
+                editUrl.trim() != config.url ||
+                currentHeaders != config.headers ||
+                filterAll != (config.dataTypeFilter == null) ||
+                (!filterAll && selectedTypes != (config.dataTypeFilter ?: globalEnabledTypes))
+            }
+        }
 
         ModalBottomSheet(
             onDismissRequest = { sheetIndex = -1 },
@@ -84,10 +87,23 @@ fun WebhooksScreen() {
                     .padding(bottom = 36.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    stringResource(R.string.webhooks_edit_title),
-                    style = MaterialTheme.typography.titleMedium
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        stringResource(R.string.webhooks_edit_title),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    if (hasUnsavedChanges) {
+                        Text(
+                            stringResource(R.string.webhooks_unsaved_changes),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
 
                 // ── URL edit ─────────────────────────────────────────────────
                 OutlinedTextField(
@@ -338,7 +354,6 @@ fun WebhooksScreen() {
                 OutlinedButton(
                     onClick = {
                         testLoading = true
-                        testResult = null
                         val testConfig = WebhookConfig(
                             url = editUrl.trim(),
                             headers = currentHeaders,
@@ -355,19 +370,22 @@ fun WebhooksScreen() {
                                     payload = mockPayload
                                 ).postData(mockPayload)
                             }
-                            // Read back the log entry written during the test for status/timing details
                             val log = withContext(Dispatchers.IO) {
                                 preferencesManager.getWebhookLogs()
                                     .firstOrNull { it.syncType == "test" && it.url == testConfig.url }
                             }
                             testLoading = false
-                            testResult = result.isSuccess
-                            testMessage = buildString {
+                            val detail = buildString {
                                 val code = log?.statusCode
                                 val ms = log?.responseTimeMs
                                 if (code != null) append("$code")
                                 if (ms != null) { if (code != null) append(" · "); append("${ms}ms") }
                                 if (isEmpty()) append(result.exceptionOrNull()?.message ?: "Failed")
+                            }
+                            if (result.isSuccess) {
+                                Toast.makeText(context, context.getString(R.string.webhooks_test_success, detail), Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, context.getString(R.string.webhooks_test_failed, detail), Toast.LENGTH_LONG).show()
                             }
                         }
                     },
@@ -380,32 +398,7 @@ fun WebhooksScreen() {
                     }
                     Text(stringResource(R.string.webhooks_action_test))
                 }
-                testResult?.let { success ->
-                    val dotColor = if (success) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error
-                    Surface(
-                        shape = MaterialTheme.shapes.small,
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(7.dp)
-                                    .clip(CircleShape)
-                                    .background(dotColor)
-                            )
-                            Text(
-                                text = testMessage,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = dotColor
-                            )
-                        }
-                    }
-                }
+
 
                 // ── Save ─────────────────────────────────────────────────────
                 Button(

@@ -1,18 +1,21 @@
 package com.hcwebhook.app.components
 
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
 import com.hcwebhook.app.HealthConnectManager
 import com.hcwebhook.app.PreferencesManager
 import com.hcwebhook.app.SyncManager
 import com.hcwebhook.app.SyncResult
+import com.hcwebhook.app.WebhookConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -34,7 +37,9 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
     var showConfirmSheet by remember { mutableStateOf(false) }
     
     val webhookConfigs = preferencesManager.getWebhookConfigs()
+    val enabledWebhooks = remember(webhookConfigs) { webhookConfigs.filter { it.isEnabled } }
     val localTcpEnabled = preferencesManager.isLocalTcpEnabled()
+    var selectedWebhookUrl by remember { mutableStateOf<String?>(null) }
 
     val timeRangeOptions = listOf(
         context.getString(R.string.manual_sync_default_range) to null,
@@ -68,6 +73,48 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (enabledWebhooks.size >= 2) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            stringResource(R.string.manual_sync_send_to),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedWebhookUrl = null },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedWebhookUrl == null,
+                                onClick = { selectedWebhookUrl = null }
+                            )
+                            Text(stringResource(R.string.manual_sync_all_webhooks))
+                        }
+                        enabledWebhooks.forEach { config ->
+                            val host = remember(config.url) {
+                                try { java.net.URI(config.url).host?.takeIf { it.isNotEmpty() } ?: config.url }
+                                catch (_: Exception) { config.url }
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { selectedWebhookUrl = config.url },
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = selectedWebhookUrl == config.url,
+                                    onClick = { selectedWebhookUrl = config.url }
+                                )
+                                Text(host, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        }
+                    }
+                }
                 Spacer(modifier = Modifier.height(4.dp))
                 Button(
                     onClick = {
@@ -105,6 +152,10 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                                 val syncManager = SyncManager(context)
                                 val timeRangeSelection = timeRangeOptions[selectedOptionIndex].second
 
+                                val targetWebhooks: List<WebhookConfig>? = selectedWebhookUrl?.let { url ->
+                                    enabledWebhooks.filter { it.url == url }
+                                }
+
                                 val result = if (timeRangeSelection == -1) {
                                     // custom date range
                                     val startInstant = startDate?.atStartOfDay(ZoneOffset.UTC)?.toInstant()
@@ -117,10 +168,10 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                                     }
 
                                     syncMessage = context.getString(R.string.manual_sync_progress, startDate.toString(), endDate.toString())
-                                    syncManager.performSync(start = startInstant, end = endInstant, syncType = "manual")
+                                    syncManager.performSync(start = startInstant, end = endInstant, syncType = "manual", targetWebhooks = targetWebhooks)
                                 } else {
                                     // sync the last N days, or from the last sync
-                                    syncManager.performSync(timeRangeSelection, syncType = "manual")
+                                    syncManager.performSync(timeRangeSelection, syncType = "manual", targetWebhooks = targetWebhooks)
                                 }
 
                                 when {
@@ -128,6 +179,7 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                                         val syncResult = result.getOrThrow()
                                         syncMessage = when (syncResult) {
                                             is SyncResult.NoData -> context.getString(R.string.manual_sync_no_data)
+                                            is SyncResult.NoMatchingData -> context.getString(R.string.manual_sync_no_matching_data)
                                             is SyncResult.Success -> {
                                                 val parts = syncResult.syncCounts.map { (type, count) ->
                                                     "$count ${context.getString(type.nameResId).lowercase()}"

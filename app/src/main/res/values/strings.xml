@@ -101,6 +101,8 @@
     <string name="manual_sync_end_label">End Date: %1$s</string>
     <string name="manual_sync_confirm_title">Sync Now?</string>
     <string name="manual_sync_confirm_desc">This will immediately send your health data to all configured webhooks.</string>
+    <string name="manual_sync_send_to">Send to</string>
+    <string name="manual_sync_all_webhooks">All webhooks</string>
     <string name="manual_sync_btn">Sync Now</string>
     <string name="action_ok">OK</string>
     <string name="action_cancel">Cancel</string>
@@ -114,6 +116,7 @@
     <string name="err_permissions_required">Permissions required for sync.</string>
     <string name="manual_sync_progress">Syncing data from %1$s to %2$s...</string>
     <string name="manual_sync_no_data">No new data to sync</string>
+    <string name="manual_sync_no_matching_data">No data matched the webhook filters</string>
     <string name="manual_sync_success_empty">Sync completed successfully</string>
     <string name="manual_sync_success_items">Synced %1$s</string>
     <string name="manual_sync_failed">Sync failed: %1$s</string>
@@ -156,8 +159,10 @@
     <string name="webhooks_headers_json_label">Paste JSON object</string>
     <string name="webhooks_headers_json_apply">Apply JSON</string>
     <string name="webhooks_headers_json_error">Invalid JSON — expected an object with string values</string>
+    <string name="webhooks_unsaved_changes">Unsaved changes</string>
     <string name="webhooks_action_test">Test Webhook</string>
-    <string name="webhooks_test_success">✓ Connected successfully</string>
+    <string name="webhooks_test_success">Test successful: %1$s</string>
+    <string name="webhooks_test_failed">Test failed: %1$s</string>
     <string name="webhooks_test_retry">Retry</string>
     <string name="webhooks_retry_success">✓ Retry sent successfully</string>
     <string name="webhooks_retry_failed">Retry failed: %1$s</string>

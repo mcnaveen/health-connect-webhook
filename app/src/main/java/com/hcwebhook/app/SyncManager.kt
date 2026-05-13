@@ -61,7 +61,7 @@ class SyncManager(private val context: Context) {
         }
     }
 
-    suspend fun performSync(timeRangeDays: Int? = null, start: Instant? = null, end: Instant? = null, syncType: String = "auto"): Result<SyncResult> = withContext(Dispatchers.IO) {
+    suspend fun performSync(timeRangeDays: Int? = null, start: Instant? = null, end: Instant? = null, syncType: String = "auto", targetWebhooks: List<WebhookConfig>? = null): Result<SyncResult> = withContext(Dispatchers.IO) {
         /*
         Supports two modes:
         - timeRangeDays: the amount of days in the past to sync.
@@ -71,7 +71,7 @@ class SyncManager(private val context: Context) {
 
         try {
             val webhookConfigs = preferencesManager.getWebhookConfigs()
-            val enabledWebhookConfigs = webhookConfigs.filter { it.isEnabled }
+            val enabledWebhookConfigs = (targetWebhooks ?: webhookConfigs).filter { it.isEnabled }
             val localTcpEnabled = preferencesManager.isLocalTcpEnabled()
 
             if (enabledWebhookConfigs.isEmpty() && !localTcpEnabled) {
@@ -122,6 +122,7 @@ class SyncManager(private val context: Context) {
             // Post to each enabled webhook with optional per-webhook data type filtering
             if (enabledWebhookConfigs.isNotEmpty()) {
                 var atLeastOneSuccess = false
+                var atLeastOneAttempted = false
                 var lastFailure: Throwable? = null
 
                 for (config in enabledWebhookConfigs) {
@@ -130,6 +131,8 @@ class SyncManager(private val context: Context) {
                     } else {
                         healthData
                     }
+                    if (isHealthDataEmpty(filteredData)) continue
+                    atLeastOneAttempted = true
                     val payload = if (config.dataTypeFilter != null) buildJsonPayload(filteredData) else fullPayload
                     val totalRecords = countHealthData(filteredData)
 
@@ -146,6 +149,11 @@ class SyncManager(private val context: Context) {
                     else lastFailure = result.exceptionOrNull()
                 }
 
+                if (!atLeastOneAttempted) {
+                    preferencesManager.setLastSyncTime(Instant.now().toEpochMilli())
+                    preferencesManager.setLastSyncSummary("No matching data")
+                    return@withContext Result.success(SyncResult.NoMatchingData)
+                }
                 if (!atLeastOneSuccess) {
                     return@withContext Result.failure(lastFailure ?: Exception("Failed to post to webhooks"))
                 }
@@ -630,5 +638,6 @@ class SyncManager(private val context: Context) {
 
 sealed class SyncResult {
     object NoData : SyncResult()
+    object NoMatchingData : SyncResult()
     data class Success(val syncCounts: Map<HealthDataType, Int>) : SyncResult()
 }
