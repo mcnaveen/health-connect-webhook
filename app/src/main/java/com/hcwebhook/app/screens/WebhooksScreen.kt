@@ -1,14 +1,19 @@
 package com.hcwebhook.app.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +23,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.hcwebhook.app.R
 import com.hcwebhook.app.*
@@ -28,10 +36,11 @@ import org.json.JSONObject
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun WebhooksScreen() {
+fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context) }
     val globalEnabledTypes = remember { preferencesManager.getEnabledDataTypes().map { it.name }.toSet() }
+    val globalNotificationConfigs = remember { preferencesManager.getNotificationConfigs() }
     val appVersion = remember {
         try { context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "unknown" }
         catch (_: Exception) { "unknown" }
@@ -61,16 +70,18 @@ fun WebhooksScreen() {
         var selectedTypes by remember(capturedIndex) {
             mutableStateOf(config.dataTypeFilter ?: globalEnabledTypes)
         }
+        var selectedNotificationIds by remember(capturedIndex) { mutableStateOf(config.notificationConfigIds) }
         var showDeleteConfirm by remember(capturedIndex) { mutableStateOf(false) }
         var testLoading by remember(capturedIndex) { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
 
-        val hasUnsavedChanges by remember(editUrl, currentHeaders, filterAll, selectedTypes) {
+        val hasUnsavedChanges by remember(editUrl, currentHeaders, filterAll, selectedTypes, selectedNotificationIds) {
             derivedStateOf {
                 editUrl.trim() != config.url ||
                 currentHeaders != config.headers ||
                 filterAll != (config.dataTypeFilter == null) ||
-                (!filterAll && selectedTypes != (config.dataTypeFilter ?: globalEnabledTypes))
+                (!filterAll && selectedTypes != (config.dataTypeFilter ?: globalEnabledTypes)) ||
+                selectedNotificationIds != config.notificationConfigIds
             }
         }
 
@@ -92,17 +103,36 @@ fun WebhooksScreen() {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        stringResource(R.string.webhooks_edit_title),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    if (hasUnsavedChanges) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            stringResource(R.string.webhooks_unsaved_changes),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
+                            stringResource(R.string.webhooks_edit_title),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
                         )
+                        if (hasUnsavedChanges) {
+                            Text(
+                                stringResource(R.string.webhooks_unsaved_changes),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            Text(
+                                if (config.isEnabled) stringResource(R.string.webhooks_status_active)
+                                else stringResource(R.string.webhooks_status_disabled),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (config.isEnabled) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
+                    Switch(
+                        checked = config.isEnabled,
+                        onCheckedChange = { enabled ->
+                            val list = webhookConfigs.toMutableList()
+                            list[capturedIndex] = config.copy(isEnabled = enabled)
+                            webhookConfigs = list
+                        }
+                    )
                 }
 
                 // ── URL edit ─────────────────────────────────────────────────
@@ -112,61 +142,38 @@ fun WebhooksScreen() {
                     label = { Text(stringResource(R.string.webhooks_new_url_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    textStyle = MaterialTheme.typography.bodySmall,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    textStyle = MaterialTheme.typography.bodyMedium,
                     isError = editUrl.isNotBlank() && !editUrl.startsWith("http://") && !editUrl.startsWith("https://")
                 )
 
-                // ── Status — updates immediately, no Save needed ──────────────
-                SheetSection {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text(
-                                stringResource(R.string.webhooks_toggle_enable),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                if (config.isEnabled) stringResource(R.string.webhooks_status_active)
-                                else stringResource(R.string.webhooks_status_disabled),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (config.isEnabled) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = config.isEnabled,
-                            onCheckedChange = { enabled ->
-                                // Apply immediately so the list updates without needing Save
-                                val list = webhookConfigs.toMutableList()
-                                list[capturedIndex] = config.copy(isEnabled = enabled)
-                                webhookConfigs = list
-                            }
-                        )
-                    }
-                }
-
                 // ── Data Types ───────────────────────────────────────────────
                 SheetSection {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Filled.FilterList,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                stringResource(R.string.webhooks_data_types_section),
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                        }
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                                Text(
-                                    stringResource(R.string.webhooks_data_types_section),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    stringResource(R.string.webhooks_data_types_send_all),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            Text(
+                                stringResource(R.string.webhooks_data_types_send_all),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                             Switch(
                                 checked = filterAll,
                                 onCheckedChange = { all ->
@@ -214,11 +221,20 @@ fun WebhooksScreen() {
 
                 // ── Headers ───────────────────────────────────────────────────
                 SheetSection {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            stringResource(R.string.webhooks_headers_manage_title),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Filled.List,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                stringResource(R.string.webhooks_headers_manage_title),
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                        }
 
                         if (currentHeaders.isEmpty()) {
                             Text(
@@ -347,80 +363,169 @@ fun WebhooksScreen() {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // ── Test ─────────────────────────────────────────────────────
-                val urlValid = editUrl.trim().let { it.startsWith("http://") || it.startsWith("https://") }
-                OutlinedButton(
-                    onClick = {
-                        testLoading = true
-                        val testConfig = WebhookConfig(
-                            url = editUrl.trim(),
-                            headers = currentHeaders,
-                            isEnabled = true
-                        )
-                        val typesForMock = if (filterAll) globalEnabledTypes else selectedTypes
-                        val mockPayload = MockPayloadBuilder.build(typesForMock.ifEmpty { null }, appVersion)
-                        scope.launch {
-                            val result = withContext(Dispatchers.IO) {
-                                WebhookManager(
-                                    webhookConfigs = listOf(testConfig),
-                                    context = context,
-                                    syncType = "test",
-                                    payload = mockPayload
-                                ).postData(mockPayload)
-                            }
-                            val log = withContext(Dispatchers.IO) {
-                                preferencesManager.getWebhookLogs()
-                                    .firstOrNull { it.syncType == "test" && it.url == testConfig.url }
-                            }
-                            testLoading = false
-                            val detail = buildString {
-                                val code = log?.statusCode
-                                val ms = log?.responseTimeMs
-                                if (code != null) append("$code")
-                                if (ms != null) { if (code != null) append(" · "); append("${ms}ms") }
-                                if (isEmpty()) append(result.exceptionOrNull()?.message ?: "Failed")
-                            }
-                            if (result.isSuccess) {
-                                Toast.makeText(context, context.getString(R.string.webhooks_test_success, detail), Toast.LENGTH_SHORT).show()
+                SheetSection {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Filled.Notifications,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                stringResource(R.string.webhooks_notification_section),
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                        }
+                        var expanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(
+                            expanded = expanded,
+                            onExpandedChange = { expanded = !expanded }
+                        ) {
+                            val selectedCount = selectedNotificationIds.size
+                            val selectedName = if (selectedCount == 0) {
+                                stringResource(R.string.webhooks_notification_none)
+                            } else if (selectedCount == 1) {
+                                globalNotificationConfigs.find { it.id == selectedNotificationIds.first() }?.let {
+                                    "${it.providerType.displayName} (${it.displayIdentifier})"
+                                } ?: "$selectedCount selected"
                             } else {
-                                Toast.makeText(context, context.getString(R.string.webhooks_test_failed, detail), Toast.LENGTH_LONG).show()
+                                "$selectedCount providers selected"
+                            }
+
+                            OutlinedTextField(
+                                value = selectedName,
+                                onValueChange = {},
+                                readOnly = true,
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                textStyle = MaterialTheme.typography.bodySmall
+                            )
+
+                            ExposedDropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Add New Provider...") },
+                                    leadingIcon = { Icon(Icons.Filled.Add, null, Modifier.size(16.dp)) },
+                                    onClick = {
+                                        expanded = false
+                                        onOpenNotificationsSettings()
+                                    }
+                                )
+                                HorizontalDivider()
+                                
+                                if (globalNotificationConfigs.isEmpty()) {
+                                    DropdownMenuItem(
+                                        text = { Text("No providers configured", fontStyle = FontStyle.Italic) },
+                                        onClick = { expanded = false }
+                                    )
+                                } else {
+                                    globalNotificationConfigs.forEach { notif ->
+                                        DropdownMenuItem(
+                                            text = { Text("${notif.providerType.displayName} (${notif.displayIdentifier})") },
+                                            leadingIcon = {
+                                                Checkbox(
+                                                    checked = notif.id in selectedNotificationIds,
+                                                    onCheckedChange = null
+                                                )
+                                            },
+                                            onClick = {
+                                                selectedNotificationIds = if (notif.id in selectedNotificationIds) {
+                                                    selectedNotificationIds - notif.id
+                                                } else {
+                                                    selectedNotificationIds + notif.id
+                                                }
+                                                // Don't close the dropdown on click to allow multiple selections
+                                            }
+                                        )
+                                    }
+                                }
                             }
                         }
-                    },
-                    enabled = !testLoading && urlValid,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    if (testLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
-                        Spacer(Modifier.width(8.dp))
                     }
-                    Text(stringResource(R.string.webhooks_action_test))
                 }
 
+                Spacer(modifier = Modifier.height(4.dp))
 
-                // ── Save ─────────────────────────────────────────────────────
-                Button(
-                    onClick = {
-                        val trimmedUrl = editUrl.trim()
-                        if (trimmedUrl.isEmpty() || (!trimmedUrl.startsWith("http://") && !trimmedUrl.startsWith("https://"))) {
-                            Toast.makeText(context, context.getString(R.string.webhooks_toast_invalid_url), Toast.LENGTH_SHORT).show()
-                            return@Button
-                        }
-                        val newFilter = if (filterAll) null else selectedTypes.ifEmpty { null }
-                        val list = webhookConfigs.toMutableList()
-                        list[capturedIndex] = webhookConfigs[capturedIndex].copy(
-                            url = trimmedUrl,
-                            headers = currentHeaders,
-                            dataTypeFilter = newFilter
-                        )
-                        webhookConfigs = list
-                        sheetIndex = -1
-                    },
-                    modifier = Modifier.fillMaxWidth()
+                // ── Actions ──────────────────────────────────────────────────
+                val urlValid = editUrl.trim().let { it.startsWith("http://") || it.startsWith("https://") }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(stringResource(R.string.action_save))
+                    OutlinedButton(
+                        onClick = {
+                            testLoading = true
+                            val testConfig = WebhookConfig(
+                                url = editUrl.trim(),
+                                headers = currentHeaders,
+                                isEnabled = true
+                            )
+                            val typesForMock = if (filterAll) globalEnabledTypes else selectedTypes
+                            val mockPayload = MockPayloadBuilder.build(typesForMock.ifEmpty { null }, appVersion)
+                            scope.launch {
+                                val result = withContext(Dispatchers.IO) {
+                                    WebhookManager(
+                                        webhookConfigs = listOf(testConfig),
+                                        context = context,
+                                        syncType = "test",
+                                        payload = mockPayload
+                                    ).postData(mockPayload)
+                                }
+                                val log = withContext(Dispatchers.IO) {
+                                    preferencesManager.getWebhookLogs()
+                                        .firstOrNull { it.syncType == "test" && it.url == testConfig.url }
+                                }
+                                testLoading = false
+                                val detail = buildString {
+                                    val code = log?.statusCode
+                                    val ms = log?.responseTimeMs
+                                    if (code != null) append("$code")
+                                    if (ms != null) { if (code != null) append(" · "); append("${ms}ms") }
+                                    if (isEmpty()) append(result.exceptionOrNull()?.message ?: "Failed")
+                                }
+                                if (result.isSuccess) {
+                                    Toast.makeText(context, context.getString(R.string.webhooks_test_success, detail), Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, context.getString(R.string.webhooks_test_failed, detail), Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        },
+                        enabled = !testLoading && urlValid,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        if (testLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.width(8.dp))
+                        }
+                        Text(stringResource(R.string.webhooks_action_test))
+                    }
+
+                    Button(
+                        onClick = {
+                            val trimmedUrl = editUrl.trim()
+                            if (trimmedUrl.isEmpty() || (!trimmedUrl.startsWith("http://") && !trimmedUrl.startsWith("https://"))) {
+                                Toast.makeText(context, context.getString(R.string.webhooks_toast_invalid_url), Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+                            val newFilter = if (filterAll) null else selectedTypes.ifEmpty { null }
+                            val list = webhookConfigs.toMutableList()
+                            list[capturedIndex] = webhookConfigs[capturedIndex].copy(
+                                url = trimmedUrl,
+                                headers = currentHeaders,
+                                dataTypeFilter = newFilter,
+                                notificationConfigIds = selectedNotificationIds
+                            )
+                            webhookConfigs = list
+                            sheetIndex = -1
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(stringResource(R.string.action_save))
+                    }
                 }
 
                 // ── Delete ────────────────────────────────────────────────────
@@ -436,8 +541,8 @@ fun WebhooksScreen() {
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Filled.Delete, null, Modifier.size(16.dp))
-                        Spacer(Modifier.width(6.dp))
+                        Icon(Icons.Filled.Delete, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
                         Text(stringResource(R.string.webhooks_delete_title))
                     }
                 } else {

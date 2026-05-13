@@ -125,6 +125,10 @@ class SyncManager(private val context: Context) {
                 var atLeastOneAttempted = false
                 var lastFailure: Throwable? = null
 
+                val dispatcher = NotificationDispatcher()
+                val globalNotifs = preferencesManager.getNotificationConfigs()
+                val aggregatedNotifs = mutableMapOf<NotificationConfig, MutableList<String>>()
+
                 for (config in enabledWebhookConfigs) {
                     val filteredData = if (config.dataTypeFilter != null) {
                         filterHealthData(healthData, config.dataTypeFilter)
@@ -145,8 +149,34 @@ class SyncManager(private val context: Context) {
                         payload = payload
                     )
                     val result = manager.postData(payload)
-                    if (result.isSuccess) atLeastOneSuccess = true
-                    else lastFailure = result.exceptionOrNull()
+                    
+                    val notifConfigs = config.notificationConfigIds.mapNotNull { id -> 
+                        globalNotifs.find { it.id == id } 
+                    }
+
+                    if (result.isSuccess) {
+                        atLeastOneSuccess = true
+                        val msg = "✅ ${config.url}: $totalRecords records"
+                        notifConfigs.forEach { nc ->
+                            aggregatedNotifs.getOrPut(nc) { mutableListOf() }.add(msg)
+                        }
+                    } else {
+                        lastFailure = result.exceptionOrNull()
+                        val msg = "❌ ${config.url}: ${lastFailure?.message ?: "Error"}"
+                        notifConfigs.forEach { nc ->
+                            aggregatedNotifs.getOrPut(nc) { mutableListOf() }.add(msg)
+                        }
+                    }
+                }
+
+                aggregatedNotifs.forEach { (nc, messages) ->
+                    val title = if (messages.any { it.startsWith("❌") }) "Sync Completed with Errors" else "Sync Succeeded"
+                    dispatcher.dispatch(
+                        context = context,
+                        config = nc,
+                        title = title,
+                        message = messages.joinToString("\n")
+                    )
                 }
 
                 if (!atLeastOneAttempted) {

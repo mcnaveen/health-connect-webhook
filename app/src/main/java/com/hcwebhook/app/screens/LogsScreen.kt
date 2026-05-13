@@ -59,7 +59,7 @@ fun LogsScreen() {
     // filter state
     var selectedUrl by remember { mutableStateOf<String?>(null) }
     var statusFilter by remember { mutableIntStateOf(0) } // 0=All 1=Success 2=Error
-    var syncTypeFilter by remember { mutableIntStateOf(0) } // 0=All 1=Manual 2=Auto 3=Test
+    var syncTypeFilter by remember { mutableIntStateOf(0) } // 0=All 1=Manual 2=Auto 3=Test 4=Notification
     var displayLimit by remember { mutableIntStateOf(50) }
 
     val uniqueUrls = remember(allLogs) { allLogs.map { it.url }.distinct().sorted() }
@@ -69,7 +69,7 @@ fun LogsScreen() {
     fun matchesFilter(log: WebhookLog) =
         (selectedUrl == null || log.url == selectedUrl) &&
         when (statusFilter) { 1 -> log.success; 2 -> !log.success; else -> true } &&
-        when (syncTypeFilter) { 1 -> log.syncType == "manual"; 2 -> log.syncType == "auto"; 3 -> log.syncType == "test"; else -> true }
+        when (syncTypeFilter) { 1 -> log.syncType == "manual"; 2 -> log.syncType == "auto"; 3 -> log.syncType == "test"; 4 -> log.syncType == "notification"; else -> true }
 
     val filtered = remember(allLogs, selectedUrl, statusFilter, syncTypeFilter, displayLimit) {
         allLogs.filter { matchesFilter(it) }.take(displayLimit)
@@ -87,7 +87,7 @@ fun LogsScreen() {
                 allLogs.filter { log ->
                     (snapUrl == null || log.url == snapUrl) &&
                     when (snapStatus) { 1 -> log.success; 2 -> !log.success; else -> true } &&
-                    when (snapSyncType) { 1 -> log.syncType == "manual"; 2 -> log.syncType == "auto"; 3 -> log.syncType == "test"; else -> true }
+                    when (snapSyncType) { 1 -> log.syncType == "manual"; 2 -> log.syncType == "auto"; 3 -> log.syncType == "test"; 4 -> log.syncType == "notification"; else -> true }
                 }
             } else allLogs
         }
@@ -99,7 +99,7 @@ fun LogsScreen() {
                 when (snapStatus) { 1 -> append("successful "); 2 -> append("failed ") }
                 append(if (snapLogsToRemove.size == 1) "log" else "logs")
                 snapUrl?.let { append(" from ${it.removePrefix("https://").removePrefix("http://").substringBefore("/")}") }
-                when (snapSyncType) { 1 -> append(" (manual)"); 2 -> append(" (auto)"); 3 -> append(" (test)") }
+                when (snapSyncType) { 1 -> append(" (manual)"); 2 -> append(" (auto)"); 3 -> append(" (test)"); 4 -> append(" (notification)") }
                 append(" will be permanently deleted.")
             }
         }
@@ -233,7 +233,8 @@ fun LogsScreen() {
                             0 to stringResource(R.string.logs_filter_all),
                             1 to stringResource(R.string.logs_sync_manual),
                             2 to stringResource(R.string.logs_sync_auto),
-                            3 to stringResource(R.string.logs_sync_test)
+                            3 to stringResource(R.string.logs_sync_test),
+                            4 to "Notification"
                         ).forEach { (idx, label) ->
                             FilterChip(
                                 selected = syncTypeFilter == idx,
@@ -428,6 +429,7 @@ private fun LogRow(log: WebhookLog, onClick: () -> Unit) {
                             when (type) {
                                 "manual" -> stringResource(R.string.logs_sync_manual)
                                 "test" -> stringResource(R.string.logs_sync_test)
+                                "notification" -> "Notification"
                                 else -> stringResource(R.string.logs_sync_auto)
                             },
                             style = MaterialTheme.typography.labelSmall,
@@ -612,6 +614,7 @@ private fun LogDetailSheet(
                 when (it) {
                     "manual" -> stringResource(R.string.logs_sync_manual)
                     "test" -> stringResource(R.string.logs_sync_test)
+                    "notification" -> "Notification"
                     else -> stringResource(R.string.logs_sync_auto)
                 }
             )

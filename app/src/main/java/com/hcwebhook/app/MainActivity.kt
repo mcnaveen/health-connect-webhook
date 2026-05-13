@@ -3,6 +3,7 @@ package com.hcwebhook.app
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.BackHandler
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -16,7 +17,9 @@ import com.hcwebhook.app.screens.AboutScreen
 import com.hcwebhook.app.screens.ConfigurationScreen
 import com.hcwebhook.app.screens.LocalHttpSettingsScreen
 import com.hcwebhook.app.screens.LogsScreen
+import com.hcwebhook.app.screens.NotificationsScreen
 import com.hcwebhook.app.screens.OnboardingScreen
+import com.hcwebhook.app.screens.WebhooksScreen
 import com.hcwebhook.app.ui.theme.HCWebhookTheme
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
@@ -101,6 +104,7 @@ class MainActivity : AppCompatActivity() {
     ) {
         var selectedScreen by remember { mutableStateOf<NavigationScreen>(NavigationScreen.Home) }
         var showLocalHttpSettings by remember { mutableStateOf(false) }
+        var showNotificationsSettings by remember { mutableStateOf(false) }
 
         LaunchedEffect(activity.openLocalHttpRequest.value) {
             if (activity.openLocalHttpRequest.value) {
@@ -151,7 +155,7 @@ class MainActivity : AppCompatActivity() {
 
         Scaffold(
             bottomBar = {
-                if (!showLocalHttpSettings) {
+                if (!showLocalHttpSettings && !showNotificationsSettings) {
                     NavigationBar(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     ) {
@@ -167,10 +171,23 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         ) { padding ->
+            BackHandler {
+                if (showLocalHttpSettings) {
+                    showLocalHttpSettings = false
+                } else if (showNotificationsSettings) {
+                    showNotificationsSettings = false
+                } else if (selectedScreen != NavigationScreen.Home) {
+                    selectedScreen = NavigationScreen.Home
+                } else {
+                    activity.finish()
+                }
+            }
             val saveableStateHolder = rememberSaveableStateHolder()
             Box(modifier = Modifier.padding(padding)) {
                 if (showLocalHttpSettings) {
                     LocalHttpSettingsScreen(onBack = { showLocalHttpSettings = false })
+                } else if (showNotificationsSettings) {
+                    NotificationsScreen(onBack = { showNotificationsSettings = false })
                 } else {
                     saveableStateHolder.SaveableStateProvider(selectedScreen.toString()) {
                         when (selectedScreen) {
@@ -182,11 +199,14 @@ class MainActivity : AppCompatActivity() {
                                 sdkStatus = sdkStatus,
                                 onOpenLocalHttpSettings = { showLocalHttpSettings = true }
                             )
-                            is NavigationScreen.Webhooks -> com.hcwebhook.app.screens.WebhooksScreen()
+                            is NavigationScreen.Webhooks -> WebhooksScreen(
+                                onOpenNotificationsSettings = { showNotificationsSettings = true }
+                            )
                             is NavigationScreen.Logs -> LogsScreen()
                             is NavigationScreen.About -> AboutScreen(
                                 onRestartOnboarding = onRestartOnboarding,
-                                onOpenLocalHttpSettings = { showLocalHttpSettings = true }
+                                onOpenLocalHttpSettings = { showLocalHttpSettings = true },
+                                onOpenNotificationsSettings = { showNotificationsSettings = true }
                             )
                         }
                     }

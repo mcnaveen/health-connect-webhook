@@ -143,6 +143,17 @@ class WebhookManager(
         }
     }
 
+    private fun String.redactSensitiveUrl(): String {
+        var safe = this
+        // Redact common auth query params
+        safe = safe.replace(Regex("([?&](token|key|apikey|auth|api_key|secret)=)[^&]+", RegexOption.IGNORE_CASE), "$1********")
+        // Redact Discord webhook tokens
+        safe = safe.replace(Regex("(discord\\.com/api/webhooks/\\d+/)[^/?&]+"), "$1********")
+        // Redact Telegram bot tokens (just in case they leak into url somehow)
+        safe = safe.replace(Regex("(api\\.telegram\\.org/bot)[^/]+"), "$1********")
+        return safe
+    }
+
     private fun logWebhookCall(
         url: String,
         timestamp: Long,
@@ -156,10 +167,10 @@ class WebhookManager(
             val log = WebhookLog(
                 id = UUID.randomUUID().toString(),
                 timestamp = timestamp,
-                url = url,
+                url = url.redactSensitiveUrl(),
                 statusCode = statusCode,
                 success = success,
-                errorMessage = errorMessage,
+                errorMessage = errorMessage?.redactSensitiveUrl(),
                 dataType = dataType,
                 recordCount = recordCount,
                 responseTimeMs = responseTimeMs,

@@ -42,6 +42,7 @@ class PreferencesManager(context: Context) {
         private const val DEFAULT_LOCAL_TCP_PORT = 8787
         private const val KEY_LOCAL_HTTP_AUTH_ENABLED = "local_http_auth_enabled"
         private const val KEY_LOCAL_HTTP_TOKEN = "local_http_token"
+        private const val KEY_NOTIFICATION_CONFIGS = "notification_configs"
     }
 
 
@@ -322,6 +323,23 @@ class PreferencesManager(context: Context) {
         return token
     }
 
+    fun getNotificationConfigs(): List<NotificationConfig> {
+        val configsJson = prefs.getString(KEY_NOTIFICATION_CONFIGS, null)
+        if (configsJson != null) {
+            return try {
+                Json.decodeFromString<List<NotificationConfig>>(configsJson)
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }
+        return emptyList()
+    }
+
+    fun setNotificationConfigs(configs: List<NotificationConfig>) {
+        val configsJson = Json.encodeToString(configs)
+        prefs.edit().putString(KEY_NOTIFICATION_CONFIGS, configsJson).apply()
+    }
+
     // -------------------------------------------------------------------------
     // Export / Import
     // -------------------------------------------------------------------------
@@ -338,7 +356,8 @@ class PreferencesManager(context: Context) {
             syncIntervalMinutes = getSyncIntervalMinutes(),
             scheduledSyncs = getScheduledSyncs(),
             localTcpEnabled = isLocalTcpEnabled(),
-            localTcpPort = getLocalTcpPort()
+            localTcpPort = getLocalTcpPort(),
+            notificationConfigs = getNotificationConfigs()
         )
     }
 
@@ -360,5 +379,6 @@ class PreferencesManager(context: Context) {
         setScheduledSyncs(export.scheduledSyncs)
         setLocalTcpEnabled(export.localTcpEnabled)
         setLocalTcpPort(export.localTcpPort)
+        setNotificationConfigs(export.notificationConfigs)
     }
 }

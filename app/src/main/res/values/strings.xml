@@ -272,6 +272,12 @@
     <string name="nav_webhooks">Webhooks</string>
     <string name="nav_logs">Logs</string>
     <string name="nav_about">Settings</string>
+    
+    <!-- Notifications -->
+    <string name="about_notifications_title">Notifications</string>
+    <string name="about_notifications_desc">Configure Gotify, ntfy, Telegram, Discord, Pushover</string>
+    <string name="webhooks_notification_section">Notification Provider</string>
+    <string name="webhooks_notification_none">None</string>
 </resources>
 
 

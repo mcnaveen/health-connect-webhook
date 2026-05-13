@@ -15,5 +15,6 @@ data class SettingsExport(
     val syncIntervalMinutes: Int = 60,
     val scheduledSyncs: List<ScheduledSync> = emptyList(),
     val localTcpEnabled: Boolean = false,
-    val localTcpPort: Int = 8787
+    val localTcpPort: Int = 8787,
+    val notificationConfigs: List<NotificationConfig> = emptyList()
 )
