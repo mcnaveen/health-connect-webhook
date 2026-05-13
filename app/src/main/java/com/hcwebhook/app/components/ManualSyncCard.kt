@@ -117,10 +117,10 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                                     }
 
                                     syncMessage = context.getString(R.string.manual_sync_progress, startDate.toString(), endDate.toString())
-                                    syncManager.performSync(start = startInstant, end = endInstant)
+                                    syncManager.performSync(start = startInstant, end = endInstant, syncType = "manual")
                                 } else {
                                     // sync the last N days, or from the last sync
-                                    syncManager.performSync(timeRangeSelection)
+                                    syncManager.performSync(timeRangeSelection, syncType = "manual")
                                 }
 
                                 when {
