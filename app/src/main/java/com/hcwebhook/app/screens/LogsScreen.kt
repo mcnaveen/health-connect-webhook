@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -31,7 +32,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hcwebhook.app.PreferencesManager
 import com.hcwebhook.app.R
+import com.hcwebhook.app.WebhookConfig
 import com.hcwebhook.app.WebhookLog
+import com.hcwebhook.app.WebhookManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.text.SimpleDateFormat
@@ -53,31 +59,50 @@ fun LogsScreen() {
     // filter state
     var selectedUrl by remember { mutableStateOf<String?>(null) }
     var statusFilter by remember { mutableIntStateOf(0) } // 0=All 1=Success 2=Error
-    var syncTypeFilter by remember { mutableIntStateOf(0) } // 0=All 1=Manual 2=Auto
+    var syncTypeFilter by remember { mutableIntStateOf(0) } // 0=All 1=Manual 2=Auto 3=Test
     var displayLimit by remember { mutableIntStateOf(50) }
 
     val uniqueUrls = remember(allLogs) { allLogs.map { it.url }.distinct().sorted() }
 
+    val isFiltered = selectedUrl != null || statusFilter != 0 || syncTypeFilter != 0
+
+    fun matchesFilter(log: WebhookLog) =
+        (selectedUrl == null || log.url == selectedUrl) &&
+        when (statusFilter) { 1 -> log.success; 2 -> !log.success; else -> true } &&
+        when (syncTypeFilter) { 1 -> log.syncType == "manual"; 2 -> log.syncType == "auto"; 3 -> log.syncType == "test"; else -> true }
+
     val filtered = remember(allLogs, selectedUrl, statusFilter, syncTypeFilter, displayLimit) {
-        allLogs
-            .filter { log ->
-                (selectedUrl == null || log.url == selectedUrl) &&
-                when (statusFilter) {
-                    1 -> log.success
-                    2 -> !log.success
-                    else -> true
-                } &&
-                when (syncTypeFilter) {
-                    1 -> log.syncType == "manual"
-                    2 -> log.syncType == "auto"
-                    else -> true
-                }
-            }
-            .take(displayLimit)
+        allLogs.filter { matchesFilter(it) }.take(displayLimit)
     }
 
     // ── Clear Confirmation ────────────────────────────────────────────────────
     if (showClearSheet) {
+        // Snapshot filter state at sheet-open time so the description stays stable
+        val snapUrl = remember { selectedUrl }
+        val snapStatus = remember { statusFilter }
+        val snapSyncType = remember { syncTypeFilter }
+        val snapIsFiltered = remember { snapUrl != null || snapStatus != 0 || snapSyncType != 0 }
+        val snapLogsToRemove = remember {
+            if (snapIsFiltered) {
+                allLogs.filter { log ->
+                    (snapUrl == null || log.url == snapUrl) &&
+                    when (snapStatus) { 1 -> log.success; 2 -> !log.success; else -> true } &&
+                    when (snapSyncType) { 1 -> log.syncType == "manual"; 2 -> log.syncType == "auto"; 3 -> log.syncType == "test"; else -> true }
+                }
+            } else allLogs
+        }
+        val clearDesc = buildString {
+            if (!snapIsFiltered) {
+                append("All ${allLogs.size} logs will be permanently deleted.")
+            } else {
+                append("${snapLogsToRemove.size} ")
+                when (snapStatus) { 1 -> append("successful "); 2 -> append("failed ") }
+                append(if (snapLogsToRemove.size == 1) "log" else "logs")
+                snapUrl?.let { append(" from ${it.removePrefix("https://").removePrefix("http://").substringBefore("/")}") }
+                when (snapSyncType) { 1 -> append(" (manual)"); 2 -> append(" (auto)"); 3 -> append(" (test)") }
+                append(" will be permanently deleted.")
+            }
+        }
         ModalBottomSheet(onDismissRequest = { showClearSheet = false }) {
             Column(
                 modifier = Modifier
@@ -92,17 +117,26 @@ fun LogsScreen() {
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(40.dp)
                 )
-                Text(stringResource(R.string.logs_clear_title), style = MaterialTheme.typography.titleLarge)
                 Text(
-                    stringResource(R.string.logs_clear_desc),
+                    if (snapIsFiltered) "Clear filtered logs?" else stringResource(R.string.logs_clear_title),
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Text(
+                    clearDesc,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Button(
                     onClick = {
-                        preferencesManager.clearWebhookLogs()
-                        allLogs = emptyList()
+                        if (snapIsFiltered) {
+                            val ids = snapLogsToRemove.map { it.id }.toSet()
+                            preferencesManager.removeWebhookLogs(ids)
+                            allLogs = allLogs.filter { it.id !in ids }
+                        } else {
+                            preferencesManager.clearWebhookLogs()
+                            allLogs = emptyList()
+                        }
                         showClearSheet = false
                     },
                     colors = ButtonDefaults.buttonColors(
@@ -111,7 +145,7 @@ fun LogsScreen() {
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(stringResource(R.string.action_clear_logs))
+                    Text(if (snapIsFiltered) "Clear ${snapLogsToRemove.size} logs" else stringResource(R.string.action_clear_logs))
                 }
                 OutlinedButton(
                     onClick = { showClearSheet = false },
@@ -198,7 +232,8 @@ fun LogsScreen() {
                         listOf(
                             0 to stringResource(R.string.logs_filter_all),
                             1 to stringResource(R.string.logs_sync_manual),
-                            2 to stringResource(R.string.logs_sync_auto)
+                            2 to stringResource(R.string.logs_sync_auto),
+                            3 to stringResource(R.string.logs_sync_test)
                         ).forEach { (idx, label) ->
                             FilterChip(
                                 selected = syncTypeFilter == idx,
@@ -238,7 +273,7 @@ fun LogsScreen() {
         ) {
             LogDetailSheet(
                 log = log,
-                onDismiss = { detailLog = null },
+                preferencesManager = preferencesManager,
                 onDelete = {
                     preferencesManager.removeWebhookLog(log.id)
                     allLogs = allLogs.filter { it.id != log.id }
@@ -260,8 +295,12 @@ fun LogsScreen() {
             Column {
                 Text(stringResource(R.string.logs_title), style = MaterialTheme.typography.titleLarge)
                 if (allLogs.isNotEmpty()) {
+                    val totalMatching = remember(allLogs, selectedUrl, statusFilter, syncTypeFilter) {
+                        allLogs.count { matchesFilter(it) }
+                    }
                     Text(
-                        stringResource(R.string.logs_count, allLogs.size),
+                        if (isFiltered) "$totalMatching of ${allLogs.size} logs"
+                        else stringResource(R.string.logs_count, allLogs.size),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -386,8 +425,11 @@ private fun LogRow(log: WebhookLog, onClick: () -> Unit) {
                         color = MaterialTheme.colorScheme.surfaceVariant
                     ) {
                         Text(
-                            if (type == "manual") stringResource(R.string.logs_sync_manual)
-                            else stringResource(R.string.logs_sync_auto),
+                            when (type) {
+                                "manual" -> stringResource(R.string.logs_sync_manual)
+                                "test" -> stringResource(R.string.logs_sync_test)
+                                else -> stringResource(R.string.logs_sync_auto)
+                            },
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
@@ -408,11 +450,20 @@ private fun LogRow(log: WebhookLog, onClick: () -> Unit) {
 }
 
 @Composable
-private fun LogDetailSheet(log: WebhookLog, onDismiss: () -> Unit, onDelete: () -> Unit) {
+private fun LogDetailSheet(
+    log: WebhookLog,
+    preferencesManager: PreferencesManager,
+    onDelete: () -> Unit
+) {
+    val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val successColor = Color(0xFF4CAF50)
     val statusColor = if (log.success) successColor else MaterialTheme.colorScheme.error
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var retryLoading by remember { mutableStateOf(false) }
+    var retryResult by remember { mutableStateOf<Boolean?>(null) }
+    var retryMessage by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
     val prettyPayload = remember(log.payload) {
         log.payload?.let {
             try { prettyJson.encodeToString(Json.parseToJsonElement(it)) } catch (_: Exception) { it }
@@ -450,6 +501,43 @@ private fun LogDetailSheet(log: WebhookLog, onDismiss: () -> Unit, onDelete: () 
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (!log.success && log.payload != null) {
+                    IconButton(
+                        onClick = {
+                            retryLoading = true
+                            retryResult = null
+                            scope.launch {
+                                val result = withContext(Dispatchers.IO) {
+                                    val configs = preferencesManager.getWebhookConfigs()
+                                    val config = configs.find { it.url == log.url }
+                                        ?: WebhookConfig(url = log.url)
+                                    WebhookManager(
+                                        webhookConfigs = listOf(config.copy(isEnabled = true)),
+                                        context = context,
+                                        dataType = log.dataType,
+                                        recordCount = log.recordCount,
+                                        syncType = "manual",
+                                        payload = log.payload
+                                    ).postData(log.payload!!)
+                                }
+                                retryLoading = false
+                                retryResult = result.isSuccess
+                                retryMessage = result.exceptionOrNull()?.message ?: ""
+                            }
+                        },
+                        enabled = !retryLoading
+                    ) {
+                        if (retryLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        } else {
+                            Icon(
+                                Icons.Filled.Refresh,
+                                contentDescription = stringResource(R.string.webhooks_test_retry),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
                 IconButton(onClick = {
                     clipboardManager.setText(AnnotatedString(prettyJson.encodeToString(log)))
                 }) {
@@ -468,6 +556,15 @@ private fun LogDetailSheet(log: WebhookLog, onDismiss: () -> Unit, onDelete: () 
                     )
                 }
             }
+        }
+
+        retryResult?.let { success ->
+            Text(
+                text = if (success) stringResource(R.string.webhooks_retry_success)
+                       else stringResource(R.string.webhooks_retry_failed, retryMessage),
+                style = MaterialTheme.typography.labelSmall,
+                color = if (success) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error
+            )
         }
 
         if (showDeleteConfirm) {
@@ -512,8 +609,11 @@ private fun LogDetailSheet(log: WebhookLog, onDismiss: () -> Unit, onDelete: () 
         log.syncType?.let {
             DetailField(
                 "Sync Type",
-                if (it == "manual") stringResource(R.string.logs_sync_manual)
-                else stringResource(R.string.logs_sync_auto)
+                when (it) {
+                    "manual" -> stringResource(R.string.logs_sync_manual)
+                    "test" -> stringResource(R.string.logs_sync_test)
+                    else -> stringResource(R.string.logs_sync_auto)
+                }
             )
         }
         if (log.recordCount != null) DetailField("Records", "${log.recordCount}")

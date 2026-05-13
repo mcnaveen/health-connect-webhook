@@ -156,6 +156,11 @@
     <string name="webhooks_headers_json_label">Paste JSON object</string>
     <string name="webhooks_headers_json_apply">Apply JSON</string>
     <string name="webhooks_headers_json_error">Invalid JSON — expected an object with string values</string>
+    <string name="webhooks_action_test">Test Webhook</string>
+    <string name="webhooks_test_success">✓ Connected successfully</string>
+    <string name="webhooks_test_retry">Retry</string>
+    <string name="webhooks_retry_success">✓ Retry sent successfully</string>
+    <string name="webhooks_retry_failed">Retry failed: %1$s</string>
     <string name="action_save">Save</string>
 
     <!-- Configuration Screen -->
@@ -249,6 +254,7 @@
     <string name="logs_response_time">%1$d ms</string>
     <string name="logs_sync_manual">Manual</string>
     <string name="logs_sync_auto">Auto</string>
+    <string name="logs_sync_test">Test</string>
     <string name="logs_action_export">Export Logs</string>
     <string name="logs_export_intent_title">Export Webhook Logs</string>
     <string name="logs_count">%1$d logs</string>

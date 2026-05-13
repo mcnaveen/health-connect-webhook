@@ -165,6 +165,11 @@ class PreferencesManager(context: Context) {
         prefs.edit().putString(KEY_WEBHOOK_LOGS, logsJson).apply()
     }
 
+    fun removeWebhookLogs(ids: Set<String>) {
+        val updated = getWebhookLogs().filter { it.id !in ids }
+        prefs.edit().putString(KEY_WEBHOOK_LOGS, Json.encodeToString(updated)).apply()
+    }
+
     fun clearWebhookLogs() {
         prefs.edit().remove(KEY_WEBHOOK_LOGS).apply()
     }
