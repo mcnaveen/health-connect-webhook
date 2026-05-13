@@ -62,6 +62,7 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
 
         var editUrl by remember(capturedIndex) { mutableStateOf(config.url) }
         var currentHeaders by remember(capturedIndex) { mutableStateOf(config.headers) }
+        var manageHeaders by remember(capturedIndex) { mutableStateOf(config.headers.isNotEmpty()) }
         var newKey by remember(capturedIndex) { mutableStateOf("") }
         var newValue by remember(capturedIndex) { mutableStateOf("") }
         var jsonPaste by remember(capturedIndex) { mutableStateOf("") }
@@ -85,8 +86,11 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
             }
         }
 
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
         ModalBottomSheet(
             onDismissRequest = { sheetIndex = -1 },
+            sheetState = sheetState,
             dragHandle = { BottomSheetDefaults.DragHandle() },
             containerColor = MaterialTheme.colorScheme.surface
         ) {
@@ -222,142 +226,157 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                 // ── Headers ───────────────────────────────────────────────────
                 SheetSection {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Filled.List,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(Modifier.width(12.dp))
-                            Text(
-                                stringResource(R.string.webhooks_headers_manage_title),
-                                style = MaterialTheme.typography.titleSmall
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Filled.List,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    stringResource(R.string.webhooks_headers_manage_title),
+                                    style = MaterialTheme.typography.titleSmall
+                                )
+                            }
+                            Switch(
+                                checked = manageHeaders,
+                                onCheckedChange = { enabled -> 
+                                    manageHeaders = enabled
+                                    if (!enabled) currentHeaders = emptyMap()
+                                }
                             )
                         }
 
-                        if (currentHeaders.isEmpty()) {
-                            Text(
-                                stringResource(R.string.webhooks_headers_empty),
-                                style = MaterialTheme.typography.bodySmall,
-                                fontStyle = FontStyle.Italic,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        } else {
-                            currentHeaders.forEach { (key, value) ->
-                                Surface(
-                                    shape = MaterialTheme.shapes.small,
-                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                        if (manageHeaders) {
+                            if (currentHeaders.isEmpty()) {
+                                Text(
+                                    stringResource(R.string.webhooks_headers_empty),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontStyle = FontStyle.Italic,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            } else {
+                                currentHeaders.forEach { (key, value) ->
+                                    Surface(
+                                        shape = MaterialTheme.shapes.small,
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                     ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(key, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                            Text(value, style = MaterialTheme.typography.bodySmall)
-                                        }
-                                        IconButton(
-                                            onClick = { currentHeaders = currentHeaders - key },
-                                            modifier = Modifier.size(32.dp)
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Icon(
-                                                Icons.Filled.Close,
-                                                contentDescription = stringResource(R.string.webhooks_headers_action_remove),
-                                                modifier = Modifier.size(16.dp),
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(key, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                                Text(value, style = MaterialTheme.typography.bodySmall)
+                                            }
+                                            IconButton(
+                                                onClick = { currentHeaders = currentHeaders - key },
+                                                modifier = Modifier.size(32.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Filled.Close,
+                                                    contentDescription = stringResource(R.string.webhooks_headers_action_remove),
+                                                    modifier = Modifier.size(16.dp),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
 
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-                        TabRow(
-                            selectedTabIndex = headerTab,
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0f)
-                        ) {
-                            Tab(selected = headerTab == 0, onClick = { headerTab = 0 }) {
-                                Text(
-                                    stringResource(R.string.webhooks_headers_tab_form),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    modifier = Modifier.padding(vertical = 10.dp)
-                                )
-                            }
-                            Tab(selected = headerTab == 1, onClick = { headerTab = 1 }) {
-                                Text(
-                                    stringResource(R.string.webhooks_headers_tab_json),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    modifier = Modifier.padding(vertical = 10.dp)
-                                )
-                            }
-                        }
-
-                        if (headerTab == 0) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            TabRow(
+                                selectedTabIndex = headerTab,
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0f)
                             ) {
+                                Tab(selected = headerTab == 0, onClick = { headerTab = 0 }) {
+                                    Text(
+                                        stringResource(R.string.webhooks_headers_tab_form),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        modifier = Modifier.padding(vertical = 10.dp)
+                                    )
+                                }
+                                Tab(selected = headerTab == 1, onClick = { headerTab = 1 }) {
+                                    Text(
+                                        stringResource(R.string.webhooks_headers_tab_json),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        modifier = Modifier.padding(vertical = 10.dp)
+                                    )
+                                }
+                            }
+
+                            if (headerTab == 0) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = newKey,
+                                        onValueChange = { newKey = it },
+                                        label = { Text(stringResource(R.string.webhooks_headers_key_label)) },
+                                        modifier = Modifier.weight(1f),
+                                        singleLine = true,
+                                        textStyle = MaterialTheme.typography.bodySmall
+                                    )
+                                    OutlinedTextField(
+                                        value = newValue,
+                                        onValueChange = { newValue = it },
+                                        label = { Text(stringResource(R.string.webhooks_headers_value_label)) },
+                                        modifier = Modifier.weight(1f),
+                                        singleLine = true,
+                                        textStyle = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                                OutlinedButton(
+                                    onClick = {
+                                        if (newKey.isNotBlank() && newValue.isNotBlank()) {
+                                            currentHeaders = currentHeaders + (newKey.trim() to newValue.trim())
+                                            newKey = ""
+                                            newValue = ""
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(stringResource(R.string.webhooks_headers_action_add_title))
+                                }
+                            } else {
                                 OutlinedTextField(
-                                    value = newKey,
-                                    onValueChange = { newKey = it },
-                                    label = { Text(stringResource(R.string.webhooks_headers_key_label)) },
-                                    modifier = Modifier.weight(1f),
-                                    singleLine = true,
+                                    value = jsonPaste,
+                                    onValueChange = { jsonPaste = it },
+                                    label = { Text(stringResource(R.string.webhooks_headers_json_label)) },
+                                    placeholder = { Text("{\"Authorization\": \"Bearer token\"}", style = MaterialTheme.typography.bodySmall) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    minLines = 3,
+                                    maxLines = 6,
                                     textStyle = MaterialTheme.typography.bodySmall
                                 )
-                                OutlinedTextField(
-                                    value = newValue,
-                                    onValueChange = { newValue = it },
-                                    label = { Text(stringResource(R.string.webhooks_headers_value_label)) },
-                                    modifier = Modifier.weight(1f),
-                                    singleLine = true,
-                                    textStyle = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                            OutlinedButton(
-                                onClick = {
-                                    if (newKey.isNotBlank() && newValue.isNotBlank()) {
-                                        currentHeaders = currentHeaders + (newKey.trim() to newValue.trim())
-                                        newKey = ""
-                                        newValue = ""
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(stringResource(R.string.webhooks_headers_action_add_title))
-                            }
-                        } else {
-                            OutlinedTextField(
-                                value = jsonPaste,
-                                onValueChange = { jsonPaste = it },
-                                label = { Text(stringResource(R.string.webhooks_headers_json_label)) },
-                                placeholder = { Text("{\"Authorization\": \"Bearer token\"}", style = MaterialTheme.typography.bodySmall) },
-                                modifier = Modifier.fillMaxWidth(),
-                                minLines = 3,
-                                maxLines = 6,
-                                textStyle = MaterialTheme.typography.bodySmall
-                            )
-                            OutlinedButton(
-                                onClick = {
-                                    try {
-                                        val obj = JSONObject(jsonPaste.trim())
-                                        val parsed = mutableMapOf<String, String>()
-                                        obj.keys().forEach { key -> parsed[key] = obj.getString(key) }
-                                        currentHeaders = currentHeaders + parsed
-                                        jsonPaste = ""
-                                        headerTab = 0
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, context.getString(R.string.webhooks_headers_json_error), Toast.LENGTH_SHORT).show()
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(stringResource(R.string.webhooks_headers_json_apply))
+                                OutlinedButton(
+                                    onClick = {
+                                        try {
+                                            val obj = JSONObject(jsonPaste.trim())
+                                            val parsed = mutableMapOf<String, String>()
+                                            obj.keys().forEach { key -> parsed[key] = obj.getString(key) }
+                                            currentHeaders = currentHeaders + parsed
+                                            jsonPaste = ""
+                                            headerTab = 0
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, context.getString(R.string.webhooks_headers_json_error), Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(stringResource(R.string.webhooks_headers_json_apply))
+                                }
                             }
                         }
                     }
