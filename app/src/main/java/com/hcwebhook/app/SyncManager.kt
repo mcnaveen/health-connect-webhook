@@ -71,10 +71,11 @@ class SyncManager(private val context: Context) {
 
         try {
             val webhookConfigs = preferencesManager.getWebhookConfigs()
+            val enabledWebhookConfigs = webhookConfigs.filter { it.isEnabled }
             val localTcpEnabled = preferencesManager.isLocalTcpEnabled()
 
-            if (webhookConfigs.isEmpty() && !localTcpEnabled) {
-                return@withContext Result.failure(Exception("No webhook URLs configured and local TCP server is disabled"))
+            if (enabledWebhookConfigs.isEmpty() && !localTcpEnabled) {
+                return@withContext Result.failure(Exception("No enabled webhook URLs configured and local TCP server is disabled"))
             }
 
             val enabledTypes = preferencesManager.getEnabledDataTypes()
@@ -114,34 +115,37 @@ class SyncManager(private val context: Context) {
                 return@withContext Result.success(SyncResult.NoData)
             }
 
-            // Calculate total record count
-            val totalRecords = healthData.steps.size + healthData.sleep.size + healthData.heartRate.size +
-                    healthData.heartRateVariability.size +
-                    healthData.distance.size + healthData.activeCalories.size + healthData.totalCalories.size +
-                    healthData.weight.size + healthData.height.size + healthData.bloodPressure.size +
-                    healthData.bloodGlucose.size + healthData.oxygenSaturation.size + healthData.bodyTemperature.size +
-                    healthData.skinTemperature.size +
-                    healthData.respiratoryRate.size + healthData.restingHeartRate.size + healthData.exercise.size +
-                    healthData.hydration.size + healthData.nutrition.size +
-                    healthData.basalMetabolicRate.size + healthData.bodyFat.size + healthData.leanBodyMass.size +
-                    healthData.vo2Max.size + healthData.boneMass.size
+            // Build full payload (also used by local TCP server)
+            val fullPayload = buildJsonPayload(healthData)
+            LocalHttpServerManager.publishPayload(fullPayload)
 
-            val webhookManager = WebhookManager(
-                webhookConfigs = webhookConfigs,
-                context = context,
-                dataType = "all",
-                recordCount = totalRecords
-            )
+            // Post to each enabled webhook with optional per-webhook data type filtering
+            if (enabledWebhookConfigs.isNotEmpty()) {
+                var atLeastOneSuccess = false
+                var lastFailure: Throwable? = null
 
-            // Build JSON payload
-            val jsonPayload = buildJsonPayload(healthData)
-            LocalHttpServerManager.publishPayload(jsonPayload)
+                for (config in enabledWebhookConfigs) {
+                    val filteredData = if (config.dataTypeFilter != null) {
+                        filterHealthData(healthData, config.dataTypeFilter)
+                    } else {
+                        healthData
+                    }
+                    val payload = if (config.dataTypeFilter != null) buildJsonPayload(filteredData) else fullPayload
+                    val totalRecords = countHealthData(filteredData)
 
-            if (webhookConfigs.isNotEmpty()) {
-                // Post to webhook
-                val postResult = webhookManager.postData(jsonPayload)
-                if (postResult.isFailure) {
-                    return@withContext Result.failure(postResult.exceptionOrNull() ?: Exception("Failed to post to webhooks"))
+                    val manager = WebhookManager(
+                        webhookConfigs = listOf(config),
+                        context = context,
+                        dataType = "all",
+                        recordCount = totalRecords
+                    )
+                    val result = manager.postData(payload)
+                    if (result.isSuccess) atLeastOneSuccess = true
+                    else lastFailure = result.exceptionOrNull()
+                }
+
+                if (!atLeastOneSuccess) {
+                    return@withContext Result.failure(lastFailure ?: Exception("Failed to post to webhooks"))
                 }
             }
 
@@ -160,6 +164,47 @@ class SyncManager(private val context: Context) {
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    private fun filterHealthData(data: HealthData, allowedTypes: Set<String>): HealthData {
+        val allowed = allowedTypes.map { it.uppercase() }.toSet()
+        return data.copy(
+            steps = if ("STEPS" in allowed) data.steps else emptyList(),
+            sleep = if ("SLEEP" in allowed) data.sleep else emptyList(),
+            heartRate = if ("HEART_RATE" in allowed) data.heartRate else emptyList(),
+            heartRateVariability = if ("HEART_RATE_VARIABILITY" in allowed) data.heartRateVariability else emptyList(),
+            distance = if ("DISTANCE" in allowed) data.distance else emptyList(),
+            activeCalories = if ("ACTIVE_CALORIES" in allowed) data.activeCalories else emptyList(),
+            totalCalories = if ("TOTAL_CALORIES" in allowed) data.totalCalories else emptyList(),
+            weight = if ("WEIGHT" in allowed) data.weight else emptyList(),
+            height = if ("HEIGHT" in allowed) data.height else emptyList(),
+            bloodPressure = if ("BLOOD_PRESSURE" in allowed) data.bloodPressure else emptyList(),
+            bloodGlucose = if ("BLOOD_GLUCOSE" in allowed) data.bloodGlucose else emptyList(),
+            oxygenSaturation = if ("OXYGEN_SATURATION" in allowed) data.oxygenSaturation else emptyList(),
+            bodyTemperature = if ("BODY_TEMPERATURE" in allowed) data.bodyTemperature else emptyList(),
+            skinTemperature = if ("SKIN_TEMPERATURE" in allowed) data.skinTemperature else emptyList(),
+            respiratoryRate = if ("RESPIRATORY_RATE" in allowed) data.respiratoryRate else emptyList(),
+            restingHeartRate = if ("RESTING_HEART_RATE" in allowed) data.restingHeartRate else emptyList(),
+            exercise = if ("EXERCISE" in allowed) data.exercise else emptyList(),
+            hydration = if ("HYDRATION" in allowed) data.hydration else emptyList(),
+            nutrition = if ("NUTRITION" in allowed) data.nutrition else emptyList(),
+            basalMetabolicRate = if ("BASAL_METABOLIC_RATE" in allowed) data.basalMetabolicRate else emptyList(),
+            bodyFat = if ("BODY_FAT" in allowed) data.bodyFat else emptyList(),
+            leanBodyMass = if ("LEAN_BODY_MASS" in allowed) data.leanBodyMass else emptyList(),
+            vo2Max = if ("VO2_MAX" in allowed) data.vo2Max else emptyList(),
+            boneMass = if ("BONE_MASS" in allowed) data.boneMass else emptyList()
+        )
+    }
+
+    private fun countHealthData(data: HealthData): Int {
+        return data.steps.size + data.sleep.size + data.heartRate.size +
+                data.heartRateVariability.size + data.distance.size + data.activeCalories.size +
+                data.totalCalories.size + data.weight.size + data.height.size +
+                data.bloodPressure.size + data.bloodGlucose.size + data.oxygenSaturation.size +
+                data.bodyTemperature.size + data.skinTemperature.size + data.respiratoryRate.size +
+                data.restingHeartRate.size + data.exercise.size + data.hydration.size +
+                data.nutrition.size + data.basalMetabolicRate.size + data.bodyFat.size +
+                data.leanBodyMass.size + data.vo2Max.size + data.boneMass.size
     }
 
     private fun isHealthDataEmpty(data: HealthData): Boolean {

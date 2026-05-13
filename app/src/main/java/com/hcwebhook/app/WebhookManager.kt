@@ -36,16 +36,17 @@ class WebhookManager(
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
     suspend fun postData(jsonPayload: String): Result<Unit> {
-        if (webhookConfigs.isEmpty()) {
-            return Result.failure(IllegalStateException("No webhook URLs configured"))
+        val enabledConfigs = webhookConfigs.filter { it.isEnabled }
+        if (enabledConfigs.isEmpty()) {
+            return Result.failure(IllegalStateException("No enabled webhook URLs configured"))
         }
 
         var atLeastOneSuccess = false
         var retryableFailure: IOException? = null
         var lastFailure: Throwable? = null
 
-        // Post to ALL configured webhooks — do not short-circuit on success
-        for (config in webhookConfigs) {
+        // Post to ALL enabled webhooks — do not short-circuit on success
+        for (config in enabledConfigs) {
             val result = postToUrl(config, jsonPayload)
             if (result.isSuccess) {
                 atLeastOneSuccess = true
