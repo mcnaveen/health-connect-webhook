@@ -1,7 +1,10 @@
 package com.hcwebhook.app.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -13,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -21,6 +25,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hcwebhook.app.R
 import com.hcwebhook.app.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -29,6 +36,10 @@ fun WebhooksScreen() {
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context) }
     val globalEnabledTypes = remember { preferencesManager.getEnabledDataTypes().map { it.name }.toSet() }
+    val appVersion = remember {
+        try { context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "unknown" }
+        catch (_: Exception) { "unknown" }
+    }
 
     var webhookConfigs by remember { mutableStateOf(preferencesManager.getWebhookConfigs()) }
     var newUrl by remember { mutableStateOf("") }
@@ -55,6 +66,10 @@ fun WebhooksScreen() {
             mutableStateOf(config.dataTypeFilter ?: globalEnabledTypes)
         }
         var showDeleteConfirm by remember(capturedIndex) { mutableStateOf(false) }
+        var testLoading by remember(capturedIndex) { mutableStateOf(false) }
+        var testResult by remember(capturedIndex) { mutableStateOf<Boolean?>(null) }
+        var testMessage by remember(capturedIndex) { mutableStateOf("") }
+        val scope = rememberCoroutineScope()
 
         ModalBottomSheet(
             onDismissRequest = { sheetIndex = -1 },
@@ -317,6 +332,80 @@ fun WebhooksScreen() {
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
+
+                // ── Test ─────────────────────────────────────────────────────
+                val urlValid = editUrl.trim().let { it.startsWith("http://") || it.startsWith("https://") }
+                OutlinedButton(
+                    onClick = {
+                        testLoading = true
+                        testResult = null
+                        val testConfig = WebhookConfig(
+                            url = editUrl.trim(),
+                            headers = currentHeaders,
+                            isEnabled = true
+                        )
+                        val typesForMock = if (filterAll) globalEnabledTypes else selectedTypes
+                        val mockPayload = MockPayloadBuilder.build(typesForMock.ifEmpty { null }, appVersion)
+                        scope.launch {
+                            val result = withContext(Dispatchers.IO) {
+                                WebhookManager(
+                                    webhookConfigs = listOf(testConfig),
+                                    context = context,
+                                    syncType = "test",
+                                    payload = mockPayload
+                                ).postData(mockPayload)
+                            }
+                            // Read back the log entry written during the test for status/timing details
+                            val log = withContext(Dispatchers.IO) {
+                                preferencesManager.getWebhookLogs()
+                                    .firstOrNull { it.syncType == "test" && it.url == testConfig.url }
+                            }
+                            testLoading = false
+                            testResult = result.isSuccess
+                            testMessage = buildString {
+                                val code = log?.statusCode
+                                val ms = log?.responseTimeMs
+                                if (code != null) append("$code")
+                                if (ms != null) { if (code != null) append(" · "); append("${ms}ms") }
+                                if (isEmpty()) append(result.exceptionOrNull()?.message ?: "Failed")
+                            }
+                        }
+                    },
+                    enabled = !testLoading && urlValid,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (testLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(stringResource(R.string.webhooks_action_test))
+                }
+                testResult?.let { success ->
+                    val dotColor = if (success) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .clip(CircleShape)
+                                    .background(dotColor)
+                            )
+                            Text(
+                                text = testMessage,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = dotColor
+                            )
+                        }
+                    }
+                }
 
                 // ── Save ─────────────────────────────────────────────────────
                 Button(

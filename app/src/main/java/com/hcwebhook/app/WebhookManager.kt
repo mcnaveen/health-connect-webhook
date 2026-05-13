@@ -2,6 +2,9 @@ package com.hcwebhook.app
 
 import android.content.Context
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -33,6 +36,7 @@ class WebhookManager(
         .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .followRedirects(false)
         .build()
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
@@ -47,9 +51,11 @@ class WebhookManager(
         var retryableFailure: IOException? = null
         var lastFailure: Throwable? = null
 
-        // Post to ALL enabled webhooks — do not short-circuit on success
-        for (config in enabledConfigs) {
-            val result = postToUrl(config, jsonPayload)
+        // Post to ALL enabled webhooks in parallel
+        val results = coroutineScope {
+            enabledConfigs.map { config -> async { postToUrl(config, jsonPayload) } }.awaitAll()
+        }
+        for (result in results) {
             if (result.isSuccess) {
                 atLeastOneSuccess = true
             } else {
