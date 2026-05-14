@@ -260,4 +260,10 @@
     <string name="logs_action_export">Esporta registri</string>
     <string name="logs_export_intent_title">Esporta registri Webhook</string>
     <string name="logs_count">%1$d registri</string>
+
+    <!-- Notifications -->
+    <string name="about_notifications_title">Notifiche</string>
+    <string name="about_notifications_desc">Configura Gotify, ntfy, Telegram, Discord, Pushover</string>
+    <string name="webhooks_notification_section">Provider notifiche</string>
+    <string name="webhooks_notification_none">Nessuno</string>
 </resources>

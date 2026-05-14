@@ -260,4 +260,10 @@
     <string name="logs_action_export">Exporter les journaux</string>
     <string name="logs_export_intent_title">Exporter les journaux Webhook</string>
     <string name="logs_count">%1$d journaux</string>
+
+    <!-- Notifications -->
+    <string name="about_notifications_title">Notifications</string>
+    <string name="about_notifications_desc">Configurer Gotify, ntfy, Telegram, Discord, Pushover</string>
+    <string name="webhooks_notification_section">Fournisseur de notifications</string>
+    <string name="webhooks_notification_none">Aucun</string>
 </resources>

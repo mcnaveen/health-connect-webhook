@@ -260,4 +260,10 @@
     <string name="logs_action_export">Protokolle exportieren</string>
     <string name="logs_export_intent_title">Webhook-Protokolle exportieren</string>
     <string name="logs_count">%1$d Protokolle</string>
+
+    <!-- Notifications -->
+    <string name="about_notifications_title">Benachrichtigungen</string>
+    <string name="about_notifications_desc">Gotify, ntfy, Telegram, Discord, Pushover konfigurieren</string>
+    <string name="webhooks_notification_section">Benachrichtigungsanbieter</string>
+    <string name="webhooks_notification_none">Keine</string>
 </resources>

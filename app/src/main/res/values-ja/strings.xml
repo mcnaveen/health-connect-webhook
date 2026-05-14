@@ -260,4 +260,10 @@
     <string name="logs_action_export">ログをエクスポート</string>
     <string name="logs_export_intent_title">Webhookログをエクスポート</string>
     <string name="logs_count">%1$d 件のログ</string>
+
+    <!-- Notifications -->
+    <string name="about_notifications_title">通知</string>
+    <string name="about_notifications_desc">Gotify、ntfy、Telegram、Discord、Pushoverを設定</string>
+    <string name="webhooks_notification_section">通知プロバイダー</string>
+    <string name="webhooks_notification_none">なし</string>
 </resources>
