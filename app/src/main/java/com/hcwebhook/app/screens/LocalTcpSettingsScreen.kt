@@ -138,7 +138,9 @@ fun LocalHttpSettingsScreen(onBack: () -> Unit) {
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { }
+    ) { _ ->
+        LocalHttpServerService.start(context)
+    }
 
     fun startServerWithPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -146,8 +148,9 @@ fun LocalHttpSettingsScreen(onBack: () -> Unit) {
             != PackageManager.PERMISSION_GRANTED
         ) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            LocalHttpServerService.start(context)
         }
-        LocalHttpServerService.start(context)
     }
 
     Scaffold(
@@ -214,8 +217,16 @@ fun LocalHttpSettingsScreen(onBack: () -> Unit) {
                             onCheckedChange = { enabled ->
                                 localTcpEnabled = enabled
                                 preferencesManager.setLocalTcpEnabled(enabled)
-                                if (enabled) startServerWithPermission()
-                                else LocalHttpServerService.stop(context)
+                                if (enabled) {
+                                    val port = localTcpPort.toIntOrNull()
+                                    if (port != null && port in 1024..65535) {
+                                        preferencesManager.setLocalTcpPort(port)
+                                        savedPort = port
+                                    }
+                                    startServerWithPermission()
+                                } else {
+                                    LocalHttpServerService.stop(context)
+                                }
                             }
                         )
                     }

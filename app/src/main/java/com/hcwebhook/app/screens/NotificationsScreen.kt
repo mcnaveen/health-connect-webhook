@@ -6,11 +6,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.hcwebhook.app.*
@@ -83,9 +84,7 @@ fun NotificationsScreen(onBack: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(notificationConfigs) { config ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+                    Card(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -124,11 +123,9 @@ fun NotificationsScreen(onBack: () -> Unit) {
             }
         }
 
-        // Provider Picker Bottom Sheet
+        // ── Provider Picker ───────────────────────────────────────────────────
         if (showProviderPicker) {
-            ModalBottomSheet(
-                onDismissRequest = { showProviderPicker = false }
-            ) {
+            ModalBottomSheet(onDismissRequest = { showProviderPicker = false }) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -155,7 +152,7 @@ fun NotificationsScreen(onBack: () -> Unit) {
             }
         }
 
-        // Editor Bottom Sheet
+        // ── Editor ────────────────────────────────────────────────────────────
         if (editingConfig != null) {
             val config = editingConfig!!
             var editUrl by remember { mutableStateOf(config.url) }
@@ -164,10 +161,11 @@ fun NotificationsScreen(onBack: () -> Unit) {
             var editChatId by remember { mutableStateOf(config.chatId) }
             var editUserKey by remember { mutableStateOf(config.userKey) }
             var editBodyTemplate by remember { mutableStateOf(config.bodyTemplate) }
+            var editHeaders by remember { mutableStateOf(config.headers) }
+            var newHeaderKey by remember { mutableStateOf("") }
+            var newHeaderValue by remember { mutableStateOf("") }
 
-            ModalBottomSheet(
-                onDismissRequest = { editingConfig = null }
-            ) {
+            ModalBottomSheet(onDismissRequest = { editingConfig = null }) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -257,9 +255,86 @@ fun NotificationsScreen(onBack: () -> Unit) {
                                 value = editBodyTemplate,
                                 onValueChange = { editBodyTemplate = it },
                                 label = { Text("Body Template (JSON)") },
-                                placeholder = { Text("Supports {title}, {message}, {status}") },
+                                placeholder = { Text("{\"title\":\"{title}\",\"message\":\"{message}\"}") },
                                 modifier = Modifier.fillMaxWidth(),
                                 minLines = 3
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                listOf("{title}", "{message}", "{status}").forEach { v ->
+                                    FilterChip(
+                                        selected = false,
+                                        onClick = { editBodyTemplate += v },
+                                        label = { Text(v, style = MaterialTheme.typography.labelSmall) }
+                                    )
+                                }
+                            }
+                            HorizontalDivider()
+                            Text("Headers", style = MaterialTheme.typography.labelMedium)
+                            if (editHeaders.isEmpty()) {
+                                Text(
+                                    "No headers added",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontStyle = FontStyle.Italic,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            } else {
+                                editHeaders.forEach { (k, v) ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(k, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                            Text(v, style = MaterialTheme.typography.bodySmall)
+                                        }
+                                        IconButton(
+                                            onClick = { editHeaders = editHeaders - k },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(Icons.Filled.Close, null, Modifier.size(16.dp))
+                                        }
+                                    }
+                                }
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = newHeaderKey,
+                                    onValueChange = { newHeaderKey = it },
+                                    label = { Text("Key") },
+                                    modifier = Modifier.weight(1f),
+                                    singleLine = true,
+                                    textStyle = MaterialTheme.typography.bodySmall
+                                )
+                                OutlinedTextField(
+                                    value = newHeaderValue,
+                                    onValueChange = { newHeaderValue = it },
+                                    label = { Text("Value") },
+                                    modifier = Modifier.weight(1f),
+                                    singleLine = true,
+                                    textStyle = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    if (newHeaderKey.isNotBlank() && newHeaderValue.isNotBlank()) {
+                                        editHeaders = editHeaders + (newHeaderKey.trim() to newHeaderValue.trim())
+                                        newHeaderKey = ""
+                                        newHeaderValue = ""
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Add Header")
+                            }
+                        }
+                        NotificationProviderType.LOCAL_PUSH -> {
+                            Text(
+                                "Posts an Android system notification after each sync. Tap it to open logs.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -278,6 +353,7 @@ fun NotificationsScreen(onBack: () -> Unit) {
                                     chatId = editChatId,
                                     userKey = editUserKey,
                                     bodyTemplate = editBodyTemplate,
+                                    headers = editHeaders,
                                     isEnabled = true
                                 )
                                 scope.launch {
@@ -311,7 +387,8 @@ fun NotificationsScreen(onBack: () -> Unit) {
                                     topic = editTopic,
                                     chatId = editChatId,
                                     userKey = editUserKey,
-                                    bodyTemplate = editBodyTemplate
+                                    bodyTemplate = editBodyTemplate,
+                                    headers = editHeaders
                                 )
                                 val exists = notificationConfigs.any { it.id == newConfig.id }
                                 notificationConfigs = if (exists) {

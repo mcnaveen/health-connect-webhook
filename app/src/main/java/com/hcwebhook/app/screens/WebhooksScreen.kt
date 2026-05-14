@@ -40,7 +40,7 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context) }
     val globalEnabledTypes = remember { preferencesManager.getEnabledDataTypes().map { it.name }.toSet() }
-    val globalNotificationConfigs = remember { preferencesManager.getNotificationConfigs() }
+    var globalNotificationConfigs by remember { mutableStateOf(preferencesManager.getNotificationConfigs()) }
     val appVersion = remember {
         try { context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "unknown" }
         catch (_: Exception) { "unknown" }
@@ -75,6 +75,20 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
         var showDeleteConfirm by remember(capturedIndex) { mutableStateOf(false) }
         var testLoading by remember(capturedIndex) { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
+
+        LaunchedEffect(capturedIndex) {
+            globalNotificationConfigs = preferencesManager.getNotificationConfigs()
+        }
+
+        val existingNotifIds = globalNotificationConfigs.map { it.id }.toSet()
+        val enabledNotifConfigs = globalNotificationConfigs.filter { it.isEnabled }
+        val enabledNotifIds = enabledNotifConfigs.map { it.id }.toSet()
+        val orphanedIds = selectedNotificationIds - existingNotifIds
+        var showUnlinkConfirm by remember(capturedIndex) { mutableStateOf(false) }
+
+        LaunchedEffect(orphanedIds) {
+            if (orphanedIds.isNotEmpty()) showUnlinkConfirm = true
+        }
 
         val hasUnsavedChanges by remember(editUrl, currentHeaders, filterAll, selectedTypes, selectedNotificationIds) {
             derivedStateOf {
@@ -402,11 +416,12 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                             expanded = expanded,
                             onExpandedChange = { expanded = !expanded }
                         ) {
-                            val selectedCount = selectedNotificationIds.size
+                            val validSelectedIds = selectedNotificationIds intersect enabledNotifIds
+                            val selectedCount = validSelectedIds.size
                             val selectedName = if (selectedCount == 0) {
                                 stringResource(R.string.webhooks_notification_none)
                             } else if (selectedCount == 1) {
-                                globalNotificationConfigs.find { it.id == selectedNotificationIds.first() }?.let {
+                                enabledNotifConfigs.find { it.id == validSelectedIds.first() }?.let {
                                     "${it.providerType.displayName} (${it.displayIdentifier})"
                                 } ?: "$selectedCount selected"
                             } else {
@@ -436,13 +451,13 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                                 )
                                 HorizontalDivider()
                                 
-                                if (globalNotificationConfigs.isEmpty()) {
+                                if (enabledNotifConfigs.isEmpty()) {
                                     DropdownMenuItem(
                                         text = { Text("No providers configured", fontStyle = FontStyle.Italic) },
                                         onClick = { expanded = false }
                                     )
                                 } else {
-                                    globalNotificationConfigs.forEach { notif ->
+                                    enabledNotifConfigs.forEach { notif ->
                                         DropdownMenuItem(
                                             text = { Text("${notif.providerType.displayName} (${notif.displayIdentifier})") },
                                             leadingIcon = {
@@ -574,6 +589,25 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                     }
                 }
             }
+        }
+
+        if (showUnlinkConfirm && orphanedIds.isNotEmpty()) {
+            AlertDialog(
+                onDismissRequest = { showUnlinkConfirm = false },
+                title = { Text("Unlink Provider") },
+                text = {
+                    Text("${orphanedIds.size} linked notification provider(s) no longer exist. Remove the link?")
+                },
+                confirmButton = {
+                    Button(onClick = {
+                        selectedNotificationIds = selectedNotificationIds - orphanedIds
+                        showUnlinkConfirm = false
+                    }) { Text("Unlink") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showUnlinkConfirm = false }) { Text("Keep") }
+                }
+            )
         }
     }
 
