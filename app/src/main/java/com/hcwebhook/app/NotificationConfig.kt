@@ -3,7 +3,7 @@ package com.hcwebhook.app
 import kotlinx.serialization.Serializable
 
 enum class NotificationProviderType {
-    GOTIFY, NTFY, TELEGRAM, DISCORD, PUSHOVER, CUSTOM_HTTP;
+    GOTIFY, NTFY, TELEGRAM, DISCORD, PUSHOVER, CUSTOM_HTTP, LOCAL_PUSH;
 
     val displayName: String
         get() = when (this) {
@@ -13,6 +13,7 @@ enum class NotificationProviderType {
             DISCORD      -> "Discord"
             PUSHOVER     -> "Pushover"
             CUSTOM_HTTP  -> "Custom HTTP"
+            LOCAL_PUSH   -> "Local Push"
         }
 
     val description: String
@@ -23,6 +24,7 @@ enum class NotificationProviderType {
             DISCORD      -> "Discord webhook message"
             PUSHOVER     -> "Pushover push notification"
             CUSTOM_HTTP  -> "Custom HTTP POST request"
+            LOCAL_PUSH   -> "Android system notification"
         }
 }
 
@@ -48,11 +50,12 @@ data class NotificationConfig(
 ) {
     val displayIdentifier: String
         get() = when (providerType) {
-            NotificationProviderType.GOTIFY -> url.ifEmpty { "Configured" }
-            NotificationProviderType.NTFY -> if (url.isNotEmpty() && topic.isNotEmpty()) "$url/$topic" else if (url.isNotEmpty()) url else if (topic.isNotEmpty()) topic else "Configured"
-            NotificationProviderType.TELEGRAM -> if (chatId.isNotEmpty()) "Chat: $chatId" else "Configured"
-            NotificationProviderType.DISCORD -> url.ifEmpty { "Configured" }
-            NotificationProviderType.PUSHOVER -> if (userKey.isNotEmpty()) "User: $userKey" else "Configured"
+            NotificationProviderType.GOTIFY      -> url.ifEmpty { "Configured" }
+            NotificationProviderType.NTFY        -> if (url.isNotEmpty() && topic.isNotEmpty()) "$url/$topic" else if (url.isNotEmpty()) url else if (topic.isNotEmpty()) topic else "Configured"
+            NotificationProviderType.TELEGRAM    -> if (chatId.isNotEmpty()) "Chat: $chatId" else "Configured"
+            NotificationProviderType.DISCORD     -> url.ifEmpty { "Configured" }
+            NotificationProviderType.PUSHOVER    -> if (userKey.isNotEmpty()) "User: $userKey" else "Configured"
             NotificationProviderType.CUSTOM_HTTP -> url.ifEmpty { "Configured" }
+            NotificationProviderType.LOCAL_PUSH  -> "Android notification"
         }
 }

@@ -1,7 +1,12 @@
 package com.hcwebhook.app
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
-
+import android.content.Intent
+import android.os.Build
+import androidx.core.app.NotificationCompat
 import okhttp3.FormBody
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -9,11 +14,6 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 
-/**
- * Fires a best-effort HTTP notification to the configured provider.
- * All calls are synchronous (intended to be called from IO dispatcher).
- * Failures are silently swallowed so they never interrupt the sync result.
- */
 class NotificationDispatcher {
 
     private val client = OkHttpClient.Builder()
@@ -27,12 +27,17 @@ class NotificationDispatcher {
 
     fun dispatch(context: Context, config: NotificationConfig, title: String, message: String) {
         if (!config.isEnabled) return
-        
+
+        if (config.providerType == NotificationProviderType.LOCAL_PUSH) {
+            postLocalNotification(context, title, message)
+            return
+        }
+
         val start = System.currentTimeMillis()
         var code: Int? = null
         var error: String? = null
-        var requestUrl = config.displayIdentifier
-        
+        val requestUrl = config.displayIdentifier
+
         try {
             val request = buildRequest(config, title, message)
             if (request == null) {
@@ -45,9 +50,9 @@ class NotificationDispatcher {
         } catch (e: Exception) {
             error = e.message
         }
-        
+
         val duration = System.currentTimeMillis() - start
-        
+
         val log = WebhookLog(
             id = java.util.UUID.randomUUID().toString(),
             timestamp = start,
@@ -64,17 +69,40 @@ class NotificationDispatcher {
         PreferencesManager(context).addWebhookLog(log)
     }
 
-    private fun buildRequest(
-        config: NotificationConfig,
-        title: String,
-        message: String
-    ): Request? = when (config.providerType) {
-        NotificationProviderType.GOTIFY      -> buildGotify(config, title, message)
-        NotificationProviderType.NTFY        -> buildNtfy(config, title, message)
-        NotificationProviderType.TELEGRAM    -> buildTelegram(config, title, message)
-        NotificationProviderType.DISCORD     -> buildDiscord(config, title, message)
-        NotificationProviderType.PUSHOVER    -> buildPushover(config, title, message)
-        NotificationProviderType.CUSTOM_HTTP -> buildCustom(config, title, message)
+    private fun buildRequest(config: NotificationConfig, title: String, message: String): Request? =
+        when (config.providerType) {
+            NotificationProviderType.GOTIFY      -> buildGotify(config, title, message)
+            NotificationProviderType.NTFY        -> buildNtfy(config, title, message)
+            NotificationProviderType.TELEGRAM    -> buildTelegram(config, title, message)
+            NotificationProviderType.DISCORD     -> buildDiscord(config, title, message)
+            NotificationProviderType.PUSHOVER    -> buildPushover(config, title, message)
+            NotificationProviderType.CUSTOM_HTTP -> buildCustom(config, title, message)
+            NotificationProviderType.LOCAL_PUSH  -> null
+        }
+
+    private fun postLocalNotification(context: Context, title: String, message: String) {
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            nm.createNotificationChannel(
+                NotificationChannel(LOCAL_CHANNEL_ID, "Sync Notifications", NotificationManager.IMPORTANCE_DEFAULT)
+            )
+        }
+        val intent = Intent(context, LogsActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val pi = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notif = NotificationCompat.Builder(context, LOCAL_CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setContentIntent(pi)
+            .setAutoCancel(true)
+            .build()
+        nm.notify(System.currentTimeMillis().toInt(), notif)
     }
 
     // ── Gotify ────────────────────────────────────────────────────────────────
@@ -107,8 +135,8 @@ class NotificationDispatcher {
         val token  = c.token.trim()
         val chatId = c.chatId.trim()
         if (token.isEmpty() || chatId.isEmpty()) return null
-        val text   = "<b>${title.htmlEscape()}</b>\n${message.htmlEscape()}"
-        val body   = """{"chat_id":${chatId.jsonEncode()},"text":${text.jsonEncode()},"parse_mode":"HTML"}"""
+        val text = "<b>${title.htmlEscape()}</b>\n${message.htmlEscape()}"
+        val body = """{"chat_id":${chatId.jsonEncode()},"text":${text.jsonEncode()},"parse_mode":"HTML"}"""
         return Request.Builder()
             .url("https://api.telegram.org/bot$token/sendMessage")
             .post(body.toRequestBody(jsonType))
@@ -120,7 +148,7 @@ class NotificationDispatcher {
         val url = c.url.trim()
         if (url.isEmpty()) return null
         val content = "**${title}**\\n${message}"
-        val body    = """{"content":${content.jsonEncode()}}"""
+        val body = """{"content":${content.jsonEncode()}}"""
         return Request.Builder()
             .url(url)
             .post(body.toRequestBody(jsonType))
@@ -184,5 +212,9 @@ class NotificationDispatcher {
         safe = safe.replace(Regex("(discord\\.com/api/webhooks/\\d+/)[^/?&]+"), "$1********")
         safe = safe.replace(Regex("(api\\.telegram\\.org/bot)[^/]+"), "$1********")
         return safe
+    }
+
+    companion object {
+        private const val LOCAL_CHANNEL_ID = "sync_notifications"
     }
 }
