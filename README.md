@@ -350,23 +350,13 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the [Apache License, Version 2.0](LICENSE).
+This project is licensed under the [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.html) (AGPL-3.0). The full license text is in [LICENSE](LICENSE).
 
-```text
-   Copyright 2026 MC.Naveen
+You may read the source, modify it, and publish your changes, subject to the AGPL (including source-sharing and notice requirements).
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+**Commercial redistribution on the Apple App Store or Google Play Store** is addressed in [LICENSE.ADDENDUM](LICENSE.ADDENDUM): it requires a separate commercial license from the copyright holder; see that file for details.
 
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-```
+SPDX-License-Identifier: AGPL-3.0-only
 
 ## Privacy & Security
 
