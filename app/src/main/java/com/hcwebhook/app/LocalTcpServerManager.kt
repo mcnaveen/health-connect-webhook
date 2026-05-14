@@ -466,7 +466,12 @@ object LocalHttpServerManager {
             405 -> "Method Not Allowed"
             else -> "Internal Server Error"
         }
-        val bodyBytes = body.toByteArray(Charsets.UTF_8)
+        val versionedBody = if (body.startsWith("{") && body.endsWith("}")) {
+            val inner = body.drop(1).dropLast(1)
+            if (inner.isNotEmpty()) """{"app_version":"${BuildConfig.VERSION_NAME}",$inner}"""
+            else """{"app_version":"${BuildConfig.VERSION_NAME}"}"""
+        } else body
+        val bodyBytes = versionedBody.toByteArray(Charsets.UTF_8)
         writer.write("HTTP/1.1 $statusCode $statusText\r\n")
         writer.write("Content-Type: application/json; charset=utf-8\r\n")
         writer.write("Cache-Control: no-store\r\n")
@@ -474,7 +479,7 @@ object LocalHttpServerManager {
         writer.write("Content-Length: ${bodyBytes.size}\r\n")
         writer.write("Connection: close\r\n")
         writer.write("\r\n")
-        writer.write(body)
+        writer.write(versionedBody)
         writer.flush()
     }
 }
