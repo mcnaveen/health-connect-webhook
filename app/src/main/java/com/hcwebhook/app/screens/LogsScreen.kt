@@ -30,12 +30,17 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.hcwebhook.app.LocalHttpServerManager
 import com.hcwebhook.app.PreferencesManager
 import com.hcwebhook.app.R
+import com.hcwebhook.app.ServerRequestLog
 import com.hcwebhook.app.WebhookConfig
 import com.hcwebhook.app.WebhookLog
 import com.hcwebhook.app.WebhookManager
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
@@ -46,11 +51,15 @@ import java.util.*
 private val LOG_LIMITS = listOf(25, 50, 100)
 private val prettyJson = Json { prettyPrint = true }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun LogsScreen() {
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context) }
+    val pagerState = rememberPagerState { 2 }
+    val scope = rememberCoroutineScope()
+
+    // ── Webhook logs ──────────────────────────────────────────────────────────
     var allLogs by remember { mutableStateOf(preferencesManager.getWebhookLogs()) }
     var showClearSheet by remember { mutableStateOf(false) }
     var showFilterSheet by remember { mutableStateOf(false) }
@@ -284,75 +293,461 @@ fun LogsScreen() {
         }
     }
 
-    // ── Main UI ───────────────────────────────────────────────────────────────
-    Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(stringResource(R.string.logs_title), style = MaterialTheme.typography.titleLarge)
-                if (allLogs.isNotEmpty()) {
-                    val totalMatching = remember(allLogs, selectedUrl, statusFilter, syncTypeFilter) {
-                        allLogs.count { matchesFilter(it) }
+    // ── Server logs ───────────────────────────────────────────────────────────
+    var serverLogs by remember { mutableStateOf(LocalHttpServerManager.getRequestLogs()) }
+    var showClearServerSheet by remember { mutableStateOf(false) }
+    var showServerFilterSheet by remember { mutableStateOf(false) }
+    var detailServerLog by remember { mutableStateOf<ServerRequestLog?>(null) }
+
+    // server log filter state
+    var serverMethodFilter by remember { mutableIntStateOf(0) }  // 0=All 1=GET 2=POST
+    var serverStatusFilter by remember { mutableIntStateOf(0) }  // 0=All 1=2xx 2=4xx/5xx
+    var serverPathFilter by remember { mutableStateOf<String?>(null) }
+    var serverDisplayLimit by remember { mutableIntStateOf(50) }
+
+    val serverIsFiltered = serverMethodFilter != 0 || serverStatusFilter != 0 || serverPathFilter != null
+    val uniqueServerPaths = remember(serverLogs) { serverLogs.map { it.path }.distinct().sorted() }
+
+    fun matchesServerFilter(log: ServerRequestLog) =
+        (when (serverMethodFilter) { 1 -> log.method == "GET"; 2 -> log.method == "POST"; else -> true }) &&
+        (when (serverStatusFilter) { 1 -> log.statusCode in 200..299; 2 -> log.statusCode >= 400; else -> true }) &&
+        (serverPathFilter == null || log.path == serverPathFilter)
+
+    val filteredServerLogs = remember(serverLogs, serverMethodFilter, serverStatusFilter, serverPathFilter, serverDisplayLimit) {
+        serverLogs.filter { matchesServerFilter(it) }.take(serverDisplayLimit)
+    }
+
+    if (showServerFilterSheet) {
+        ModalBottomSheet(onDismissRequest = { showServerFilterSheet = false }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 36.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Text("Filter Server Logs", style = MaterialTheme.typography.titleMedium)
+
+                // Method
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Method", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(0 to "All", 1 to "GET", 2 to "POST").forEach { (idx, label) ->
+                            FilterChip(
+                                selected = serverMethodFilter == idx,
+                                onClick = { serverMethodFilter = idx },
+                                label = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                            )
+                        }
                     }
-                    Text(
-                        if (isFiltered) "$totalMatching of ${allLogs.size} logs"
-                        else stringResource(R.string.logs_count, allLogs.size),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                }
+
+                // Status
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Status", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(0 to "All", 1 to "2xx", 2 to "4xx / 5xx").forEach { (idx, label) ->
+                            FilterChip(
+                                selected = serverStatusFilter == idx,
+                                onClick = { serverStatusFilter = idx },
+                                label = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                            )
+                        }
+                    }
+                }
+
+                // Path
+                if (uniqueServerPaths.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Path", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Surface(
+                            shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column {
+                                FilterUrlRow(label = "All paths", selected = serverPathFilter == null, onClick = { serverPathFilter = null })
+                                uniqueServerPaths.forEachIndexed { i, path ->
+                                    if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                                    FilterUrlRow(label = path, selected = serverPathFilter == path, onClick = { serverPathFilter = path })
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Limit
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Show", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        LOG_LIMITS.forEach { limit ->
+                            FilterChip(
+                                selected = serverDisplayLimit == limit,
+                                onClick = { serverDisplayLimit = limit },
+                                label = { Text("$limit", style = MaterialTheme.typography.labelSmall) }
+                            )
+                        }
+                    }
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (allLogs.isNotEmpty()) {
-                    IconButton(onClick = {
-                        val json = prettyJson.encodeToString(allLogs)
-                        val intent = Intent(Intent.ACTION_SEND).apply {
-                            type = "application/json"
-                            putExtra(Intent.EXTRA_TEXT, json)
-                            putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.logs_export_intent_title))
+        }
+    }
+
+    detailServerLog?.let { log ->
+        ModalBottomSheet(
+            onDismissRequest = { detailServerLog = null },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            ServerLogDetailSheet(log = log)
+        }
+    }
+
+    LaunchedEffect(pagerState.currentPage) {
+        while (pagerState.currentPage == 1) {
+            serverLogs = LocalHttpServerManager.getRequestLogs()
+            delay(2_000)
+        }
+    }
+
+    if (showClearServerSheet) {
+        ModalBottomSheet(onDismissRequest = { showClearServerSheet = false }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(40.dp)
+                )
+                Text("Clear server logs?", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    "All ${serverLogs.size} in-memory server request logs will be cleared.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Button(
+                    onClick = {
+                        LocalHttpServerManager.clearRequestLogs()
+                        serverLogs = emptyList()
+                        showClearServerSheet = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.action_clear_logs))
+                }
+                OutlinedButton(
+                    onClick = { showClearServerSheet = false },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        }
+    }
+
+    // ── Main UI ───────────────────────────────────────────────────────────────
+    Column(modifier = Modifier.fillMaxSize()) {
+        TabRow(selectedTabIndex = pagerState.currentPage) {
+            Tab(
+                selected = pagerState.currentPage == 0,
+                onClick = { scope.launch { pagerState.animateScrollToPage(0) } },
+                text = { Text("Webhooks") }
+            )
+            Tab(
+                selected = pagerState.currentPage == 1,
+                onClick = { scope.launch { pagerState.animateScrollToPage(1) } },
+                text = { Text("Server") }
+            )
+        }
+
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { page ->
+        if (page == 0) { Column(modifier = Modifier.fillMaxSize()) {
+            // ── Webhook logs tab ──────────────────────────────────────────────
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(stringResource(R.string.logs_title), style = MaterialTheme.typography.titleLarge)
+                    if (allLogs.isNotEmpty()) {
+                        val totalMatching = remember(allLogs, selectedUrl, statusFilter, syncTypeFilter) {
+                            allLogs.count { matchesFilter(it) }
                         }
-                        context.startActivity(Intent.createChooser(intent, context.getString(R.string.logs_action_export)))
-                    }) {
-                        Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.logs_action_export))
-                    }
-                    IconButton(onClick = { showFilterSheet = true }) {
-                        Icon(Icons.Filled.FilterList, contentDescription = "Filter")
-                    }
-                    TextButton(onClick = { showClearSheet = true }) {
-                        Text(stringResource(R.string.action_clear))
+                        Text(
+                            if (isFiltered) "$totalMatching of ${allLogs.size} logs"
+                            else stringResource(R.string.logs_count, allLogs.size),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (allLogs.isNotEmpty()) {
+                        IconButton(onClick = {
+                            val json = prettyJson.encodeToString(allLogs)
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/json"
+                                putExtra(Intent.EXTRA_TEXT, json)
+                                putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.logs_export_intent_title))
+                            }
+                            context.startActivity(Intent.createChooser(intent, context.getString(R.string.logs_action_export)))
+                        }) {
+                            Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.logs_action_export))
+                        }
+                        IconButton(onClick = { showFilterSheet = true }) {
+                            Icon(Icons.Filled.FilterList, contentDescription = "Filter")
+                        }
+                        TextButton(onClick = { showClearSheet = true }) {
+                            Text(stringResource(R.string.action_clear))
+                        }
+                    }
+                }
+            }
+
+            if (allLogs.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        stringResource(R.string.logs_empty),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    items(filtered, key = { it.id }) { log ->
+                        LogRow(log = log, onClick = { detailLog = log })
+                        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
+                    }
+                    item { Spacer(modifier = Modifier.height(80.dp)) }
+                }
+            }
+        } } else { Column(modifier = Modifier.fillMaxSize()) {
+            // ── Server logs tab ───────────────────────────────────────────────
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Server Logs", style = MaterialTheme.typography.titleLarge)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF4CAF50))
+                        )
+                        Text(
+                            if (serverLogs.isEmpty()) "Live · no requests yet"
+                            else if (serverIsFiltered) "Live · ${filteredServerLogs.size} of ${serverLogs.size} requests"
+                            else "Live · ${serverLogs.size} requests",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (serverLogs.isNotEmpty()) {
+                        IconButton(onClick = { showServerFilterSheet = true }) {
+                            Icon(
+                                Icons.Filled.FilterList,
+                                contentDescription = "Filter",
+                                tint = if (serverIsFiltered) MaterialTheme.colorScheme.primary
+                                       else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        TextButton(onClick = { showClearServerSheet = true }) {
+                            Text(stringResource(R.string.action_clear))
+                        }
+                    }
+                }
+            }
+
+            if (serverLogs.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "No requests yet. Start the local HTTP server and make a request.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                }
+            } else if (filteredServerLogs.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "No logs match the current filter.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    items(filteredServerLogs, key = { it.id }) { log ->
+                        ServerLogRow(log = log, onClick = { detailServerLog = log })
+                        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
+                    }
+                    item { Spacer(modifier = Modifier.height(80.dp)) }
+                }
+            }
+        } } // end server tab Column + HorizontalPager
+        } // end pager lambda
+    }
+}
+
+@Composable
+private fun ServerLogRow(log: ServerRequestLog, onClick: () -> Unit) {
+    val methodColor = when (log.method) {
+        "GET"  -> Color(0xFF4CAF50)
+        "POST" -> Color(0xFF2196F3)
+        else   -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val statusColor = when {
+        log.statusCode in 200..299 -> Color(0xFF4CAF50)
+        log.statusCode >= 400      -> MaterialTheme.colorScheme.error
+        else                       -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(
+            log.method,
+            style = MaterialTheme.typography.labelSmall,
+            color = methodColor,
+            modifier = Modifier.width(36.dp)
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                log.path,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                "${log.clientIp} · ${formatTimestamp(log.timestamp)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                "${log.statusCode}",
+                style = MaterialTheme.typography.labelSmall,
+                color = statusColor
+            )
+            Text(
+                "${log.responseTimeMs}ms",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun ServerLogDetailSheet(log: ServerRequestLog) {
+    val clipboardManager = LocalClipboardManager.current
+    val methodColor = when (log.method) {
+        "GET"  -> Color(0xFF4CAF50)
+        "POST" -> Color(0xFF2196F3)
+        else   -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val statusColor = when {
+        log.statusCode in 200..299 -> Color(0xFF4CAF50)
+        log.statusCode >= 400      -> MaterialTheme.colorScheme.error
+        else                       -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 36.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    log.method,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = methodColor
+                )
+                Text(
+                    "${log.statusCode}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = statusColor
+                )
+            }
+            IconButton(onClick = {
+                val text = buildString {
+                    appendLine("Method: ${log.method}")
+                    appendLine("Path: ${log.path}")
+                    appendLine("Status: ${log.statusCode}")
+                    appendLine("Response Time: ${log.responseTimeMs}ms")
+                    appendLine("Client IP: ${log.clientIp}")
+                    appendLine("Timestamp: ${formatFullTimestamp(log.timestamp)}")
+                }
+                clipboardManager.setText(AnnotatedString(text))
+            }) {
+                Icon(Icons.Filled.ContentCopy, contentDescription = "Copy", modifier = Modifier.size(20.dp))
             }
         }
 
-        if (allLogs.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    stringResource(R.string.logs_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
-            ) {
-                items(filtered, key = { it.id }) { log ->
-                    LogRow(log = log, onClick = { detailLog = log })
-                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
-                }
-                item { Spacer(modifier = Modifier.height(80.dp)) }
-            }
-        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+        DetailField("Path", log.path)
+        DetailField("Timestamp", formatFullTimestamp(log.timestamp))
+        DetailField("Client IP", log.clientIp)
+        DetailField("Response Time", "${log.responseTimeMs}ms")
+        DetailField("Status Code", "${log.statusCode}", valueColor = statusColor)
     }
 }
 

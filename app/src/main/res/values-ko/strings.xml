@@ -264,6 +264,6 @@
     <!-- Notifications -->
     <string name="about_notifications_title">알림</string>
     <string name="about_notifications_desc">Gotify, ntfy, Telegram, Discord, Pushover 구성</string>
-    <string name="webhooks_notification_section">알림 제공자</string>
+    <string name="webhooks_notification_section">성공/실패 시 알림</string>
     <string name="webhooks_notification_none">없음</string>
 </resources>

@@ -264,6 +264,6 @@
     <!-- Notifications -->
     <string name="about_notifications_title">通知</string>
     <string name="about_notifications_desc">Gotify、ntfy、Telegram、Discord、Pushoverを設定</string>
-    <string name="webhooks_notification_section">通知プロバイダー</string>
+    <string name="webhooks_notification_section">成功/失敗時に通知</string>
     <string name="webhooks_notification_none">なし</string>
 </resources>
