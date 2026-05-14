@@ -264,6 +264,6 @@
     <!-- Notifications -->
     <string name="about_notifications_title">Notifications</string>
     <string name="about_notifications_desc">Configurer Gotify, ntfy, Telegram, Discord, Pushover</string>
-    <string name="webhooks_notification_section">Fournisseur de notifications</string>
+    <string name="webhooks_notification_section">Notifier en cas de succès/échec</string>
     <string name="webhooks_notification_none">Aucun</string>
 </resources>

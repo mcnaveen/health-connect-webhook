@@ -278,17 +278,20 @@ fun LocalHttpSettingsScreen(onBack: () -> Unit) {
             }
 
             if (localTcpEnabled) {
-                val routes = listOf(
-                    "/" to "Health data (supports ?days=N)",
-                    "/ping" to "Health check",
-                    "/latest" to "Last synced payload",
+                data class Endpoint(val method: String, val path: String, val description: String)
+                val endpoints = listOf(
+                    Endpoint("GET",  "/",            "Health data · ?days=N"),
+                    Endpoint("GET",  "/ping",         "Liveness check"),
+                    Endpoint("GET",  "/latest",       "Last synced payload"),
+                    Endpoint("GET",  "/logs",         "Webhook logs · ?limit · ?success · ?dataType · ?since"),
+                    Endpoint("GET",  "/stats",        "Aggregate stats — totals, success rate, avg response time"),
+                    Endpoint("GET",  "/health",       "Server uptime & last sync info"),
+                    Endpoint("GET",  "/server-logs",  "HTTP access log · ?limit · ?method · ?path · ?since"),
+                    Endpoint("POST", "/sync",         "Trigger sync · ?days=N"),
                 )
                 Card {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Endpoints",
-                            style = MaterialTheme.typography.titleSmall
-                        )
+                        Text(text = "Endpoints", style = MaterialTheme.typography.titleSmall)
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "Bound to 0.0.0.0 — accessible via LAN, Tailscale, or any interface",
@@ -296,41 +299,50 @@ fun LocalHttpSettingsScreen(onBack: () -> Unit) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        routes.forEach { (route, description) ->
-                            val url = "http://$deviceIp:$savedPort$route"
+                        endpoints.forEach { endpoint ->
+                            val baseUrl = "http://$deviceIp:$savedPort"
+                            val copyText = if (endpoint.method == "POST") {
+                                val authFlag = if (authEnabled) " -H \"Authorization: Bearer $authToken\"" else ""
+                                "curl -X POST$authFlag $baseUrl${endpoint.path}"
+                            } else {
+                                "$baseUrl${endpoint.path}"
+                            }
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .padding(vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
+                                Text(
+                                    text = endpoint.method,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (endpoint.method == "POST") Color(0xFF2196F3) else Color(0xFF4CAF50),
+                                    modifier = Modifier.width(32.dp)
+                                )
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = route,
+                                        text = endpoint.path,
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                     Text(
-                                        text = description,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = url,
+                                        text = endpoint.description,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                                 IconButton(
                                     onClick = {
-                                        clipboard.setText(AnnotatedString(url))
+                                        clipboard.setText(AnnotatedString(copyText))
                                         Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
-                                    }
+                                    },
+                                    modifier = Modifier.size(32.dp)
                                 ) {
                                     Icon(
                                         Icons.Filled.ContentCopy,
-                                        contentDescription = "Copy URL",
-                                        modifier = Modifier.size(16.dp),
+                                        contentDescription = "Copy",
+                                        modifier = Modifier.size(14.dp),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
