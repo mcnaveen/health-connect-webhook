@@ -520,7 +520,7 @@ private fun LogDetailSheet(
                                         recordCount = log.recordCount,
                                         syncType = "manual",
                                         payload = log.payload
-                                    ).postData(log.payload!!)
+                                    ).postData(log.payload)
                                 }
                                 retryLoading = false
                                 retryResult = result.isSuccess

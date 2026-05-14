@@ -136,8 +136,10 @@ fun NotificationsScreen(onBack: () -> Unit) {
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(16.dp)
                     )
+                    val sortedProviders = listOf(NotificationProviderType.LOCAL_PUSH) +
+                        NotificationProviderType.values().filter { it != NotificationProviderType.LOCAL_PUSH }
                     LazyColumn {
-                        items(NotificationProviderType.values()) { provider ->
+                        items(sortedProviders) { provider ->
                             ListItem(
                                 headlineContent = { Text(provider.displayName) },
                                 supportingContent = { Text(provider.description) },

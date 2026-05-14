@@ -1,10 +1,7 @@
 package com.hcwebhook.app.screens
 
 import android.content.Intent
-
 import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,11 +11,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Translate
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,12 +24,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import com.hcwebhook.app.FlavorUtils
-import com.hcwebhook.app.PreferencesManager
 import com.hcwebhook.app.R
-import com.hcwebhook.app.SettingsExport
-import android.widget.Toast
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.PlayArrow
@@ -42,27 +33,17 @@ import com.hcwebhook.app.ui.theme.IconBackgroundBlue
 import com.hcwebhook.app.ui.theme.IconBackgroundGreen
 import com.hcwebhook.app.ui.theme.IconTintBlue
 import com.hcwebhook.app.ui.theme.IconTintGreen
-import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(
     onRestartOnboarding: () -> Unit = {},
     onOpenLocalHttpSettings: () -> Unit = {},
-    onOpenNotificationsSettings: () -> Unit = {}
+    onOpenNotificationsSettings: () -> Unit = {},
+    onOpenSettingsBackup: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-    val prefsManager = remember { PreferencesManager(context) }
-    var showImportConfirmSheet by remember { mutableStateOf(false) }
-    val prettyJson = Json { prettyPrint = true }
 
     // ── Version info ──────────────────────────────────────────────────────────
     val versionName = try {
@@ -73,85 +54,6 @@ fun AboutScreen(
         @Suppress("DEPRECATION")
         context.packageManager.getPackageInfo(context.packageName, 0).versionCode.toLong()
     } catch (e: android.content.pm.PackageManager.NameNotFoundException) { 0L }
-
-    // ── Import file picker ────────────────────────────────────────────────────
-    val importLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri: Uri? ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        scope.launch {
-            try {
-                val inputStream = context.contentResolver.openInputStream(uri)
-                    ?: throw IllegalStateException("Cannot open file")
-                val jsonText = inputStream.bufferedReader().use { it.readText() }
-                
-                val export = Json.decodeFromString<SettingsExport>(jsonText)
-                prefsManager.importSettings(export)
-                Toast.makeText(context, context.getString(R.string.about_toast_import_success), Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                val msg = e.message ?: context.getString(R.string.about_error_unknown)
-                Toast.makeText(context, context.getString(R.string.about_toast_import_failed, msg), Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    // ── Import Confirmation Dialog ────────────────────────────────────────────
-    if (showImportConfirmSheet) {
-        val title = stringResource(R.string.about_import_sheet_title)
-        val desc = stringResource(R.string.about_import_sheet_desc)
-        val chooseFile = stringResource(R.string.about_action_choose_import)
-        val cancel = stringResource(R.string.action_cancel)
-
-        AlertDialog(
-            onDismissRequest = { showImportConfirmSheet = false },
-            title = { Text(title) },
-            text = { Text(desc) },
-            confirmButton = {
-                Button(onClick = {
-                    showImportConfirmSheet = false
-                    importLauncher.launch(arrayOf("application/json"))
-                }) {
-                    Text(chooseFile)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showImportConfirmSheet = false }) {
-                    Text(cancel)
-                }
-            }
-        )
-    }
-
-    // ── Export helper ─────────────────────────────────────────────────────────
-    fun exportSettings() {
-        try {
-            val export = prefsManager.exportSettings()
-            val jsonText = prettyJson.encodeToString(export)
-
-            val exportDir = File(context.cacheDir, "exports").also { it.mkdirs() }
-            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-            val exportFile = File(exportDir, "hc_webhook_settings_$timestamp.json")
-            exportFile.writeText(jsonText)
-
-            val fileUri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                exportFile
-            )
-
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "application/json"
-                putExtra(Intent.EXTRA_STREAM, fileUri)
-                putExtra(Intent.EXTRA_SUBJECT, "HC Webhook Settings Export")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            val title = context.getString(R.string.about_export_intent_title)
-            context.startActivity(Intent.createChooser(shareIntent, title))
-        } catch (e: Exception) {
-            val msg = e.message ?: context.getString(R.string.about_error_unknown)
-            Toast.makeText(context, context.getString(R.string.about_toast_export_failed, msg), Toast.LENGTH_LONG).show()
-        }
-    }
 
     // ── UI ────────────────────────────────────────────────────────────────────
     Box(modifier = Modifier.fillMaxSize()) {
@@ -221,75 +123,6 @@ fun AboutScreen(
                 }
             }
 
-            // ── Settings (Export / Import) Card ───────────────────────────────
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, top = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Settings,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            text = stringResource(R.string.about_settings_backup_title),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            text = stringResource(R.string.about_settings_backup_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = { exportSettings() },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Filled.Upload, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.about_action_export))
-                    }
-
-                    OutlinedButton(
-                        onClick = { showImportConfirmSheet = true },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Filled.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.about_action_import))
-                    }
-                }
-            }
-
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -309,6 +142,13 @@ fun AboutScreen(
                         subtitle = stringResource(R.string.about_notifications_desc),
                         icon = Icons.Filled.Add,
                         onClick = { onOpenNotificationsSettings() }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    LinkRow(
+                        label = stringResource(R.string.about_settings_backup_title),
+                        subtitle = stringResource(R.string.about_settings_backup_desc),
+                        icon = Icons.Filled.Backup,
+                        onClick = { onOpenSettingsBackup() }
                     )
                 }
             }

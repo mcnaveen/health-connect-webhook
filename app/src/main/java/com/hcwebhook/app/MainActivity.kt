@@ -19,6 +19,7 @@ import com.hcwebhook.app.screens.LocalHttpSettingsScreen
 import com.hcwebhook.app.screens.LogsScreen
 import com.hcwebhook.app.screens.NotificationsScreen
 import com.hcwebhook.app.screens.OnboardingScreen
+import com.hcwebhook.app.screens.SettingsBackupScreen
 import com.hcwebhook.app.screens.WebhooksScreen
 import com.hcwebhook.app.ui.theme.HCWebhookTheme
 import kotlinx.coroutines.launch
@@ -105,6 +106,7 @@ class MainActivity : AppCompatActivity() {
         var selectedScreen by remember { mutableStateOf<NavigationScreen>(NavigationScreen.Home) }
         var showLocalHttpSettings by remember { mutableStateOf(false) }
         var showNotificationsSettings by remember { mutableStateOf(false) }
+        var showSettingsBackup by remember { mutableStateOf(false) }
 
         LaunchedEffect(activity.openLocalHttpRequest.value) {
             if (activity.openLocalHttpRequest.value) {
@@ -155,7 +157,7 @@ class MainActivity : AppCompatActivity() {
 
         Scaffold(
             bottomBar = {
-                if (!showLocalHttpSettings && !showNotificationsSettings) {
+                if (!showLocalHttpSettings && !showNotificationsSettings && !showSettingsBackup) {
                     NavigationBar(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     ) {
@@ -176,6 +178,8 @@ class MainActivity : AppCompatActivity() {
                     showLocalHttpSettings = false
                 } else if (showNotificationsSettings) {
                     showNotificationsSettings = false
+                } else if (showSettingsBackup) {
+                    showSettingsBackup = false
                 } else if (selectedScreen != NavigationScreen.Home) {
                     selectedScreen = NavigationScreen.Home
                 } else {
@@ -188,6 +192,8 @@ class MainActivity : AppCompatActivity() {
                     LocalHttpSettingsScreen(onBack = { showLocalHttpSettings = false })
                 } else if (showNotificationsSettings) {
                     NotificationsScreen(onBack = { showNotificationsSettings = false })
+                } else if (showSettingsBackup) {
+                    SettingsBackupScreen(onBack = { showSettingsBackup = false })
                 } else {
                     saveableStateHolder.SaveableStateProvider(selectedScreen.toString()) {
                         when (selectedScreen) {
@@ -206,7 +212,8 @@ class MainActivity : AppCompatActivity() {
                             is NavigationScreen.About -> AboutScreen(
                                 onRestartOnboarding = onRestartOnboarding,
                                 onOpenLocalHttpSettings = { showLocalHttpSettings = true },
-                                onOpenNotificationsSettings = { showNotificationsSettings = true }
+                                onOpenNotificationsSettings = { showNotificationsSettings = true },
+                                onOpenSettingsBackup = { showSettingsBackup = true }
                             )
                         }
                     }

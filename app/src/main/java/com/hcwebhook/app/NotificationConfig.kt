@@ -13,7 +13,7 @@ enum class NotificationProviderType {
             DISCORD      -> "Discord"
             PUSHOVER     -> "Pushover"
             CUSTOM_HTTP  -> "Custom HTTP"
-            LOCAL_PUSH   -> "Local Push"
+            LOCAL_PUSH   -> "Push Notification"
         }
 
     val description: String
