@@ -275,6 +275,35 @@
     <string name="logs_export_intent_title">Esporta registri Webhook</string>
     <string name="logs_count">%1$d registri</string>
 
+    <!-- Dashboard -->
+    <string name="dashboard_title">Dashboard</string>
+    <string name="dashboard_refresh">Aggiorna dashboard</string>
+    <string name="dashboard_sub_today">oggi</string>
+    <string name="dashboard_sub_km_today">km oggi</string>
+    <string name="dashboard_sub_kcal_today">kcal oggi</string>
+    <string name="dashboard_sub_no_data">nessun dato oggi</string>
+    <string name="dashboard_sub_avg_bpm">bpm medi</string>
+    <string name="dashboard_sub_bpm_latest">bpm</string>
+    <string name="dashboard_sub_ms_avg">ms medi</string>
+    <string name="dashboard_sub_kg_latest">kg</string>
+    <string name="dashboard_sub_cm_latest">cm</string>
+    <string name="dashboard_sub_mmhg_latest">mmHg</string>
+    <string name="dashboard_sub_mmol_latest">mmol/L</string>
+    <string name="dashboard_sub_percent_latest">%</string>
+    <string name="dashboard_sub_celsius_latest">°C</string>
+    <string name="dashboard_sub_delta_celsius">Δ °C</string>
+    <string name="dashboard_sub_per_min_avg">/min medi</string>
+    <string name="dashboard_sub_sessions_today">oggi</string>
+    <string name="dashboard_sub_liters_today">L oggi</string>
+    <string name="dashboard_sub_watts_latest">W</string>
+    <string name="dashboard_sub_vo2_latest">mL/kg/min</string>
+    <string name="dashboard_updated_just_now">Aggiornato ora</string>
+    <string name="dashboard_updated_seconds">Aggiornato %1$d s fa</string>
+    <string name="dashboard_updated_minutes">Aggiornato %1$d min fa</string>
+    <string name="dashboard_updated_hours">Aggiornato %1$d h fa</string>
+    <string name="dashboard_no_permissions">Concedi le autorizzazioni Health Connect in Home per vedere le statistiche di oggi.</string>
+    <string name="dashboard_load_error">Impossibile caricare i dati sanitari. Riprova.</string>
+
     <!-- Notifications -->
     <string name="about_notifications_title">Notifiche</string>
     <string name="about_notifications_desc">Configura Gotify, ntfy, Telegram, Discord, Pushover</string>

@@ -275,6 +275,35 @@
     <string name="logs_export_intent_title">导出Webhook日志</string>
     <string name="logs_count">%1$d 条日志</string>
 
+    <!-- Dashboard -->
+    <string name="dashboard_title">仪表板</string>
+    <string name="dashboard_refresh">刷新仪表板</string>
+    <string name="dashboard_sub_today">今天</string>
+    <string name="dashboard_sub_km_today">公里 今天</string>
+    <string name="dashboard_sub_kcal_today">千卡 今天</string>
+    <string name="dashboard_sub_no_data">今天无数据</string>
+    <string name="dashboard_sub_avg_bpm">平均 bpm</string>
+    <string name="dashboard_sub_bpm_latest">bpm</string>
+    <string name="dashboard_sub_ms_avg">平均 ms</string>
+    <string name="dashboard_sub_kg_latest">kg</string>
+    <string name="dashboard_sub_cm_latest">cm</string>
+    <string name="dashboard_sub_mmhg_latest">mmHg</string>
+    <string name="dashboard_sub_mmol_latest">mmol/L</string>
+    <string name="dashboard_sub_percent_latest">%</string>
+    <string name="dashboard_sub_celsius_latest">°C</string>
+    <string name="dashboard_sub_delta_celsius">Δ °C</string>
+    <string name="dashboard_sub_per_min_avg">/分钟 平均</string>
+    <string name="dashboard_sub_sessions_today">今天</string>
+    <string name="dashboard_sub_liters_today">升 今天</string>
+    <string name="dashboard_sub_watts_latest">W</string>
+    <string name="dashboard_sub_vo2_latest">mL/kg/分</string>
+    <string name="dashboard_updated_just_now">刚刚更新</string>
+    <string name="dashboard_updated_seconds">%1$d 秒前更新</string>
+    <string name="dashboard_updated_minutes">%1$d 分钟前更新</string>
+    <string name="dashboard_updated_hours">%1$d 小时前更新</string>
+    <string name="dashboard_no_permissions">在首页授予 Health Connect 权限以查看今日统计。</string>
+    <string name="dashboard_load_error">无法加载健康数据。请重试。</string>
+
     <!-- Notifications -->
     <string name="about_notifications_title">通知</string>
     <string name="about_notifications_desc">配置 Gotify、ntfy、Telegram、Discord、Pushover</string>

@@ -275,6 +275,35 @@
     <string name="logs_export_intent_title">Exporter les journaux Webhook</string>
     <string name="logs_count">%1$d journaux</string>
 
+    <!-- Dashboard -->
+    <string name="dashboard_title">Tableau de bord</string>
+    <string name="dashboard_refresh">Actualiser le tableau de bord</string>
+    <string name="dashboard_sub_today">aujourd\'hui</string>
+    <string name="dashboard_sub_km_today">km aujourd\'hui</string>
+    <string name="dashboard_sub_kcal_today">kcal aujourd\'hui</string>
+    <string name="dashboard_sub_no_data">aucune donnée aujourd\'hui</string>
+    <string name="dashboard_sub_avg_bpm">bpm moy.</string>
+    <string name="dashboard_sub_bpm_latest">bpm</string>
+    <string name="dashboard_sub_ms_avg">ms moy.</string>
+    <string name="dashboard_sub_kg_latest">kg</string>
+    <string name="dashboard_sub_cm_latest">cm</string>
+    <string name="dashboard_sub_mmhg_latest">mmHg</string>
+    <string name="dashboard_sub_mmol_latest">mmol/L</string>
+    <string name="dashboard_sub_percent_latest">%</string>
+    <string name="dashboard_sub_celsius_latest">°C</string>
+    <string name="dashboard_sub_delta_celsius">Δ °C</string>
+    <string name="dashboard_sub_per_min_avg">/min moy.</string>
+    <string name="dashboard_sub_sessions_today">aujourd\'hui</string>
+    <string name="dashboard_sub_liters_today">L aujourd\'hui</string>
+    <string name="dashboard_sub_watts_latest">W</string>
+    <string name="dashboard_sub_vo2_latest">mL/kg/min</string>
+    <string name="dashboard_updated_just_now">Mis à jour à l\'instant</string>
+    <string name="dashboard_updated_seconds">Mis à jour il y a %1$d s</string>
+    <string name="dashboard_updated_minutes">Mis à jour il y a %1$d min</string>
+    <string name="dashboard_updated_hours">Mis à jour il y a %1$d h</string>
+    <string name="dashboard_no_permissions">Accordez les autorisations Health Connect sur Accueil pour voir les statistiques du jour.</string>
+    <string name="dashboard_load_error">Impossible de charger les données de santé. Réessayez.</string>
+
     <!-- Notifications -->
     <string name="about_notifications_title">Notifications</string>
     <string name="about_notifications_desc">Configurer Gotify, ntfy, Telegram, Discord, Pushover</string>

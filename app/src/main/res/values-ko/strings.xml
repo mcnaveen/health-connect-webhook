@@ -275,6 +275,35 @@
     <string name="logs_export_intent_title">웹훅 로그 내보내기</string>
     <string name="logs_count">%1$d 개 로그</string>
 
+    <!-- Dashboard -->
+    <string name="dashboard_title">대시보드</string>
+    <string name="dashboard_refresh">대시보드 새로고침</string>
+    <string name="dashboard_sub_today">오늘</string>
+    <string name="dashboard_sub_km_today">km 오늘</string>
+    <string name="dashboard_sub_kcal_today">kcal 오늘</string>
+    <string name="dashboard_sub_no_data">오늘 데이터 없음</string>
+    <string name="dashboard_sub_avg_bpm">평균 bpm</string>
+    <string name="dashboard_sub_bpm_latest">bpm</string>
+    <string name="dashboard_sub_ms_avg">평균 ms</string>
+    <string name="dashboard_sub_kg_latest">kg</string>
+    <string name="dashboard_sub_cm_latest">cm</string>
+    <string name="dashboard_sub_mmhg_latest">mmHg</string>
+    <string name="dashboard_sub_mmol_latest">mmol/L</string>
+    <string name="dashboard_sub_percent_latest">%</string>
+    <string name="dashboard_sub_celsius_latest">°C</string>
+    <string name="dashboard_sub_delta_celsius">Δ °C</string>
+    <string name="dashboard_sub_per_min_avg">/분 평균</string>
+    <string name="dashboard_sub_sessions_today">오늘</string>
+    <string name="dashboard_sub_liters_today">L 오늘</string>
+    <string name="dashboard_sub_watts_latest">W</string>
+    <string name="dashboard_sub_vo2_latest">mL/kg/분</string>
+    <string name="dashboard_updated_just_now">방금 업데이트됨</string>
+    <string name="dashboard_updated_seconds">%1$d초 전 업데이트</string>
+    <string name="dashboard_updated_minutes">%1$d분 전 업데이트</string>
+    <string name="dashboard_updated_hours">%1$d시간 전 업데이트</string>
+    <string name="dashboard_no_permissions">홈에서 Health Connect 권한을 허용하면 오늘의 통계를 볼 수 있습니다.</string>
+    <string name="dashboard_load_error">건강 데이터를 불러올 수 없습니다. 다시 시도하세요.</string>
+
     <!-- Notifications -->
     <string name="about_notifications_title">알림</string>
     <string name="about_notifications_desc">Gotify, ntfy, Telegram, Discord, Pushover 구성</string>

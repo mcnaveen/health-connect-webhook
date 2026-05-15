@@ -275,6 +275,35 @@
     <string name="logs_export_intent_title">Webhook-Protokolle exportieren</string>
     <string name="logs_count">%1$d Protokolle</string>
 
+    <!-- Dashboard -->
+    <string name="dashboard_title">Dashboard</string>
+    <string name="dashboard_refresh">Dashboard aktualisieren</string>
+    <string name="dashboard_sub_today">heute</string>
+    <string name="dashboard_sub_km_today">km heute</string>
+    <string name="dashboard_sub_kcal_today">kcal heute</string>
+    <string name="dashboard_sub_no_data">keine Daten heute</string>
+    <string name="dashboard_sub_avg_bpm">Ø bpm</string>
+    <string name="dashboard_sub_bpm_latest">bpm</string>
+    <string name="dashboard_sub_ms_avg">Ø ms</string>
+    <string name="dashboard_sub_kg_latest">kg</string>
+    <string name="dashboard_sub_cm_latest">cm</string>
+    <string name="dashboard_sub_mmhg_latest">mmHg</string>
+    <string name="dashboard_sub_mmol_latest">mmol/L</string>
+    <string name="dashboard_sub_percent_latest">%</string>
+    <string name="dashboard_sub_celsius_latest">°C</string>
+    <string name="dashboard_sub_delta_celsius">Δ °C</string>
+    <string name="dashboard_sub_per_min_avg">/min Ø</string>
+    <string name="dashboard_sub_sessions_today">heute</string>
+    <string name="dashboard_sub_liters_today">L heute</string>
+    <string name="dashboard_sub_watts_latest">W</string>
+    <string name="dashboard_sub_vo2_latest">mL/kg/min</string>
+    <string name="dashboard_updated_just_now">Gerade aktualisiert</string>
+    <string name="dashboard_updated_seconds">Vor %1$d Sek. aktualisiert</string>
+    <string name="dashboard_updated_minutes">Vor %1$d Min. aktualisiert</string>
+    <string name="dashboard_updated_hours">Vor %1$d Std. aktualisiert</string>
+    <string name="dashboard_no_permissions">Erteilen Sie auf der Startseite Health-Connect-Berechtigungen, um die heutigen Statistiken zu sehen.</string>
+    <string name="dashboard_load_error">Gesundheitsdaten konnten nicht geladen werden. Erneut versuchen.</string>
+
     <!-- Notifications -->
     <string name="about_notifications_title">Benachrichtigungen</string>
     <string name="about_notifications_desc">Gotify, ntfy, Telegram, Discord, Pushover konfigurieren</string>

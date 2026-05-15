@@ -275,6 +275,35 @@
     <string name="logs_export_intent_title">வெப்ஹுக் பதிவுகளை ஏற்றுமதி செய்</string>
     <string name="logs_count">%1$d பதிவுகள்</string>
 
+    <!-- Dashboard -->
+    <string name="dashboard_title">டாஷ்போர்டு</string>
+    <string name="dashboard_refresh">டாஷ்போர்டைப் புதுப்பிக்கவும்</string>
+    <string name="dashboard_sub_today">இன்று</string>
+    <string name="dashboard_sub_km_today">km இன்று</string>
+    <string name="dashboard_sub_kcal_today">kcal இன்று</string>
+    <string name="dashboard_sub_no_data">இன்று தரவு இல்லை</string>
+    <string name="dashboard_sub_avg_bpm">சராசரி bpm</string>
+    <string name="dashboard_sub_bpm_latest">bpm</string>
+    <string name="dashboard_sub_ms_avg">சராசரி ms</string>
+    <string name="dashboard_sub_kg_latest">kg</string>
+    <string name="dashboard_sub_cm_latest">cm</string>
+    <string name="dashboard_sub_mmhg_latest">mmHg</string>
+    <string name="dashboard_sub_mmol_latest">mmol/L</string>
+    <string name="dashboard_sub_percent_latest">%</string>
+    <string name="dashboard_sub_celsius_latest">°C</string>
+    <string name="dashboard_sub_delta_celsius">Δ °C</string>
+    <string name="dashboard_sub_per_min_avg">/நிமிடம் சராசரி</string>
+    <string name="dashboard_sub_sessions_today">இன்று</string>
+    <string name="dashboard_sub_liters_today">L இன்று</string>
+    <string name="dashboard_sub_watts_latest">W</string>
+    <string name="dashboard_sub_vo2_latest">mL/kg/நிமிடம்</string>
+    <string name="dashboard_updated_just_now">இப்போதே புதுப்பிக்கப்பட்டது</string>
+    <string name="dashboard_updated_seconds">%1$d விநாடிகளுக்கு முன் புதுப்பிக்கப்பட்டது</string>
+    <string name="dashboard_updated_minutes">%1$d நிமிடங்களுக்கு முன் புதுப்பிக்கப்பட்டது</string>
+    <string name="dashboard_updated_hours">%1$d மணி நேரத்திற்கு முன் புதுப்பிக்கப்பட்டது</string>
+    <string name="dashboard_no_permissions">இன்றைய புள்ளிவிவரங்களைக் காண முகப்பில் Health Connect அனுமதிகளை வழங்கவும்.</string>
+    <string name="dashboard_load_error">சுகாதார தரவை ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.</string>
+
     <!-- Notifications -->
     <string name="about_notifications_title">அறிவிப்புகள்</string>
     <string name="about_notifications_desc">Gotify, ntfy, Telegram, Discord, Pushover உள்ளமை</string>

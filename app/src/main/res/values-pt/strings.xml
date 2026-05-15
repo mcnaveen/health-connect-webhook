@@ -275,6 +275,35 @@
     <string name="logs_export_intent_title">Exportar registros do Webhook</string>
     <string name="logs_count">%1$d registros</string>
 
+    <!-- Dashboard -->
+    <string name="dashboard_title">Painel</string>
+    <string name="dashboard_refresh">Atualizar painel</string>
+    <string name="dashboard_sub_today">hoje</string>
+    <string name="dashboard_sub_km_today">km hoje</string>
+    <string name="dashboard_sub_kcal_today">kcal hoje</string>
+    <string name="dashboard_sub_no_data">sem dados hoje</string>
+    <string name="dashboard_sub_avg_bpm">bpm médio</string>
+    <string name="dashboard_sub_bpm_latest">bpm</string>
+    <string name="dashboard_sub_ms_avg">ms médio</string>
+    <string name="dashboard_sub_kg_latest">kg</string>
+    <string name="dashboard_sub_cm_latest">cm</string>
+    <string name="dashboard_sub_mmhg_latest">mmHg</string>
+    <string name="dashboard_sub_mmol_latest">mmol/L</string>
+    <string name="dashboard_sub_percent_latest">%</string>
+    <string name="dashboard_sub_celsius_latest">°C</string>
+    <string name="dashboard_sub_delta_celsius">Δ °C</string>
+    <string name="dashboard_sub_per_min_avg">/min médio</string>
+    <string name="dashboard_sub_sessions_today">hoje</string>
+    <string name="dashboard_sub_liters_today">L hoje</string>
+    <string name="dashboard_sub_watts_latest">W</string>
+    <string name="dashboard_sub_vo2_latest">mL/kg/min</string>
+    <string name="dashboard_updated_just_now">Atualizado agora</string>
+    <string name="dashboard_updated_seconds">Atualizado há %1$d s</string>
+    <string name="dashboard_updated_minutes">Atualizado há %1$d min</string>
+    <string name="dashboard_updated_hours">Atualizado há %1$d h</string>
+    <string name="dashboard_no_permissions">Conceda permissões do Health Connect na página Início para ver as estatísticas de hoje.</string>
+    <string name="dashboard_load_error">Não foi possível carregar os dados de saúde. Tente novamente.</string>
+
     <!-- Notifications -->
     <string name="about_notifications_title">Notificações</string>
     <string name="about_notifications_desc">Configurar Gotify, ntfy, Telegram, Discord, Pushover</string>

@@ -275,6 +275,35 @@
     <string name="logs_export_intent_title">Webhookログをエクスポート</string>
     <string name="logs_count">%1$d 件のログ</string>
 
+    <!-- Dashboard -->
+    <string name="dashboard_title">ダッシュボード</string>
+    <string name="dashboard_refresh">ダッシュボードを更新</string>
+    <string name="dashboard_sub_today">今日</string>
+    <string name="dashboard_sub_km_today">km 今日</string>
+    <string name="dashboard_sub_kcal_today">kcal 今日</string>
+    <string name="dashboard_sub_no_data">今日のデータなし</string>
+    <string name="dashboard_sub_avg_bpm">平均 bpm</string>
+    <string name="dashboard_sub_bpm_latest">bpm</string>
+    <string name="dashboard_sub_ms_avg">平均 ms</string>
+    <string name="dashboard_sub_kg_latest">kg</string>
+    <string name="dashboard_sub_cm_latest">cm</string>
+    <string name="dashboard_sub_mmhg_latest">mmHg</string>
+    <string name="dashboard_sub_mmol_latest">mmol/L</string>
+    <string name="dashboard_sub_percent_latest">%</string>
+    <string name="dashboard_sub_celsius_latest">°C</string>
+    <string name="dashboard_sub_delta_celsius">Δ °C</string>
+    <string name="dashboard_sub_per_min_avg">/分 平均</string>
+    <string name="dashboard_sub_sessions_today">今日</string>
+    <string name="dashboard_sub_liters_today">L 今日</string>
+    <string name="dashboard_sub_watts_latest">W</string>
+    <string name="dashboard_sub_vo2_latest">mL/kg/分</string>
+    <string name="dashboard_updated_just_now">たった今更新</string>
+    <string name="dashboard_updated_seconds">%1$d 秒前に更新</string>
+    <string name="dashboard_updated_minutes">%1$d 分前に更新</string>
+    <string name="dashboard_updated_hours">%1$d 時間前に更新</string>
+    <string name="dashboard_no_permissions">ホームで Health Connect の権限を付与すると、今日の統計を表示できます。</string>
+    <string name="dashboard_load_error">健康データを読み込めませんでした。もう一度お試しください。</string>
+
     <!-- Notifications -->
     <string name="about_notifications_title">通知</string>
     <string name="about_notifications_desc">Gotify、ntfy、Telegram、Discord、Pushoverを設定</string>
