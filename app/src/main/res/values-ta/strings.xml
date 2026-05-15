@@ -203,6 +203,20 @@
     <string name="about_link_github">கிட்ஹப் களஞ்சியம்</string>
     <string name="about_link_feedback">கருத்துக்களை வழங்கவும்</string>
     <string name="about_link_intro">அறிமுகத்தைப் பார்க்கவும்</string>
+    <string name="about_link_changelog">புதியவை</string>
+    <string name="about_link_changelog_desc">வெளியீட்டு வரலாறு மற்றும் புதுப்பிப்புகள்</string>
+
+    <!-- Changelog -->
+    <string name="changelog_title">புதியவை</string>
+    <string name="changelog_label">மாற்றப் பதிவு</string>
+    <string name="changelog_heading">வெளியீட்டு வரலாறு</string>
+    <string name="changelog_empty">வெளியீடுகள் எதுவும் கிடைக்கவில்லை.</string>
+    <string name="action_back">பின்செல்</string>
+    <string name="whats_new_label">புதியவை</string>
+    <string name="whats_new_title">புதியவை</string>
+    <string name="whats_new_version">நீங்கள் இப்போது பதிப்பு %1$s இல் உள்ளீர்கள்</string>
+    <string name="whats_new_fallback">புதுப்பித்ததற்கு நன்றி! விவரங்களுக்கு முழு வெளியீட்டு வரலாற்றைப் பார்க்கவும்.</string>
+    <string name="whats_new_got_it">புரிந்தது</string>
     <string name="about_local_http_title">உள்ளூர் HTTP சேவையகம்</string>
     <string name="local_http_server_notification_channel_name">Local HTTP Server</string>
     <string name="local_http_server_notification_channel_desc">Local HTTP endpoint ஐ பின்னணியில் செயலில் வைத்திருக்கிறது</string>

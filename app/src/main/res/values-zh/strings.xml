@@ -203,6 +203,20 @@
     <string name="about_link_github">GitHub 存储库</string>
     <string name="about_link_feedback">提供反馈</string>
     <string name="about_link_intro">查看简介</string>
+    <string name="about_link_changelog">新功能</string>
+    <string name="about_link_changelog_desc">版本历史和更新</string>
+
+    <!-- Changelog -->
+    <string name="changelog_title">新功能</string>
+    <string name="changelog_label">更新日志</string>
+    <string name="changelog_heading">版本历史</string>
+    <string name="changelog_empty">未找到版本。</string>
+    <string name="action_back">返回</string>
+    <string name="whats_new_label">新功能</string>
+    <string name="whats_new_title">新功能</string>
+    <string name="whats_new_version">您当前使用的是版本 %1$s</string>
+    <string name="whats_new_fallback">感谢更新！请查看完整版本历史了解详情。</string>
+    <string name="whats_new_got_it">知道了</string>
     <string name="about_local_http_title">本地 HTTP 服务器</string>
     <string name="local_http_server_notification_channel_name">本地 HTTP 服务器</string>
     <string name="local_http_server_notification_channel_desc">在后台保持本地 HTTP 端点处于活动状态</string>

@@ -203,6 +203,20 @@
     <string name="about_link_github">GitHub-Repository</string>
     <string name="about_link_feedback">Geben Sie Feedback</string>
     <string name="about_link_intro">Einführung ansehen</string>
+    <string name="about_link_changelog">Neuigkeiten</string>
+    <string name="about_link_changelog_desc">Versionsverlauf und Updates</string>
+
+    <!-- Changelog -->
+    <string name="changelog_title">Neuigkeiten</string>
+    <string name="changelog_label">Änderungsprotokoll</string>
+    <string name="changelog_heading">Versionsverlauf</string>
+    <string name="changelog_empty">Keine Versionen gefunden.</string>
+    <string name="action_back">Zurück</string>
+    <string name="whats_new_label">Neuigkeiten</string>
+    <string name="whats_new_title">Neuigkeiten</string>
+    <string name="whats_new_version">Sie verwenden jetzt Version %1$s</string>
+    <string name="whats_new_fallback">Danke für das Update! Details finden Sie im vollständigen Versionsverlauf.</string>
+    <string name="whats_new_got_it">Verstanden</string>
     <string name="about_local_http_title">Lokaler HTTP-Server</string>
     <string name="local_http_server_notification_channel_name">Lokaler HTTP-Server</string>
     <string name="local_http_server_notification_channel_desc">Hält den lokalen HTTP-Endpunkt im Hintergrund aktiv</string>

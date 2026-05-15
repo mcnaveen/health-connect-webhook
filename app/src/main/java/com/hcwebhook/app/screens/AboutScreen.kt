@@ -29,6 +29,7 @@ import com.hcwebhook.app.R
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.automirrored.filled.Notes
 import com.hcwebhook.app.ui.theme.IconBackgroundBlue
 import com.hcwebhook.app.ui.theme.IconBackgroundGreen
 import com.hcwebhook.app.ui.theme.IconTintBlue
@@ -40,7 +41,8 @@ fun AboutScreen(
     onRestartOnboarding: () -> Unit = {},
     onOpenLocalHttpSettings: () -> Unit = {},
     onOpenNotificationsSettings: () -> Unit = {},
-    onOpenSettingsBackup: () -> Unit = {}
+    onOpenSettingsBackup: () -> Unit = {},
+    onOpenChangelog: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -235,7 +237,15 @@ fun AboutScreen(
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
                     LinkRow(
-                        label = "View Introduction",
+                        label = stringResource(R.string.about_link_changelog),
+                        subtitle = stringResource(R.string.about_link_changelog_desc),
+                        icon = Icons.AutoMirrored.Filled.Notes,
+                        onClick = { onOpenChangelog() }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                    LinkRow(
+                        label = stringResource(R.string.about_link_intro),
                         icon = Icons.Filled.PlayArrow,
                         onClick = { onRestartOnboarding() }
                     )

@@ -203,6 +203,20 @@
     <string name="about_link_github">Repositório GitHub</string>
     <string name="about_link_feedback">Fornecer comentários</string>
     <string name="about_link_intro">Ver introdução</string>
+    <string name="about_link_changelog">Novidades</string>
+    <string name="about_link_changelog_desc">Histórico de versões e atualizações</string>
+
+    <!-- Changelog -->
+    <string name="changelog_title">Novidades</string>
+    <string name="changelog_label">Registo de alterações</string>
+    <string name="changelog_heading">Histórico de versões</string>
+    <string name="changelog_empty">Nenhuma versão encontrada.</string>
+    <string name="action_back">Voltar</string>
+    <string name="whats_new_label">Novidades</string>
+    <string name="whats_new_title">Novidades</string>
+    <string name="whats_new_version">Está na versão %1$s</string>
+    <string name="whats_new_fallback">Obrigado pela atualização! Consulte o histórico completo de versões para mais detalhes.</string>
+    <string name="whats_new_got_it">Entendi</string>
     <string name="about_local_http_title">Servidor HTTP local</string>
     <string name="local_http_server_notification_channel_name">Servidor HTTP local</string>
     <string name="local_http_server_notification_channel_desc">Mantém o endpoint HTTP local ativo em segundo plano</string>

@@ -234,6 +234,20 @@
     <string name="about_link_github">GitHub Repository</string>
     <string name="about_link_feedback">Provide Feedback</string>
     <string name="about_link_intro">View Introduction</string>
+    <string name="about_link_changelog">What\'s New</string>
+    <string name="about_link_changelog_desc">Release history and updates</string>
+
+    <!-- Changelog -->
+    <string name="changelog_title">What\'s New</string>
+    <string name="changelog_label">Changelog</string>
+    <string name="changelog_heading">Release history</string>
+    <string name="changelog_empty">No releases found.</string>
+    <string name="action_back">Back</string>
+    <string name="whats_new_label">What\'s new</string>
+    <string name="whats_new_title">What\'s new</string>
+    <string name="whats_new_version">You\'re now on version %1$s</string>
+    <string name="whats_new_fallback">Thanks for updating! Check the full release history for details.</string>
+    <string name="whats_new_got_it">Got it</string>
     <string name="about_local_http_title">Local HTTP Server</string>
     <string name="local_http_server_notification_channel_name">Local HTTP Server</string>
     <string name="local_http_server_notification_channel_desc">Keeps local HTTP endpoint active in background</string>
