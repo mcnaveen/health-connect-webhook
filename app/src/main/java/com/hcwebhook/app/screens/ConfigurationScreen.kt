@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -63,6 +64,7 @@ fun ConfigurationScreen(
     grantedPermissionsSet: Set<String>,
     sdkStatus: Int,
     onOpenLocalHttpSettings: () -> Unit = {},
+    onOpenDashboard: () -> Unit = {},
     @Suppress("UNUSED_PARAMETER")
     onPermissionsUpdated: (Boolean, Set<String>) -> Unit = { _, _ -> }
 ) {
@@ -159,20 +161,44 @@ fun ConfigurationScreen(
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column {
-                    Text("Health Connect", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Health Connect",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
                     if (lastSyncTime != null) {
                         Text(
                             text = "Last sync $lastSyncRelativeTime",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
-                if (lastSyncSummary != null) {
-                    Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(20.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    IconButton(
+                        onClick = onOpenDashboard,
+                        modifier = Modifier.size(40.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.BarChart,
+                            contentDescription = stringResource(R.string.dashboard_title),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    if (lastSyncSummary != null) {
+                        Icon(
+                            Icons.Filled.CheckCircle,
+                            contentDescription = null,
+                            tint = Color(0xFF4CAF50),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
                 }
             }
 

@@ -10,7 +10,12 @@ import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import com.hcwebhook.app.dashboard.DashboardFormatter
+import com.hcwebhook.app.dashboard.DashboardMetric
+import com.hcwebhook.app.dashboard.DashboardSnapshot
 import kotlin.reflect.KClass
 
 enum class HealthDataType(val nameResId: Int, val recordClass: KClass<out Record>, val rationaleResId: Int) {
@@ -383,6 +388,262 @@ class HealthConnectManager(private val context: Context) {
         }
     }
 
+    suspend fun readTodayDashboardStats(grantedPermissions: Set<String>): Result<DashboardSnapshot> {
+        return try {
+            val grantedTypes = grantedDataTypes(grantedPermissions)
+            if (grantedTypes.isEmpty()) {
+                return Result.success(DashboardSnapshot(emptyList()))
+            }
+
+            val zone = ZoneId.systemDefault()
+            val dayStart = LocalDate.now(zone).atStartOfDay(zone).toInstant()
+            val dayEnd = Instant.now()
+
+            val metrics = grantedTypes.map { type ->
+                readDashboardMetric(type, dayStart, dayEnd)
+            }
+
+            Result.success(DashboardSnapshot(metrics, Instant.now()))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private suspend fun readDashboardMetric(
+        type: HealthDataType,
+        dayStart: Instant,
+        dayEnd: Instant,
+    ): DashboardMetric = when (type) {
+        HealthDataType.STEPS -> DashboardMetric(
+            type,
+            DashboardFormatter.formatSteps(aggregateSteps(dayStart, dayEnd)),
+            R.string.dashboard_sub_today,
+        )
+        HealthDataType.DISTANCE -> DashboardMetric(
+            type,
+            DashboardFormatter.formatDistanceKm(aggregateDistanceMeters(dayStart, dayEnd)),
+            R.string.dashboard_sub_km_today,
+        )
+        HealthDataType.ACTIVE_CALORIES -> DashboardMetric(
+            type,
+            DashboardFormatter.formatCalories(aggregateActiveCalories(dayStart, dayEnd)),
+            R.string.dashboard_sub_kcal_today,
+        )
+        HealthDataType.TOTAL_CALORIES -> DashboardMetric(
+            type,
+            DashboardFormatter.formatCalories(aggregateTotalCalories(dayStart, dayEnd)),
+            R.string.dashboard_sub_kcal_today,
+        )
+        HealthDataType.SLEEP -> {
+            val sessions = readSleepSessionsInRange(dayStart, dayEnd)
+            DashboardMetric(
+                type,
+                DashboardFormatter.formatDurationMinutes(
+                    DashboardFormatter.sumDurationsMinutes(
+                        sessions.map { Duration.between(it.startTime, it.endTime) },
+                    ),
+                ),
+                R.string.dashboard_sub_today,
+            )
+        }
+        HealthDataType.HEART_RATE -> {
+            val avg = averageHeartRateBpm(dayStart, dayEnd)
+            DashboardMetric(
+                type,
+                DashboardFormatter.formatOptional(avg, DashboardFormatter::formatAverageBpm),
+                if (avg != null) R.string.dashboard_sub_avg_bpm else R.string.dashboard_sub_no_data,
+            )
+        }
+        HealthDataType.HEART_RATE_VARIABILITY -> {
+            val avg = averageHeartRateVariabilityMs(dayStart, dayEnd)
+            DashboardMetric(
+                type,
+                DashboardFormatter.formatOptional(avg, DashboardFormatter::formatHeartRateVariabilityMs),
+                if (avg != null) R.string.dashboard_sub_ms_avg else R.string.dashboard_sub_no_data,
+            )
+        }
+        HealthDataType.WEIGHT -> latestMetric(
+            type,
+            readWeightData(dayStart, dayEnd, null).maxByOrNull { it.time }?.kilograms,
+            DashboardFormatter::formatWeightKg,
+            R.string.dashboard_sub_kg_latest,
+        )
+        HealthDataType.HEIGHT -> latestMetric(
+            type,
+            readHeightData(dayStart, dayEnd, null).maxByOrNull { it.time }?.meters,
+            DashboardFormatter::formatHeightCm,
+            R.string.dashboard_sub_cm_latest,
+        )
+        HealthDataType.BLOOD_PRESSURE -> {
+            val latest = readBloodPressureData(dayStart, dayEnd, null).maxByOrNull { it.time }
+            DashboardMetric(
+                type,
+                if (latest != null) {
+                    DashboardFormatter.formatBloodPressure(latest.systolic, latest.diastolic)
+                } else {
+                    DashboardFormatter.NO_DATA
+                },
+                if (latest != null) R.string.dashboard_sub_mmhg_latest else R.string.dashboard_sub_no_data,
+            )
+        }
+        HealthDataType.BLOOD_GLUCOSE -> latestMetric(
+            type,
+            readBloodGlucoseData(dayStart, dayEnd, null).maxByOrNull { it.time }?.mmolPerLiter,
+            DashboardFormatter::formatBloodGlucose,
+            R.string.dashboard_sub_mmol_latest,
+        )
+        HealthDataType.OXYGEN_SATURATION -> latestMetric(
+            type,
+            readOxygenSaturationData(dayStart, dayEnd, null).maxByOrNull { it.time }?.percentage,
+            DashboardFormatter::formatPercentage,
+            R.string.dashboard_sub_percent_latest,
+        )
+        HealthDataType.BODY_TEMPERATURE -> latestMetric(
+            type,
+            readBodyTemperatureData(dayStart, dayEnd, null).maxByOrNull { it.time }?.celsius,
+            DashboardFormatter::formatCelsius,
+            R.string.dashboard_sub_celsius_latest,
+        )
+        HealthDataType.SKIN_TEMPERATURE -> {
+            val latest = readSkinTemperatureData(dayStart, dayEnd, null).maxByOrNull { it.time }
+            DashboardMetric(
+                type,
+                if (latest != null) {
+                    DashboardFormatter.formatSignedCelsius(latest.deltaCelsius)
+                } else {
+                    DashboardFormatter.NO_DATA
+                },
+                if (latest != null) R.string.dashboard_sub_delta_celsius else R.string.dashboard_sub_no_data,
+            )
+        }
+        HealthDataType.RESPIRATORY_RATE -> {
+            val avg = averageRespiratoryRate(dayStart, dayEnd)
+            DashboardMetric(
+                type,
+                DashboardFormatter.formatOptional(avg, DashboardFormatter::formatRespiratoryRate),
+                if (avg != null) R.string.dashboard_sub_per_min_avg else R.string.dashboard_sub_no_data,
+            )
+        }
+        HealthDataType.RESTING_HEART_RATE -> latestMetric(
+            type,
+            readRestingHeartRateData(dayStart, dayEnd, null).maxByOrNull { it.time }?.bpm?.toDouble(),
+            DashboardFormatter::formatAverageBpm,
+            R.string.dashboard_sub_bpm_latest,
+        )
+        HealthDataType.EXERCISE -> {
+            val sessions = readExerciseData(dayStart, dayEnd, null, includeDistance = false, includeSteps = false)
+            val totalMinutes = DashboardFormatter.sumDurationsMinutes(sessions.map { it.duration })
+            DashboardMetric(
+                type,
+                if (sessions.isEmpty()) {
+                    DashboardFormatter.formatDurationMinutes(0)
+                } else {
+                    DashboardFormatter.formatDurationMinutes(totalMinutes)
+                },
+                R.string.dashboard_sub_sessions_today,
+            )
+        }
+        HealthDataType.HYDRATION -> DashboardMetric(
+            type,
+            DashboardFormatter.formatLiters(
+                readHydrationData(dayStart, dayEnd, null).sumOf { it.liters },
+            ),
+            R.string.dashboard_sub_liters_today,
+        )
+        HealthDataType.NUTRITION -> DashboardMetric(
+            type,
+            DashboardFormatter.formatCalories(
+                readNutritionData(dayStart, dayEnd, null).mapNotNull { it.calories }.sum(),
+            ),
+            R.string.dashboard_sub_kcal_today,
+        )
+        HealthDataType.BASAL_METABOLIC_RATE -> latestMetric(
+            type,
+            readBasalMetabolicRateData(dayStart, dayEnd, null).maxByOrNull { it.time }?.watts,
+            DashboardFormatter::formatWatts,
+            R.string.dashboard_sub_watts_latest,
+        )
+        HealthDataType.BODY_FAT -> latestMetric(
+            type,
+            readBodyFatData(dayStart, dayEnd, null).maxByOrNull { it.time }?.percentage,
+            DashboardFormatter::formatPercentage,
+            R.string.dashboard_sub_percent_latest,
+        )
+        HealthDataType.LEAN_BODY_MASS -> latestMetric(
+            type,
+            readLeanBodyMassData(dayStart, dayEnd, null).maxByOrNull { it.time }?.kilograms,
+            DashboardFormatter::formatWeightKg,
+            R.string.dashboard_sub_kg_latest,
+        )
+        HealthDataType.VO2_MAX -> latestMetric(
+            type,
+            readVo2MaxData(dayStart, dayEnd, null).maxByOrNull { it.time }?.mlPerKgPerMin,
+            DashboardFormatter::formatVo2Max,
+            R.string.dashboard_sub_vo2_latest,
+        )
+        HealthDataType.BONE_MASS -> latestMetric(
+            type,
+            readBoneMassData(dayStart, dayEnd, null).maxByOrNull { it.time }?.kilograms,
+            DashboardFormatter::formatWeightKg,
+            R.string.dashboard_sub_kg_latest,
+        )
+    }
+
+    private fun latestMetric(
+        type: HealthDataType,
+        value: Double?,
+        formatter: (Double) -> String,
+        subtitleResId: Int,
+    ): DashboardMetric = DashboardMetric(
+        type,
+        DashboardFormatter.formatOptional(value, formatter),
+        if (value != null) subtitleResId else R.string.dashboard_sub_no_data,
+    )
+
+    private suspend fun readSleepSessionsInRange(startTime: Instant, endTime: Instant): List<SleepSessionRecord> {
+        val request = ReadRecordsRequest(
+            recordType = SleepSessionRecord::class,
+            timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
+        )
+        return readAllRecords(request)
+    }
+
+    private suspend fun averageHeartRateBpm(startTime: Instant, endTime: Instant): Double? {
+        val request = ReadRecordsRequest(
+            recordType = HeartRateRecord::class,
+            timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
+        )
+        val samples = readAllRecords(request).flatMap { it.samples }
+        if (samples.isEmpty()) return null
+        return samples.map { it.beatsPerMinute.toDouble() }.average()
+    }
+
+    private suspend fun averageHeartRateVariabilityMs(startTime: Instant, endTime: Instant): Double? {
+        val request = ReadRecordsRequest(
+            recordType = HeartRateVariabilityRmssdRecord::class,
+            timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
+        )
+        val records = readAllRecords(request)
+        if (records.isEmpty()) return null
+        return records.map { it.heartRateVariabilityMillis }.average()
+    }
+
+    private suspend fun averageRespiratoryRate(startTime: Instant, endTime: Instant): Double? {
+        val request = ReadRecordsRequest(
+            recordType = RespiratoryRateRecord::class,
+            timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
+        )
+        val records = readAllRecords(request)
+        if (records.isEmpty()) return null
+        return records.map { it.rate }.average()
+    }
+
+    private suspend fun aggregateTotalCalories(startTime: Instant, endTime: Instant): Double {
+        return readTotalCaloriesData(startTime, endTime, null).sumOf { it.calories }
+    }
+
     private suspend fun readStepsData(
         startTime: Instant,
         endTime: Instant,
@@ -683,13 +944,33 @@ class HealthConnectManager(private val context: Context) {
         val max: Double? = null
     )
 
-    private suspend fun readStepsTotal(startTime: Instant, endTime: Instant): Long? {
+    private suspend fun aggregateSteps(startTime: Instant, endTime: Instant): Long {
         val request = AggregateRequest(
             metrics = setOf(StepsRecord.COUNT_TOTAL),
-            timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+            timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
         )
-        val response = healthConnectClient.aggregate(request)
-        val steps = response[StepsRecord.COUNT_TOTAL] ?: return null
+        return healthConnectClient.aggregate(request)[StepsRecord.COUNT_TOTAL] ?: 0L
+    }
+
+    private suspend fun aggregateDistanceMeters(startTime: Instant, endTime: Instant): Double {
+        val request = AggregateRequest(
+            metrics = setOf(DistanceRecord.DISTANCE_TOTAL),
+            timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
+        )
+        return healthConnectClient.aggregate(request)[DistanceRecord.DISTANCE_TOTAL]?.inMeters ?: 0.0
+    }
+
+    private suspend fun aggregateActiveCalories(startTime: Instant, endTime: Instant): Double {
+        val request = AggregateRequest(
+            metrics = setOf(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL),
+            timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
+        )
+        return healthConnectClient.aggregate(request)[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]
+            ?.inKilocalories ?: 0.0
+    }
+
+    private suspend fun readStepsTotal(startTime: Instant, endTime: Instant): Long? {
+        val steps = aggregateSteps(startTime, endTime)
         return steps.takeIf { it > 0L }
     }
 
@@ -726,12 +1007,7 @@ class HealthConnectManager(private val context: Context) {
     }
 
     private suspend fun readDistanceTotal(startTime: Instant, endTime: Instant): Double? {
-        val request = AggregateRequest(
-            metrics = setOf(DistanceRecord.DISTANCE_TOTAL),
-            timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
-        )
-        val response = healthConnectClient.aggregate(request)
-        val distanceMeters = response[DistanceRecord.DISTANCE_TOTAL]?.inMeters ?: return null
+        val distanceMeters = aggregateDistanceMeters(startTime, endTime)
         return distanceMeters.takeIf { it > 0.0 }
     }
 
@@ -846,6 +1122,11 @@ class HealthConnectManager(private val context: Context) {
 
     companion object {
         private const val LOOKBACK_HOURS = 48L
+
+        fun grantedDataTypes(grantedPermissions: Set<String>): List<HealthDataType> =
+            HealthDataType.entries.filter { type ->
+                HealthPermission.getReadPermission(type.recordClass) in grantedPermissions
+            }
 
         fun getPermissionsForTypes(
             types: Set<HealthDataType>,

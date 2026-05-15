@@ -281,6 +281,35 @@
     <string name="logs_export_intent_title">Export Webhook Logs</string>
     <string name="logs_count">%1$d logs</string>
 
+    <!-- Dashboard -->
+    <string name="dashboard_title">Dashboard</string>
+    <string name="dashboard_refresh">Refresh dashboard</string>
+    <string name="dashboard_sub_today">today</string>
+    <string name="dashboard_sub_km_today">km today</string>
+    <string name="dashboard_sub_kcal_today">kcal today</string>
+    <string name="dashboard_sub_no_data">no data today</string>
+    <string name="dashboard_sub_avg_bpm">avg bpm</string>
+    <string name="dashboard_sub_bpm_latest">bpm</string>
+    <string name="dashboard_sub_ms_avg">avg ms</string>
+    <string name="dashboard_sub_kg_latest">kg</string>
+    <string name="dashboard_sub_cm_latest">cm</string>
+    <string name="dashboard_sub_mmhg_latest">mmHg</string>
+    <string name="dashboard_sub_mmol_latest">mmol/L</string>
+    <string name="dashboard_sub_percent_latest">%</string>
+    <string name="dashboard_sub_celsius_latest">°C</string>
+    <string name="dashboard_sub_delta_celsius">Δ °C</string>
+    <string name="dashboard_sub_per_min_avg">/min avg</string>
+    <string name="dashboard_sub_sessions_today">today</string>
+    <string name="dashboard_sub_liters_today">L today</string>
+    <string name="dashboard_sub_watts_latest">W</string>
+    <string name="dashboard_sub_vo2_latest">mL/kg/min</string>
+    <string name="dashboard_updated_just_now">Updated just now</string>
+    <string name="dashboard_updated_seconds">Updated %1$d secs ago</string>
+    <string name="dashboard_updated_minutes">Updated %1$d min ago</string>
+    <string name="dashboard_updated_hours">Updated %1$d hr ago</string>
+    <string name="dashboard_no_permissions">Grant Health Connect permissions on Home to view today\'s stats.</string>
+    <string name="dashboard_load_error">Could not load health data. Try again.</string>
+
     <!-- Navigation Items -->
     <string name="nav_home">Home</string>
     <string name="nav_webhooks">Webhooks</string>
