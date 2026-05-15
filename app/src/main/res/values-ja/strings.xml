@@ -203,6 +203,20 @@
     <string name="about_link_github">GitHub リポジトリ</string>
     <string name="about_link_feedback">フィードバックを提供する</string>
     <string name="about_link_intro">概要を見る</string>
+    <string name="about_link_changelog">新機能</string>
+    <string name="about_link_changelog_desc">リリース履歴とアップデート</string>
+
+    <!-- Changelog -->
+    <string name="changelog_title">新機能</string>
+    <string name="changelog_label">変更履歴</string>
+    <string name="changelog_heading">リリース履歴</string>
+    <string name="changelog_empty">リリースが見つかりません。</string>
+    <string name="action_back">戻る</string>
+    <string name="whats_new_label">新機能</string>
+    <string name="whats_new_title">新機能</string>
+    <string name="whats_new_version">バージョン %1$s をご利用中です</string>
+    <string name="whats_new_fallback">アップデートありがとうございます！詳細はリリース履歴をご確認ください。</string>
+    <string name="whats_new_got_it">OK</string>
     <string name="about_local_http_title">ローカル HTTP サーバー</string>
     <string name="local_http_server_notification_channel_name">ローカル HTTP サーバー</string>
     <string name="local_http_server_notification_channel_desc">ローカル HTTP エンドポイントをバックグラウンドで有効に保ちます</string>

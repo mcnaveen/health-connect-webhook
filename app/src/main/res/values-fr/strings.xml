@@ -203,6 +203,20 @@
     <string name="about_link_github">Dépôt GitHub</string>
     <string name="about_link_feedback">Fournir des commentaires</string>
     <string name="about_link_intro">Voir l\'introduction</string>
+    <string name="about_link_changelog">Nouveautés</string>
+    <string name="about_link_changelog_desc">Historique des versions et mises à jour</string>
+
+    <!-- Changelog -->
+    <string name="changelog_title">Nouveautés</string>
+    <string name="changelog_label">Journal des modifications</string>
+    <string name="changelog_heading">Historique des versions</string>
+    <string name="changelog_empty">Aucune version trouvée.</string>
+    <string name="action_back">Retour</string>
+    <string name="whats_new_label">Nouveautés</string>
+    <string name="whats_new_title">Nouveautés</string>
+    <string name="whats_new_version">Vous êtes maintenant sur la version %1$s</string>
+    <string name="whats_new_fallback">Merci pour la mise à jour ! Consultez l\'historique complet des versions pour plus de détails.</string>
+    <string name="whats_new_got_it">Compris</string>
     <string name="about_local_http_title">Serveur HTTP local</string>
     <string name="local_http_server_notification_channel_name">Serveur HTTP local</string>
     <string name="local_http_server_notification_channel_desc">Maintient le point de terminaison HTTP local actif en arrière-plan</string>

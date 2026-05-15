@@ -203,6 +203,20 @@
     <string name="about_link_github">GitHub 저장소</string>
     <string name="about_link_feedback">피드백 제공</string>
     <string name="about_link_intro">소개 보기</string>
+    <string name="about_link_changelog">새로운 기능</string>
+    <string name="about_link_changelog_desc">릴리스 기록 및 업데이트</string>
+
+    <!-- Changelog -->
+    <string name="changelog_title">새로운 기능</string>
+    <string name="changelog_label">변경 기록</string>
+    <string name="changelog_heading">릴리스 기록</string>
+    <string name="changelog_empty">릴리스를 찾을 수 없습니다.</string>
+    <string name="action_back">뒤로</string>
+    <string name="whats_new_label">새로운 기능</string>
+    <string name="whats_new_title">새로운 기능</string>
+    <string name="whats_new_version">버전 %1$s을(를) 사용 중입니다</string>
+    <string name="whats_new_fallback">업데이트해 주셔서 감사합니다! 자세한 내용은 전체 릴리스 기록을 확인하세요.</string>
+    <string name="whats_new_got_it">확인</string>
     <string name="about_local_http_title">로컬 HTTP 서버</string>
     <string name="local_http_server_notification_channel_name">로컬 HTTP 서버</string>
     <string name="local_http_server_notification_channel_desc">백그라운드에서 로컬 HTTP 엔드포인트를 활성 상태로 유지합니다</string>

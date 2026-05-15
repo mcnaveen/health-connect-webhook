@@ -37,6 +37,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_SCHEDULED_SYNCS = "scheduled_syncs"
         private const val KEY_KNOWN_GRANTED_PERMISSIONS = "known_granted_permissions"
         private const val KEY_HAS_SEEN_ONBOARDING = "has_seen_onboarding"
+        private const val KEY_LAST_SEEN_VERSION_CODE = "last_seen_version_code"
         private const val KEY_LOCAL_TCP_ENABLED = "local_tcp_enabled"
         private const val KEY_LOCAL_TCP_PORT = "local_tcp_port"
         private const val DEFAULT_LOCAL_TCP_PORT = 8787
@@ -283,6 +284,13 @@ class PreferencesManager(context: Context) {
 
     fun setHasSeenOnboarding() {
         prefs.edit().putBoolean(KEY_HAS_SEEN_ONBOARDING, true).apply()
+    }
+
+    fun getLastSeenVersionCode(): Int =
+        prefs.getInt(KEY_LAST_SEEN_VERSION_CODE, 0)
+
+    fun setLastSeenVersionCode(versionCode: Int) {
+        prefs.edit().putInt(KEY_LAST_SEEN_VERSION_CODE, versionCode).apply()
     }
 
     fun isLocalTcpEnabled(): Boolean {

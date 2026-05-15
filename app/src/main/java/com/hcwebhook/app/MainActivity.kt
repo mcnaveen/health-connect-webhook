@@ -13,7 +13,9 @@ import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.health.connect.client.HealthConnectClient
 import androidx.lifecycle.lifecycleScope
+import com.hcwebhook.app.BuildConfig
 import com.hcwebhook.app.screens.AboutScreen
+import com.hcwebhook.app.screens.ChangelogScreen
 import com.hcwebhook.app.screens.ConfigurationScreen
 import com.hcwebhook.app.screens.LocalHttpSettingsScreen
 import com.hcwebhook.app.screens.LogsScreen
@@ -21,6 +23,7 @@ import com.hcwebhook.app.screens.NotificationsScreen
 import com.hcwebhook.app.screens.OnboardingScreen
 import com.hcwebhook.app.screens.SettingsBackupScreen
 import com.hcwebhook.app.screens.WebhooksScreen
+import com.hcwebhook.app.screens.WhatsNewSheet
 import com.hcwebhook.app.ui.theme.HCWebhookTheme
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
@@ -81,6 +84,7 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     MainScreenWithNav(
                         activity = this@MainActivity,
+                        preferencesManager = preferencesManager,
                         permissionLauncher = permissionLauncher,
                         onRestartOnboarding = { showOnboarding = true }
                     )
@@ -100,6 +104,7 @@ class MainActivity : AppCompatActivity() {
     @Composable
     fun MainScreenWithNav(
         activity: MainActivity,
+        preferencesManager: PreferencesManager,
         permissionLauncher: androidx.activity.result.ActivityResultLauncher<Set<String>>,
         onRestartOnboarding: () -> Unit = {}
     ) {
@@ -107,6 +112,17 @@ class MainActivity : AppCompatActivity() {
         var showLocalHttpSettings by remember { mutableStateOf(false) }
         var showNotificationsSettings by remember { mutableStateOf(false) }
         var showSettingsBackup by remember { mutableStateOf(false) }
+        var showChangelog by remember { mutableStateOf(false) }
+        var showWhatsNew by remember { mutableStateOf(false) }
+
+        LaunchedEffect(Unit) {
+            val currentCode = BuildConfig.VERSION_CODE
+            val lastSeen = preferencesManager.getLastSeenVersionCode()
+            when {
+                lastSeen == 0 -> preferencesManager.setLastSeenVersionCode(currentCode)
+                currentCode > lastSeen -> showWhatsNew = true
+            }
+        }
 
         LaunchedEffect(activity.openLocalHttpRequest.value) {
             if (activity.openLocalHttpRequest.value) {
@@ -157,7 +173,7 @@ class MainActivity : AppCompatActivity() {
 
         Scaffold(
             bottomBar = {
-                if (!showLocalHttpSettings && !showNotificationsSettings && !showSettingsBackup) {
+                if (!showLocalHttpSettings && !showNotificationsSettings && !showSettingsBackup && !showChangelog) {
                     NavigationBar(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     ) {
@@ -180,6 +196,8 @@ class MainActivity : AppCompatActivity() {
                     showNotificationsSettings = false
                 } else if (showSettingsBackup) {
                     showSettingsBackup = false
+                } else if (showChangelog) {
+                    showChangelog = false
                 } else if (selectedScreen != NavigationScreen.Home) {
                     selectedScreen = NavigationScreen.Home
                 } else {
@@ -194,6 +212,8 @@ class MainActivity : AppCompatActivity() {
                     NotificationsScreen(onBack = { showNotificationsSettings = false })
                 } else if (showSettingsBackup) {
                     SettingsBackupScreen(onBack = { showSettingsBackup = false })
+                } else if (showChangelog) {
+                    ChangelogScreen(onBack = { showChangelog = false })
                 } else {
                     saveableStateHolder.SaveableStateProvider(selectedScreen.toString()) {
                         when (selectedScreen) {
@@ -213,12 +233,21 @@ class MainActivity : AppCompatActivity() {
                                 onRestartOnboarding = onRestartOnboarding,
                                 onOpenLocalHttpSettings = { showLocalHttpSettings = true },
                                 onOpenNotificationsSettings = { showNotificationsSettings = true },
-                                onOpenSettingsBackup = { showSettingsBackup = true }
+                                onOpenSettingsBackup = { showSettingsBackup = true },
+                                onOpenChangelog = { showChangelog = true },
                             )
                         }
                     }
                 }
             }
         }
+
+        WhatsNewSheet(
+            visible = showWhatsNew,
+            onDismiss = {
+                showWhatsNew = false
+                preferencesManager.setLastSeenVersionCode(BuildConfig.VERSION_CODE)
+            },
+        )
     }
 }
