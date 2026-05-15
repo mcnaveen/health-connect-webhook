@@ -26,10 +26,16 @@ class ReleaseRepository(context: Context) {
         fetchFromNetwork()?.also { writeCache(it) } ?: readCache().orEmpty()
     }
 
-    suspend fun findReleaseForVersion(versionName: String): GithubRelease? {
-        val releases = getReleases()
+    /**
+     * Returns the GitHub release only when [versionName] matches [GithubRelease.tagName].
+     * Never falls back to another version — avoids showing 1.9.8 notes on a 1.9.9 install.
+     */
+    suspend fun findReleaseForVersion(
+        versionName: String,
+        forceRefresh: Boolean = false,
+    ): GithubRelease? {
+        val releases = getReleases(forceRefresh)
         return releases.firstOrNull { ReleaseNotesFormatter.matchesVersion(it.tagName, versionName) }
-            ?: releases.firstOrNull()
     }
 
     private fun fetchFromNetwork(): List<GithubRelease>? {

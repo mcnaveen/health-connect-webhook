@@ -52,7 +52,10 @@ fun WhatsNewSheet(
 
     LaunchedEffect(Unit) {
         loading = true
-        release = repository.findReleaseForVersion(BuildConfig.VERSION_NAME)
+        release = repository.findReleaseForVersion(
+            versionName = BuildConfig.VERSION_NAME,
+            forceRefresh = true,
+        )
         loading = false
     }
 
