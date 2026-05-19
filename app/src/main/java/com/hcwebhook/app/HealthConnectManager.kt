@@ -772,7 +772,11 @@ class HealthConnectManager(private val context: Context) {
                 timeRangeFilter = TimeRangeFilter.between(queryStart, queryEnd)
             )
             val response = healthConnectClient.aggregate(request)
-            val dayDistance = response[DistanceRecord.DISTANCE_TOTAL]?.inMeters ?: 0.0
+            var dayDistance = response[DistanceRecord.DISTANCE_TOTAL]?.inMeters ?: 0.0
+
+            if (dayDistance <= 0.0) {
+                dayDistance = readRawDistanceMeters(queryStart, queryEnd)
+            }
 
             if (dayDistance > 0.0) {
                 result.add(DistanceData(
@@ -786,6 +790,14 @@ class HealthConnectManager(private val context: Context) {
         }
 
         return result
+    }
+
+    private suspend fun readRawDistanceMeters(startTime: Instant, endTime: Instant): Double {
+        val request = ReadRecordsRequest(
+            recordType = DistanceRecord::class,
+            timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
+        )
+        return readAllRecords(request).sumOf { it.distance.inMeters }
     }
 
     private suspend fun readActiveCaloriesData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<ActiveCaloriesData> {
