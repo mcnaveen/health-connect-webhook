@@ -673,12 +673,23 @@ class HealthConnectManager(private val context: Context) {
                 continue
             }
 
-            val request = AggregateRequest(
+            val aggregateRequest = AggregateRequest(
                 metrics = setOf(StepsRecord.COUNT_TOTAL),
                 timeRangeFilter = TimeRangeFilter.between(queryStart, queryEnd)
             )
-            val response = healthConnectClient.aggregate(request)
-            val daySteps = response[StepsRecord.COUNT_TOTAL] ?: 0L
+            val aggregateResponse = healthConnectClient.aggregate(aggregateRequest)
+            val aggregateSteps = aggregateResponse[StepsRecord.COUNT_TOTAL]
+
+            val daySteps: Long = if (aggregateSteps != null && aggregateSteps > 0L) {
+                aggregateSteps
+            } else {
+                // Aggregate returned null — fall back to summing raw records.
+                val rawRequest = ReadRecordsRequest(
+                    recordType = StepsRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(queryStart, queryEnd)
+                )
+                readAllRecords(rawRequest).sumOf { it.count }
+            }
 
             if (daySteps > 0) {
                 result.add(StepsData(
@@ -822,12 +833,23 @@ class HealthConnectManager(private val context: Context) {
                 continue
             }
 
-            val request = AggregateRequest(
+            val aggregateRequest = AggregateRequest(
                 metrics = setOf(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL),
                 timeRangeFilter = TimeRangeFilter.between(queryStart, queryEnd)
             )
-            val response = healthConnectClient.aggregate(request)
-            val dayCalories = response[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]?.inKilocalories ?: 0.0
+            val aggregateResponse = healthConnectClient.aggregate(aggregateRequest)
+            val aggregateKcal = aggregateResponse[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]?.inKilocalories
+
+            val dayCalories: Double = if (aggregateKcal != null && aggregateKcal > 0.0) {
+                aggregateKcal
+            } else {
+                // Aggregate returned null — fall back to summing raw records.
+                val rawRequest = ReadRecordsRequest(
+                    recordType = ActiveCaloriesBurnedRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(queryStart, queryEnd)
+                )
+                readAllRecords(rawRequest).sumOf { it.energy.inKilocalories }
+            }
 
             if (dayCalories > 0.0) {
                 result.add(ActiveCaloriesData(
