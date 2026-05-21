@@ -747,7 +747,9 @@ class HealthConnectManager(private val context: Context) {
     }
 
     private suspend fun readDistanceData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<DistanceData> {
-        // Aggregate distance per calendar day (same pattern as steps)
+        // Aggregate distance per calendar day (same pattern as steps).
+        // If the aggregate returns null (e.g., Google Health/Fit data after the Fitbit rebrand),
+        // fall back to summing raw DistanceRecord entries so distance is never silently omitted.
         val zone = java.time.ZoneId.systemDefault()
         val result = mutableListOf<DistanceData>()
 
@@ -767,12 +769,23 @@ class HealthConnectManager(private val context: Context) {
                 continue
             }
 
-            val request = AggregateRequest(
+            val aggregateRequest = AggregateRequest(
                 metrics = setOf(DistanceRecord.DISTANCE_TOTAL),
                 timeRangeFilter = TimeRangeFilter.between(queryStart, queryEnd)
             )
-            val response = healthConnectClient.aggregate(request)
-            val dayDistance = response[DistanceRecord.DISTANCE_TOTAL]?.inMeters ?: 0.0
+            val aggregateResponse = healthConnectClient.aggregate(aggregateRequest)
+            val aggregateMeters = aggregateResponse[DistanceRecord.DISTANCE_TOTAL]?.inMeters
+
+            val dayDistance: Double = if (aggregateMeters != null && aggregateMeters > 0.0) {
+                aggregateMeters
+            } else {
+                // Aggregate returned null or zero — fall back to raw records.
+                val rawRequest = ReadRecordsRequest(
+                    recordType = DistanceRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(queryStart, queryEnd)
+                )
+                readAllRecords(rawRequest).sumOf { it.distance.inMeters }
+            }
 
             if (dayDistance > 0.0) {
                 result.add(DistanceData(
