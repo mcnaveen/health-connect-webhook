@@ -677,7 +677,7 @@ class HealthConnectManager(private val context: Context) {
                 metrics = setOf(StepsRecord.COUNT_TOTAL),
                 timeRangeFilter = TimeRangeFilter.between(queryStart, queryEnd)
             )
-            val response = healthConnectClient.aggregate(request)
+            val response = aggregateRL(request)
             val daySteps = response[StepsRecord.COUNT_TOTAL] ?: 0L
 
             if (daySteps > 0) {
@@ -771,7 +771,7 @@ class HealthConnectManager(private val context: Context) {
                 metrics = setOf(DistanceRecord.DISTANCE_TOTAL),
                 timeRangeFilter = TimeRangeFilter.between(queryStart, queryEnd)
             )
-            val response = healthConnectClient.aggregate(request)
+            val response = aggregateRL(request)
             val dayDistance = response[DistanceRecord.DISTANCE_TOTAL]?.inMeters ?: 0.0
 
             if (dayDistance > 0.0) {
@@ -813,7 +813,7 @@ class HealthConnectManager(private val context: Context) {
                 metrics = setOf(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL),
                 timeRangeFilter = TimeRangeFilter.between(queryStart, queryEnd)
             )
-            val response = healthConnectClient.aggregate(request)
+            val response = aggregateRL(request)
             val dayCalories = response[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]?.inKilocalories ?: 0.0
 
             if (dayCalories > 0.0) {
@@ -949,7 +949,7 @@ class HealthConnectManager(private val context: Context) {
             metrics = setOf(StepsRecord.COUNT_TOTAL),
             timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
         )
-        return healthConnectClient.aggregate(request)[StepsRecord.COUNT_TOTAL] ?: 0L
+        return aggregateRL(request)[StepsRecord.COUNT_TOTAL] ?: 0L
     }
 
     private suspend fun aggregateDistanceMeters(startTime: Instant, endTime: Instant): Double {
@@ -957,7 +957,7 @@ class HealthConnectManager(private val context: Context) {
             metrics = setOf(DistanceRecord.DISTANCE_TOTAL),
             timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
         )
-        return healthConnectClient.aggregate(request)[DistanceRecord.DISTANCE_TOTAL]?.inMeters ?: 0.0
+        return aggregateRL(request)[DistanceRecord.DISTANCE_TOTAL]?.inMeters ?: 0.0
     }
 
     private suspend fun aggregateActiveCalories(startTime: Instant, endTime: Instant): Double {
@@ -965,7 +965,7 @@ class HealthConnectManager(private val context: Context) {
             metrics = setOf(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL),
             timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
         )
-        return healthConnectClient.aggregate(request)[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]
+        return aggregateRL(request)[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]
             ?.inKilocalories ?: 0.0
     }
 
@@ -980,7 +980,7 @@ class HealthConnectManager(private val context: Context) {
                 metrics = setOf(StepsCadenceRecord.RATE_AVG, StepsCadenceRecord.RATE_MAX),
                 timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
             )
-            val response = healthConnectClient.aggregate(request)
+            val response = aggregateRL(request)
             StepsCadenceMetrics(
                 avg = response[StepsCadenceRecord.RATE_AVG]?.takeIf { it > 0.0 },
                 max = response[StepsCadenceRecord.RATE_MAX]?.takeIf { it > 0.0 }
@@ -1073,10 +1073,42 @@ class HealthConnectManager(private val context: Context) {
             .map { BoneMassData(it.mass.inKilograms, it.time) }
     }
 
+    /**
+     * Retries a Health Connect call when the platform throws its rate-limit /
+     * quota-exceeded error, backing off exponentially (1s, 2s, 4s, 8s). Any other
+     * error propagates immediately. This mitigates the periodic (burst) quota; the
+     * separate daily quota still needs real time to replenish, so after the last
+     * attempt the original exception is rethrown for the UI to surface.
+     */
+    private suspend fun <T> withHealthConnectRetry(maxAttempts: Int = 4, block: suspend () -> T): T {
+        var attempt = 0
+        var delayMs = 1_000L
+        while (true) {
+            try {
+                return block()
+            } catch (e: Exception) {
+                val msg = e.message?.lowercase().orEmpty()
+                val isRateLimit = msg.contains("rate limit") || msg.contains("quota")
+                attempt++
+                if (!isRateLimit || attempt >= maxAttempts) throw e
+                kotlinx.coroutines.delay(delayMs)
+                delayMs = (delayMs * 2).coerceAtMost(8_000L)
+            }
+        }
+    }
+
+    private suspend fun aggregateRL(request: AggregateRequest) =
+        withHealthConnectRetry { healthConnectClient.aggregate(request) }
+
     private suspend fun <T : Record> readAllRecords(request: ReadRecordsRequest<T>): List<T> {
         val all = mutableListOf<T>()
         var token: String? = null
+        var firstPage = true
         do {
+            // Gentle inter-page throttle so a multi-page read (e.g. heart rate over a
+            // long window) doesn't trip Health Connect's burst quota in the first place.
+            if (!firstPage) kotlinx.coroutines.delay(120)
+            firstPage = false
             val current = if (token == null) request else ReadRecordsRequest(
                 recordType = request.recordType,
                 timeRangeFilter = request.timeRangeFilter,
@@ -1085,7 +1117,7 @@ class HealthConnectManager(private val context: Context) {
                 pageSize = request.pageSize,
                 pageToken = token,
             )
-            val page = healthConnectClient.readRecords(current)
+            val page = withHealthConnectRetry { healthConnectClient.readRecords(current) }
             all.addAll(page.records)
             token = page.pageToken
         } while (token != null)
