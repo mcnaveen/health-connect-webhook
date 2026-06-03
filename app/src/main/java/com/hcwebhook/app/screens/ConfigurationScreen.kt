@@ -75,6 +75,8 @@ fun ConfigurationScreen(
     var syncInterval by remember { mutableStateOf(preferencesManager.getSyncIntervalMinutes().toString()) }
     var scheduledSyncs by remember { mutableStateOf(preferencesManager.getScheduledSyncs()) }
     var enabledDataTypes by remember { mutableStateOf(preferencesManager.getEnabledDataTypes()) }
+    var hrDownsampleMinutes by remember { mutableStateOf(preferencesManager.getHeartRateDownsampleMinutes()) }
+    var stepsResolutionMinutes by remember { mutableStateOf(preferencesManager.getStepsResolutionMinutes()) }
 
     var showDataTypesSheet by remember { mutableStateOf(false) }
     var showPermissionsSheet by remember { mutableStateOf(false) }
@@ -450,6 +452,47 @@ fun ConfigurationScreen(
                 }
             }
 
+            // ── Heart rate resolution ─────────────────────────────────────────
+            if (HealthDataType.HEART_RATE in enabledDataTypes) {
+                ResolutionCard(
+                    icon = iconForDataType(HealthDataType.HEART_RATE),
+                    title = stringResource(R.string.config_hr_resolution_title),
+                    description = stringResource(R.string.config_hr_resolution_desc),
+                    options = listOf(
+                        0 to stringResource(R.string.config_hr_resolution_full),
+                        1 to stringResource(R.string.config_hr_resolution_1m),
+                        5 to stringResource(R.string.config_hr_resolution_5m),
+                        15 to stringResource(R.string.config_hr_resolution_15m)
+                    ),
+                    selected = hrDownsampleMinutes,
+                    onSelect = {
+                        hrDownsampleMinutes = it
+                        preferencesManager.setHeartRateDownsampleMinutes(it)
+                    }
+                )
+            }
+
+            // ── Steps resolution ──────────────────────────────────────────────
+            if (HealthDataType.STEPS in enabledDataTypes) {
+                ResolutionCard(
+                    icon = iconForDataType(HealthDataType.STEPS),
+                    title = stringResource(R.string.config_steps_resolution_title),
+                    description = stringResource(R.string.config_steps_resolution_desc),
+                    options = listOf(
+                        -1 to stringResource(R.string.config_steps_resolution_daily),
+                        0 to stringResource(R.string.config_steps_resolution_full),
+                        1 to stringResource(R.string.config_steps_resolution_1m),
+                        5 to stringResource(R.string.config_steps_resolution_5m),
+                        15 to stringResource(R.string.config_steps_resolution_15m)
+                    ),
+                    selected = stepsResolutionMinutes,
+                    onSelect = {
+                        stepsResolutionMinutes = it
+                        preferencesManager.setStepsResolutionMinutes(it)
+                    }
+                )
+            }
+
             // ── Manual sync ───────────────────────────────────────────────────
             com.hcwebhook.app.components.ManualSyncCard(onSyncCompleted = {
                 lastSyncTime = preferencesManager.getLastSyncTime()
@@ -477,6 +520,54 @@ fun ConfigurationScreen(
                     showDataTypesSheet = false
                 }
             )
+        }
+    }
+}
+
+/**
+ * A card that lets the user pick a data-granularity option for a health data
+ * type, rendered as a row of selectable chips. Shared by the Heart Rate and
+ * Steps resolution settings. [options] maps each stored value to its label;
+ * [selected] is the currently stored value.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ResolutionCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String,
+    options: List<Pair<Int, String>>,
+    selected: Int,
+    onSelect: (Int) -> Unit
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(title, style = MaterialTheme.typography.titleSmall)
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                options.forEach { (value, label) ->
+                    FilterChip(
+                        selected = selected == value,
+                        onClick = { onSelect(value) },
+                        label = { Text(label) }
+                    )
+                }
+            }
         }
     }
 }

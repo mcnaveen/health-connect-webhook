@@ -44,6 +44,8 @@ class PreferencesManager(context: Context) {
         private const val KEY_LOCAL_HTTP_AUTH_ENABLED = "local_http_auth_enabled"
         private const val KEY_LOCAL_HTTP_TOKEN = "local_http_token"
         private const val KEY_NOTIFICATION_CONFIGS = "notification_configs"
+        private const val KEY_HR_DOWNSAMPLE_MINUTES = "hr_downsample_minutes"
+        private const val KEY_STEPS_RESOLUTION_MINUTES = "steps_resolution_minutes"
     }
 
 
@@ -348,6 +350,30 @@ class PreferencesManager(context: Context) {
         prefs.edit().putString(KEY_NOTIFICATION_CONFIGS, configsJson).apply()
     }
 
+    /**
+     * Heart rate downsampling interval in minutes. 0 means full resolution
+     * (every raw sample is sent). A positive value groups samples into buckets
+     * of that size and sends one avg/min/max summary per bucket, shrinking the
+     * payload. Defaults to 0 to preserve the existing full-resolution behavior.
+     */
+    fun getHeartRateDownsampleMinutes(): Int = prefs.getInt(KEY_HR_DOWNSAMPLE_MINUTES, 0)
+
+    fun setHeartRateDownsampleMinutes(minutes: Int) {
+        prefs.edit().putInt(KEY_HR_DOWNSAMPLE_MINUTES, minutes.coerceAtLeast(0)).apply()
+    }
+
+    /**
+     * Steps resolution in minutes: negative = daily cumulative total (default,
+     * the original behavior), 0 = full (every raw interval), positive = group raw
+     * intervals into buckets of that size and sum the counts. Controls how
+     * granular the step data sent to webhooks is.
+     */
+    fun getStepsResolutionMinutes(): Int = prefs.getInt(KEY_STEPS_RESOLUTION_MINUTES, -1)
+
+    fun setStepsResolutionMinutes(minutes: Int) {
+        prefs.edit().putInt(KEY_STEPS_RESOLUTION_MINUTES, minutes).apply()
+    }
+
     // -------------------------------------------------------------------------
     // Export / Import
     // -------------------------------------------------------------------------
@@ -365,7 +391,9 @@ class PreferencesManager(context: Context) {
             scheduledSyncs = getScheduledSyncs(),
             localTcpEnabled = isLocalTcpEnabled(),
             localTcpPort = getLocalTcpPort(),
-            notificationConfigs = getNotificationConfigs()
+            notificationConfigs = getNotificationConfigs(),
+            heartRateDownsampleMinutes = getHeartRateDownsampleMinutes(),
+            stepsResolutionMinutes = getStepsResolutionMinutes()
         )
     }
 
@@ -388,5 +416,7 @@ class PreferencesManager(context: Context) {
         setLocalTcpEnabled(export.localTcpEnabled)
         setLocalTcpPort(export.localTcpPort)
         setNotificationConfigs(export.notificationConfigs)
+        setHeartRateDownsampleMinutes(export.heartRateDownsampleMinutes)
+        setStepsResolutionMinutes(export.stepsResolutionMinutes)
     }
 }

@@ -43,7 +43,9 @@ class SyncManager(private val context: Context) {
                 lastSyncTimestamps = emptyMap(),
                 timeRangeDays = timeRangeDays,
                 start = start,
-                end = end
+                end = end,
+                heartRateDownsampleMinutes = preferencesManager.getHeartRateDownsampleMinutes(),
+                stepsResolutionMinutes = preferencesManager.getStepsResolutionMinutes()
             )
             if (healthDataResult.isFailure) {
                 return@withContext Result.failure(
@@ -100,7 +102,9 @@ class SyncManager(private val context: Context) {
                 lastSyncTimestamps = lastSyncTimestamps,
                 timeRangeDays = timeRangeDays,
                 start = start,
-                end = end
+                end = end,
+                heartRateDownsampleMinutes = preferencesManager.getHeartRateDownsampleMinutes(),
+                stepsResolutionMinutes = preferencesManager.getStepsResolutionMinutes()
             )
             if (healthDataResult.isFailure) {
                 return@withContext Result.failure(healthDataResult.exceptionOrNull() ?: Exception("Failed to read health data"))
@@ -458,9 +462,18 @@ class SyncManager(private val context: Context) {
 
             if (healthData.heartRate.isNotEmpty()) {
                 putJsonArray("heart_rate") {
-                    healthData.heartRate.forEach { add(buildJsonObject {
-                        put("bpm", it.bpm)
-                        put("time", it.time.toString())
+                    healthData.heartRate.forEach { hr -> add(buildJsonObject {
+                        if (hr.min != null) {
+                            // Downsampled bucket summary.
+                            put("time", hr.time.toString())
+                            put("avg", hr.bpm)
+                            put("min", hr.min)
+                            put("max", hr.max)
+                        } else {
+                            // Full-resolution sample.
+                            put("bpm", hr.bpm)
+                            put("time", hr.time.toString())
+                        }
                     }) }
                 }
             }
