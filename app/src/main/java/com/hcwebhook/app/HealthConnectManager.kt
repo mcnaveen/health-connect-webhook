@@ -16,6 +16,7 @@ import java.time.temporal.ChronoUnit
 import com.hcwebhook.app.dashboard.DashboardFormatter
 import com.hcwebhook.app.dashboard.DashboardMetric
 import com.hcwebhook.app.dashboard.DashboardSnapshot
+import kotlin.math.roundToLong
 import kotlin.reflect.KClass
 
 enum class HealthDataType(val nameResId: Int, val recordClass: KClass<out Record>, val rationaleResId: Int) {
@@ -140,8 +141,10 @@ data class SleepStage(
 )
 
 data class HeartRateData(
-    val bpm: Long,
-    val time: Instant
+    val bpm: Long,        // sample bpm (full-res) or rounded average (downsampled bucket)
+    val time: Instant,    // sample time (full-res) or bucket start (downsampled bucket)
+    val min: Long? = null, // non-null marks an aggregated bucket
+    val max: Long? = null
 )
 
 data class HeartRateVariabilityData(
@@ -286,7 +289,9 @@ class HealthConnectManager(private val context: Context) {
         lastSyncTimestamps: Map<HealthDataType, Instant?>,
         timeRangeDays: Int? = null,
         start: Instant? = null,
-        end: Instant? = null
+        end: Instant? = null,
+        heartRateDownsampleMinutes: Int = 0,
+        stepsResolutionMinutes: Int = -1
     ): Result<HealthData> {
         return try {
             val endTime = end ?: Instant.now()
@@ -301,11 +306,11 @@ class HealthConnectManager(private val context: Context) {
             }
 
             val stepsData = if (HealthDataType.STEPS in enabledTypes)
-                readStepsData(startTime, endTime, lastSyncTimestamps[HealthDataType.STEPS]) else emptyList()
+                readStepsData(startTime, endTime, lastSyncTimestamps[HealthDataType.STEPS], stepsResolutionMinutes) else emptyList()
             val sleepData = if (HealthDataType.SLEEP in enabledTypes)
                 readSleepData(startTime, endTime, lastSyncTimestamps[HealthDataType.SLEEP]) else emptyList()
             val heartRateData = if (HealthDataType.HEART_RATE in enabledTypes)
-                readHeartRateData(startTime, endTime, lastSyncTimestamps[HealthDataType.HEART_RATE]) else emptyList()
+                readHeartRateData(startTime, endTime, lastSyncTimestamps[HealthDataType.HEART_RATE], heartRateDownsampleMinutes) else emptyList()
             val heartRateVariabilityData = if (HealthDataType.HEART_RATE_VARIABILITY in enabledTypes)
                 readHeartRateVariabilityData(startTime, endTime, lastSyncTimestamps[HealthDataType.HEART_RATE_VARIABILITY]) else emptyList()
             val distanceData = if (HealthDataType.DISTANCE in enabledTypes)
@@ -647,6 +652,63 @@ class HealthConnectManager(private val context: Context) {
     private suspend fun readStepsData(
         startTime: Instant,
         endTime: Instant,
+        lastSync: Instant?,
+        resolutionMinutes: Int
+    ): List<StepsData> {
+        return when {
+            resolutionMinutes < 0 -> readDailyStepsData(startTime, endTime, lastSync)
+            resolutionMinutes == 0 -> readRawStepsData(startTime, endTime, lastSync)
+            else -> readBucketedStepsData(startTime, endTime, lastSync, resolutionMinutes)
+        }
+    }
+
+    private suspend fun readRawStepsData(
+        startTime: Instant,
+        endTime: Instant,
+        lastSync: Instant?
+    ): List<StepsData> {
+        // Full resolution: forward each Health Connect step interval as-is.
+        val request = ReadRecordsRequest(
+            recordType = StepsRecord::class,
+            timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+        )
+        return readAllRecords(request)
+            .filter { lastSync == null || it.endTime >= lastSync }
+            .filter { it.count > 0 }
+            .map { StepsData(count = it.count, startTime = it.startTime, endTime = it.endTime) }
+    }
+
+    private suspend fun readBucketedStepsData(
+        startTime: Instant,
+        endTime: Instant,
+        lastSync: Instant?,
+        bucketMinutes: Int
+    ): List<StepsData> {
+        // Group raw step intervals into fixed time buckets (keyed by start time)
+        // and sum their counts, emitting one StepsData per bucket.
+        val request = ReadRecordsRequest(
+            recordType = StepsRecord::class,
+            timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+        )
+        val bucketSeconds = bucketMinutes.toLong() * 60L
+        return readAllRecords(request)
+            .filter { lastSync == null || it.endTime >= lastSync }
+            .filter { it.count > 0 }
+            .groupBy { it.startTime.epochSecond / bucketSeconds }
+            .toSortedMap()
+            .map { (bucketIndex, records) ->
+                val bucketStart = Instant.ofEpochSecond(bucketIndex * bucketSeconds)
+                StepsData(
+                    count = records.sumOf { it.count },
+                    startTime = bucketStart,
+                    endTime = bucketStart.plusSeconds(bucketSeconds)
+                )
+            }
+    }
+
+    private suspend fun readDailyStepsData(
+        startTime: Instant,
+        endTime: Instant,
         lastSync: Instant?
     ): List<StepsData> {
         // Aggregate steps per calendar day (using device timezone) instead of
@@ -683,7 +745,7 @@ class HealthConnectManager(private val context: Context) {
             val daySteps: Long = if (aggregateSteps != null && aggregateSteps > 0L) {
                 aggregateSteps
             } else {
-                // Aggregate returned null — fall back to summing raw records.
+                // Aggregate returned null, fall back to summing raw records.
                 val rawRequest = ReadRecordsRequest(
                     recordType = StepsRecord::class,
                     timeRangeFilter = TimeRangeFilter.between(queryStart, queryEnd)
@@ -739,14 +801,38 @@ class HealthConnectManager(private val context: Context) {
             }
     }
 
-    private suspend fun readHeartRateData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<HeartRateData> {
+    private suspend fun readHeartRateData(
+        startTime: Instant,
+        endTime: Instant,
+        lastSync: Instant?,
+        downsampleMinutes: Int
+    ): List<HeartRateData> {
         val request = ReadRecordsRequest(recordType = HeartRateRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
-        return response
-            .flatMap { record ->
-                record.samples
-                    .filter { lastSync == null || it.time >= lastSync }
-                    .map { HeartRateData(it.beatsPerMinute, it.time) }
+        val samples = response
+            .flatMap { record -> record.samples }
+            .filter { lastSync == null || it.time >= lastSync }
+
+        if (downsampleMinutes <= 0) {
+            // Full resolution: one record per raw sample.
+            return samples.map { HeartRateData(it.beatsPerMinute, it.time) }
+        }
+
+        // Downsample: group samples into fixed time buckets and emit one summary
+        // (avg/min/max/count) per bucket. Drastically reduces payload size while
+        // preserving the trend.
+        val bucketSeconds = downsampleMinutes.toLong() * 60L
+        return samples
+            .groupBy { it.time.epochSecond / bucketSeconds }
+            .toSortedMap()
+            .map { (bucketIndex, bucketSamples) ->
+                val bpms = bucketSamples.map { it.beatsPerMinute }
+                HeartRateData(
+                    bpm = bpms.average().roundToLong(),
+                    time = Instant.ofEpochSecond(bucketIndex * bucketSeconds),
+                    min = bpms.min(),
+                    max = bpms.max()
+                )
             }
     }
 
