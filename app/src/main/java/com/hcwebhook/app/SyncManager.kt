@@ -43,7 +43,8 @@ class SyncManager(private val context: Context) {
                 lastSyncTimestamps = emptyMap(),
                 timeRangeDays = timeRangeDays,
                 start = start,
-                end = end
+                end = end,
+                rawSteps = preferencesManager.isRawStepsEnabled()
             )
             if (healthDataResult.isFailure) {
                 return@withContext Result.failure(
@@ -100,7 +101,8 @@ class SyncManager(private val context: Context) {
                 lastSyncTimestamps = lastSyncTimestamps,
                 timeRangeDays = timeRangeDays,
                 start = start,
-                end = end
+                end = end,
+                rawSteps = preferencesManager.isRawStepsEnabled()
             )
             if (healthDataResult.isFailure) {
                 return@withContext Result.failure(healthDataResult.exceptionOrNull() ?: Exception("Failed to read health data"))

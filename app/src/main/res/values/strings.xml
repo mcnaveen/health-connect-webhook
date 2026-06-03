@@ -188,6 +188,9 @@
     <string name="config_toast_interval_saved">Interval saved</string>
     <string name="config_toast_min_interval">Min 15 minutes</string>
     <string name="config_action_add_schedule">Add Schedule Time</string>
+    <string name="config_steps_format_title">Steps Format</string>
+    <string name="config_steps_format_desc">Send raw step intervals instead of a single daily cumulative total. Useful when your server expects granular, non-cumulative data.</string>
+    <string name="config_steps_format_toggle">Raw step intervals</string>
     <string name="config_bg_perm_title">Background Permission Required</string>
     <string name="config_bg_perm_desc">To sync data automatically on a schedule or interval, you must grant Health Connect access for background use.</string>
     <string name="config_action_grant_bg">Grant Background Permission</string>

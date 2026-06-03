@@ -286,7 +286,8 @@ class HealthConnectManager(private val context: Context) {
         lastSyncTimestamps: Map<HealthDataType, Instant?>,
         timeRangeDays: Int? = null,
         start: Instant? = null,
-        end: Instant? = null
+        end: Instant? = null,
+        rawSteps: Boolean = false
     ): Result<HealthData> {
         return try {
             val endTime = end ?: Instant.now()
@@ -301,7 +302,7 @@ class HealthConnectManager(private val context: Context) {
             }
 
             val stepsData = if (HealthDataType.STEPS in enabledTypes)
-                readStepsData(startTime, endTime, lastSyncTimestamps[HealthDataType.STEPS]) else emptyList()
+                readStepsData(startTime, endTime, lastSyncTimestamps[HealthDataType.STEPS], rawSteps) else emptyList()
             val sleepData = if (HealthDataType.SLEEP in enabledTypes)
                 readSleepData(startTime, endTime, lastSyncTimestamps[HealthDataType.SLEEP]) else emptyList()
             val heartRateData = if (HealthDataType.HEART_RATE in enabledTypes)
@@ -647,6 +648,47 @@ class HealthConnectManager(private val context: Context) {
     private suspend fun readStepsData(
         startTime: Instant,
         endTime: Instant,
+        lastSync: Instant?,
+        rawIntervals: Boolean
+    ): List<StepsData> {
+        return if (rawIntervals) {
+            readRawStepsData(startTime, endTime, lastSync)
+        } else {
+            readDailyStepsData(startTime, endTime, lastSync)
+        }
+    }
+
+    private suspend fun readRawStepsData(
+        startTime: Instant,
+        endTime: Instant,
+        lastSync: Instant?
+    ): List<StepsData> {
+        // Emit raw step records as-is (one StepsData per Health Connect interval)
+        // instead of collapsing them into a single per-day cumulative total.
+        // Health Connect stores steps in small intervals; we forward those
+        // intervals directly so the server receives granular, non-cumulative data.
+        val request = ReadRecordsRequest(
+            recordType = StepsRecord::class,
+            timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+        )
+
+        return readAllRecords(request)
+            .filter { record ->
+                lastSync == null || record.endTime >= lastSync
+            }
+            .filter { it.count > 0 }
+            .map { record ->
+                StepsData(
+                    count = record.count,
+                    startTime = record.startTime,
+                    endTime = record.endTime
+                )
+            }
+    }
+
+    private suspend fun readDailyStepsData(
+        startTime: Instant,
+        endTime: Instant,
         lastSync: Instant?
     ): List<StepsData> {
         // Aggregate steps per calendar day (using device timezone) instead of
@@ -683,7 +725,7 @@ class HealthConnectManager(private val context: Context) {
             val daySteps: Long = if (aggregateSteps != null && aggregateSteps > 0L) {
                 aggregateSteps
             } else {
-                // Aggregate returned null — fall back to summing raw records.
+                // Aggregate returned null, fall back to summing raw records.
                 val rawRequest = ReadRecordsRequest(
                     recordType = StepsRecord::class,
                     timeRangeFilter = TimeRangeFilter.between(queryStart, queryEnd)

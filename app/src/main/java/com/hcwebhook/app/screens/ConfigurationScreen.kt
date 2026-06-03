@@ -75,6 +75,7 @@ fun ConfigurationScreen(
     var syncInterval by remember { mutableStateOf(preferencesManager.getSyncIntervalMinutes().toString()) }
     var scheduledSyncs by remember { mutableStateOf(preferencesManager.getScheduledSyncs()) }
     var enabledDataTypes by remember { mutableStateOf(preferencesManager.getEnabledDataTypes()) }
+    var rawStepsEnabled by remember { mutableStateOf(preferencesManager.isRawStepsEnabled()) }
 
     var showDataTypesSheet by remember { mutableStateOf(false) }
     var showPermissionsSheet by remember { mutableStateOf(false) }
@@ -445,6 +446,52 @@ fun ConfigurationScreen(
                             try { permissionLauncher.launch(setOf(HealthConnectManager.BACKGROUND_PERMISSION_STR)) } catch (e: Exception) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show() }
                         }, modifier = Modifier.fillMaxWidth()) {
                             Text(stringResource(R.string.config_action_grant_bg))
+                        }
+                    }
+                }
+            }
+
+            // ── Steps format ──────────────────────────────────────────────────
+            if (HealthDataType.STEPS in enabledDataTypes) {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = iconForDataType(HealthDataType.STEPS),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                stringResource(R.string.config_steps_format_title),
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            stringResource(R.string.config_steps_format_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                stringResource(R.string.config_steps_format_toggle),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Switch(
+                                checked = rawStepsEnabled,
+                                onCheckedChange = { checked ->
+                                    rawStepsEnabled = checked
+                                    preferencesManager.setRawStepsEnabled(checked)
+                                }
+                            )
                         }
                     }
                 }

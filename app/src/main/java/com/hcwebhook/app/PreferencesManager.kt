@@ -44,6 +44,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_LOCAL_HTTP_AUTH_ENABLED = "local_http_auth_enabled"
         private const val KEY_LOCAL_HTTP_TOKEN = "local_http_token"
         private const val KEY_NOTIFICATION_CONFIGS = "notification_configs"
+        private const val KEY_RAW_STEPS_ENABLED = "raw_steps_enabled"
     }
 
 
@@ -348,6 +349,17 @@ class PreferencesManager(context: Context) {
         prefs.edit().putString(KEY_NOTIFICATION_CONFIGS, configsJson).apply()
     }
 
+    /**
+     * When enabled, step data is sent as raw Health Connect intervals (granular,
+     * non-cumulative) instead of a single per-day cumulative total.
+     * Defaults to false to preserve the existing per-day aggregate behavior.
+     */
+    fun isRawStepsEnabled(): Boolean = prefs.getBoolean(KEY_RAW_STEPS_ENABLED, false)
+
+    fun setRawStepsEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_RAW_STEPS_ENABLED, enabled).apply()
+    }
+
     // -------------------------------------------------------------------------
     // Export / Import
     // -------------------------------------------------------------------------
@@ -365,7 +377,8 @@ class PreferencesManager(context: Context) {
             scheduledSyncs = getScheduledSyncs(),
             localTcpEnabled = isLocalTcpEnabled(),
             localTcpPort = getLocalTcpPort(),
-            notificationConfigs = getNotificationConfigs()
+            notificationConfigs = getNotificationConfigs(),
+            rawStepsEnabled = isRawStepsEnabled()
         )
     }
 
@@ -388,5 +401,6 @@ class PreferencesManager(context: Context) {
         setLocalTcpEnabled(export.localTcpEnabled)
         setLocalTcpPort(export.localTcpPort)
         setNotificationConfigs(export.notificationConfigs)
+        setRawStepsEnabled(export.rawStepsEnabled)
     }
 }
