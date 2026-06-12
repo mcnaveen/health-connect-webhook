@@ -8,10 +8,27 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 import java.time.Instant
+
+/** Emit a record's Health Connect provenance as a nested "metadata" object. */
+private fun JsonObjectBuilder.putRecordMetadata(meta: RecordMetadata) {
+    putJsonObject("metadata") {
+        put("data_origin", meta.dataOrigin)
+        put("recording_method", meta.recordingMethod)
+        if (meta.deviceManufacturer != null || meta.deviceModel != null || meta.deviceType != null) {
+            putJsonObject("device") {
+                meta.deviceManufacturer?.let { put("manufacturer", it) }
+                meta.deviceModel?.let { put("model", it) }
+                meta.deviceType?.let { put("type", it) }
+            }
+        }
+    }
+}
 
 class SyncManager(private val context: Context) {
 
@@ -610,6 +627,7 @@ class SyncManager(private val context: Context) {
                         it.strideLengthMeters?.let { strideLengthMeters ->
                             put("stride_length_m", strideLengthMeters)
                         }
+                        it.metadata?.let { meta -> putRecordMetadata(meta) }
                     }) }
                 }
             }

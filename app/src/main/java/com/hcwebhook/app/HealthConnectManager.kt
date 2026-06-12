@@ -5,6 +5,7 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import kotlinx.coroutines.CancellationException
 import androidx.health.connect.client.records.*
+import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
@@ -120,6 +121,32 @@ data class HealthData(
     val boneMass: List<BoneMassData>
 )
 
+/**
+ * Provenance of a Health Connect record: which app wrote it, how it was recorded, and on what
+ * device. Lets downstream consumers tell e.g. an automatically-detected session apart from one
+ * recorded by gym equipment, and deduplicate records that arrive from multiple source apps.
+ */
+data class RecordMetadata(
+    val dataOrigin: String,
+    val recordingMethod: String,
+    val deviceManufacturer: String? = null,
+    val deviceModel: String? = null,
+    val deviceType: Int? = null
+)
+
+fun Metadata.toRecordMetadata(): RecordMetadata = RecordMetadata(
+    dataOrigin = dataOrigin.packageName,
+    recordingMethod = when (recordingMethod) {
+        Metadata.RECORDING_METHOD_ACTIVELY_RECORDED -> "actively_recorded"
+        Metadata.RECORDING_METHOD_AUTOMATICALLY_RECORDED -> "automatically_recorded"
+        Metadata.RECORDING_METHOD_MANUAL_ENTRY -> "manual_entry"
+        else -> "unknown"
+    },
+    deviceManufacturer = device?.manufacturer,
+    deviceModel = device?.model,
+    deviceType = device?.type,
+)
+
 data class StepsData(
     val count: Long,
     val startTime: Instant,
@@ -224,7 +251,8 @@ data class ExerciseData(
     val steps: Long? = null,
     val avgCadenceSpm: Double? = null,
     val maxCadenceSpm: Double? = null,
-    val strideLengthMeters: Double? = null
+    val strideLengthMeters: Double? = null,
+    val metadata: RecordMetadata? = null
 )
 
 data class HydrationData(
@@ -969,7 +997,8 @@ class HealthConnectManager(private val context: Context) {
                     steps = steps,
                     avgCadenceSpm = cadenceMetrics.avg ?: deriveAverageCadenceSpm(steps, duration),
                     maxCadenceSpm = cadenceMetrics.max,
-                    strideLengthMeters = deriveStrideLengthMeters(distanceMeters, steps)
+                    strideLengthMeters = deriveStrideLengthMeters(distanceMeters, steps),
+                    metadata = it.metadata.toRecordMetadata()
                 )
             }
     }
