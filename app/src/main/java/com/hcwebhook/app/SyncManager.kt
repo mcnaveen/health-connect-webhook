@@ -260,13 +260,29 @@ class SyncManager(private val context: Context) {
                 data.vo2Max.isEmpty() && data.boneMass.isEmpty()
     }
 
+    /**
+     * Returns the epoch-millisecond value of the latest endTime that is NOT
+     * in the future, or null if every endTime is in the future.
+     *
+     * Clamping to now() prevents future-dated projection records (e.g., Google
+     * Health's daily calorie/distance projection ending at local midnight) from
+     * advancing the per-type lastSync cursor past wall-clock time. Without this
+     * clamp, all genuinely-closed records produced after the first sync are
+     * filtered out by the endTime >= lastSync guard in each readXxx function.
+     */
+    private fun clampedMaxEndMs(endTimes: Sequence<Instant>, now: Instant): Long? =
+        endTimes.filter { !it.isAfter(now) }.maxOrNull()?.toEpochMilli()
+
     private fun updateSyncTimestamps(data: HealthData, syncCounts: MutableMap<HealthDataType, Int>) {
+        val now = Instant.now()
         if (data.steps.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.STEPS, data.steps.maxOf { it.endTime }.toEpochMilli())
+            clampedMaxEndMs(data.steps.asSequence().map { it.endTime }, now)
+                ?.let { preferencesManager.setLastSyncTimestamp(HealthDataType.STEPS, it) }
             syncCounts[HealthDataType.STEPS] = data.steps.size
         }
         if (data.sleep.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.SLEEP, data.sleep.maxOf { it.sessionEndTime }.toEpochMilli())
+            clampedMaxEndMs(data.sleep.asSequence().map { it.sessionEndTime }, now)
+                ?.let { preferencesManager.setLastSyncTimestamp(HealthDataType.SLEEP, it) }
             syncCounts[HealthDataType.SLEEP] = data.sleep.size
         }
         if (data.heartRate.isNotEmpty()) {
@@ -278,15 +294,21 @@ class SyncManager(private val context: Context) {
             syncCounts[HealthDataType.HEART_RATE_VARIABILITY] = data.heartRateVariability.size
         }
         if (data.distance.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.DISTANCE, data.distance.maxOf { it.endTime }.toEpochMilli())
+            clampedMaxEndMs(data.distance.asSequence().map { it.endTime }, now)
+                ?.let { preferencesManager.setLastSyncTimestamp(HealthDataType.DISTANCE, it) }
             syncCounts[HealthDataType.DISTANCE] = data.distance.size
         }
         if (data.activeCalories.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.ACTIVE_CALORIES, data.activeCalories.maxOf { it.endTime }.toEpochMilli())
+            clampedMaxEndMs(data.activeCalories.asSequence().map { it.endTime }, now)
+                ?.let { preferencesManager.setLastSyncTimestamp(HealthDataType.ACTIVE_CALORIES, it) }
             syncCounts[HealthDataType.ACTIVE_CALORIES] = data.activeCalories.size
         }
         if (data.totalCalories.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.TOTAL_CALORIES, data.totalCalories.maxOf { it.endTime }.toEpochMilli())
+            // Clamp to now() so a future-dated endTime (e.g., daily projection
+            // from Google Health ending at local midnight) cannot advance the
+            // cursor past wall-clock time and starve subsequent closed records.
+            clampedMaxEndMs(data.totalCalories.asSequence().map { it.endTime }, now)
+                ?.let { preferencesManager.setLastSyncTimestamp(HealthDataType.TOTAL_CALORIES, it) }
             syncCounts[HealthDataType.TOTAL_CALORIES] = data.totalCalories.size
         }
         if (data.weight.isNotEmpty()) {
@@ -326,15 +348,18 @@ class SyncManager(private val context: Context) {
             syncCounts[HealthDataType.RESTING_HEART_RATE] = data.restingHeartRate.size
         }
         if (data.exercise.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.EXERCISE, data.exercise.maxOf { it.endTime }.toEpochMilli())
+            clampedMaxEndMs(data.exercise.asSequence().map { it.endTime }, now)
+                ?.let { preferencesManager.setLastSyncTimestamp(HealthDataType.EXERCISE, it) }
             syncCounts[HealthDataType.EXERCISE] = data.exercise.size
         }
         if (data.hydration.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.HYDRATION, data.hydration.maxOf { it.endTime }.toEpochMilli())
+            clampedMaxEndMs(data.hydration.asSequence().map { it.endTime }, now)
+                ?.let { preferencesManager.setLastSyncTimestamp(HealthDataType.HYDRATION, it) }
             syncCounts[HealthDataType.HYDRATION] = data.hydration.size
         }
         if (data.nutrition.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.NUTRITION, data.nutrition.maxOf { it.endTime }.toEpochMilli())
+            clampedMaxEndMs(data.nutrition.asSequence().map { it.endTime }, now)
+                ?.let { preferencesManager.setLastSyncTimestamp(HealthDataType.NUTRITION, it) }
             syncCounts[HealthDataType.NUTRITION] = data.nutrition.size
         }
         if (data.basalMetabolicRate.isNotEmpty()) {
