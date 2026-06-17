@@ -44,6 +44,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_LOCAL_HTTP_AUTH_ENABLED = "local_http_auth_enabled"
         private const val KEY_LOCAL_HTTP_TOKEN = "local_http_token"
         private const val KEY_NOTIFICATION_CONFIGS = "notification_configs"
+        private const val KEY_BATTERY_BANNER_DISMISSED = "battery_banner_dismissed"
     }
 
 
@@ -346,6 +347,13 @@ class PreferencesManager(context: Context) {
     fun setNotificationConfigs(configs: List<NotificationConfig>) {
         val configsJson = Json.encodeToString(configs)
         prefs.edit().putString(KEY_NOTIFICATION_CONFIGS, configsJson).apply()
+    }
+
+    fun isBatteryBannerDismissed(): Boolean =
+        prefs.getBoolean(KEY_BATTERY_BANNER_DISMISSED, false)
+
+    fun setBatteryBannerDismissed(dismissed: Boolean) {
+        prefs.edit().putBoolean(KEY_BATTERY_BANNER_DISMISSED, dismissed).apply()
     }
 
     // -------------------------------------------------------------------------
