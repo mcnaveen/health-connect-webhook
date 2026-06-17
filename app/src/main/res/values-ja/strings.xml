@@ -309,4 +309,22 @@
     <string name="about_notifications_desc">Gotify、ntfy、Telegram、Discord、Pushoverを設定</string>
     <string name="webhooks_notification_section">成功/失敗時に通知</string>
     <string name="webhooks_notification_none">なし</string>
+
+    <!-- Battery Optimization Banner -->
+    <string name="battery_banner_title">バッテリー最適化が有効</string>
+    <string name="battery_banner_desc">Androidがバックグラウンド同期を遅延またはスキップする場合があります。自動同期を安定させるため、バッテリー最適化を無効にしてください。</string>
+    <string name="battery_banner_action_fix">今すぐ修正</string>
+    <string name="battery_banner_action_oem">%1$s</string>
+    <string name="battery_banner_action_dismiss">閉じる</string>
+    <string name="battery_banner_dialog_title">バッテリー最適化を無効にする</string>
+    <string name="battery_banner_dialog_desc">システムダイアログで「許可」をタップして、HC Webhookが制限なしでバックグラウンドで実行できるようにしてください。</string>
+
+    <!-- Exact Alarm Warning -->
+    <string name="exact_alarm_warning">正確なアラームが許可されていません — スケジュールの時刻がずれる場合があります。設定で有効にするにはタップしてください。</string>
+
+    <!-- Sync Foreground Service -->
+    <string name="sync_service_channel_name">バックグラウンド同期</string>
+    <string name="sync_service_channel_desc">バックグラウンドで健康データを同期中に短時間表示されます</string>
+    <string name="sync_service_notification_title">健康データを同期中…</string>
+    <string name="sync_service_notification_text">設定したウェブフックにデータを送信中</string>
 </resources>
