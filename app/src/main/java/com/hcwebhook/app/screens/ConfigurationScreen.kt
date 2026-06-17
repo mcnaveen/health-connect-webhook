@@ -1,8 +1,11 @@
 package com.hcwebhook.app.screens
 
 import android.app.TimePickerDialog
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.PowerManager
+import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
@@ -54,6 +57,8 @@ import com.hcwebhook.app.ui.theme.*
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import com.hcwebhook.app.R
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,6 +80,30 @@ fun ConfigurationScreen(
     var syncInterval by remember { mutableStateOf(preferencesManager.getSyncIntervalMinutes().toString()) }
     var scheduledSyncs by remember { mutableStateOf(preferencesManager.getScheduledSyncs()) }
     var enabledDataTypes by remember { mutableStateOf(preferencesManager.getEnabledDataTypes()) }
+
+    // Battery optimization banner state
+    var isBatteryOptimized by remember {
+        val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+        mutableStateOf(!pm.isIgnoringBatteryOptimizations(context.packageName))
+    }
+    var batteryBannerDismissed by remember { mutableStateOf(preferencesManager.isBatteryBannerDismissed()) }
+    val showBatteryBanner = isBatteryOptimized && !batteryBannerDismissed
+
+    // Re-check battery optimization status every time the user returns to the app
+    // (e.g. after granting the exemption in the system dialog).
+    DisposableEffect(activity) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+                isBatteryOptimized = !pm.isIgnoringBatteryOptimizations(context.packageName)
+            }
+        }
+        activity.lifecycle.addObserver(observer)
+        onDispose { activity.lifecycle.removeObserver(observer) }
+    }
+
+    val oemDeepLinkIntent = remember { BatteryOptimizationHelper.buildOemDeepLinkIntent() }
+    val oemLabel = remember { BatteryOptimizationHelper.oemDeepLinkLabel() }
 
     var showDataTypesSheet by remember { mutableStateOf(false) }
     var showPermissionsSheet by remember { mutableStateOf(false) }
@@ -260,6 +289,143 @@ fun ConfigurationScreen(
                 }
             }
 
+            // ── Battery optimization banner ────────────────────────────────────
+            if (showBatteryBanner) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = stringResource(R.string.battery_banner_title),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = stringResource(R.string.battery_banner_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        // Primary action: standard Android system dialog
+                        Button(
+                            onClick = {
+                                // Try each option in order. Do NOT use resolveActivity() —
+                                // on Android 11+ it returns null for system intents due to
+                                // package visibility filtering, even when they ARE resolvable.
+                                // Instead call startActivity() directly and fall through on failure.
+                                var opened = false
+
+                                // Option 1: Standard Android system dialog
+                                if (!opened) {
+                                    try {
+                                        context.startActivity(
+                                            BatteryOptimizationHelper.buildRequestExemptionIntent(context)
+                                        )
+                                        opened = true
+                                    } catch (_: Exception) {}
+                                }
+
+                                // Option 2: OEM-specific screen (Samsung Device Care, etc.)
+                                if (!opened) {
+                                    val oemIntent = BatteryOptimizationHelper.buildOemDeepLinkIntent()
+                                    if (oemIntent != null) {
+                                        try {
+                                            context.startActivity(oemIntent)
+                                            opened = true
+                                        } catch (_: Exception) {}
+                                    }
+                                }
+
+                                // Option 3: Generic battery optimization settings list
+                                if (!opened) {
+                                    try {
+                                        context.startActivity(
+                                            Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        )
+                                        opened = true
+                                    } catch (_: Exception) {}
+                                }
+
+                                if (!opened) {
+                                    Toast.makeText(
+                                        context,
+                                        "Could not open battery settings. Please disable battery optimization manually in your device Settings.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.battery_banner_action_fix))
+                        }
+                        // OEM-specific deep-link (Samsung, Xiaomi, etc.)
+                        if (oemDeepLinkIntent != null && oemLabel != null) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    try {
+                                        context.startActivity(oemDeepLinkIntent)
+                                    } catch (_: Exception) {
+                                        try {
+                                            context.startActivity(
+                                                Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            )
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, context.getString(R.string.config_toast_error, e.message), Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                },
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp, MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.5f)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.battery_banner_action_oem, oemLabel),
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        // Dismiss — user can re-open via system settings themselves
+                        TextButton(
+                            onClick = {
+                                batteryBannerDismissed = true
+                                preferencesManager.setBatteryBannerDismissed(true)
+                            },
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.battery_banner_action_dismiss),
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                }
+            }
+
             // ── Permission status ─────────────────────────────────────────────
             when {
                 hasPermissions == null -> {
@@ -387,6 +553,50 @@ fun ConfigurationScreen(
                         }
                         AnimatedVisibility(visible = syncMode == SyncMode.SCHEDULED, enter = expandVertically(), exit = shrinkVertically()) {
                             Column {
+                                // Exact alarm permission warning
+                                if (!ScheduledSyncManager(context).canScheduleExactAlarms()) {
+                                    Card(
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                                        ),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(bottom = 8.dp)
+                                            .clickable {
+                                                try {
+                                                    context.startActivity(
+                                                        Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                                                            data = Uri.parse("package:${context.packageName}")
+                                                        }
+                                                    )
+                                                } catch (e: Exception) {
+                                                    try {
+                                                        context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                                            data = Uri.parse("package:${context.packageName}")
+                                                        })
+                                                    } catch (_: Exception) {}
+                                                }
+                                            }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Warning,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Text(
+                                                text = stringResource(R.string.exact_alarm_warning),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                                            )
+                                        }
+                                    }
+                                }
                                 scheduledSyncs.forEach { schedule ->
                                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                         Text(text = schedule.getDisplayTime(), style = MaterialTheme.typography.bodyMedium)
