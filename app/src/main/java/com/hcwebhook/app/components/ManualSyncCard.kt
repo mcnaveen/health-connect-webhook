@@ -147,7 +147,15 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                                 val enabledTypes = preferencesManager.getEnabledDataTypes()
                                 val requiredPermissions = HealthConnectManager.getPermissionsForTypes(
                                     enabledTypes,
-                                    includeBackgroundPermission = false
+                                    includeBackgroundPermission = false,
+                                    // The manual-sync gate should only require read access to the
+                                    // enabled data types. READ_HEALTH_DATA_HISTORY is only needed for
+                                    // ranges older than 30 days, and READ_STEPS_CADENCE is optional
+                                    // (its aggregate read is already try/catch-guarded). Requiring
+                                    // either here left users stuck on "Permissions required for sync"
+                                    // with no in-app way to grant them.
+                                    includeHistoryPermission = false,
+                                    includeStepsCadence = false
                                 )
                                 if (requiredPermissions.isNotEmpty() && !healthConnectManager.hasPermissions(requiredPermissions)) {
                                     syncMessage = context.getString(R.string.err_permissions_required)
