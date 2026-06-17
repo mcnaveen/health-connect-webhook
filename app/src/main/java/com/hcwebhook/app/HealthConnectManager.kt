@@ -1194,16 +1194,20 @@ class HealthConnectManager(private val context: Context) {
 
         fun getPermissionsForTypes(
             types: Set<HealthDataType>,
-            includeBackgroundPermission: Boolean = true
+            includeBackgroundPermission: Boolean = true,
+            includeHistoryPermission: Boolean = true,
+            includeStepsCadence: Boolean = true
         ): Set<String> {
             val permissions = types.map { HealthPermission.getReadPermission(it.recordClass) }.toMutableSet()
-            if (HealthDataType.STEPS in types) {
+            if (includeStepsCadence && HealthDataType.STEPS in types) {
                 permissions.add(HealthPermission.getReadPermission(StepsCadenceRecord::class))
             }
             if (includeBackgroundPermission) {
                 permissions.add(BACKGROUND_PERMISSION_STR)
             }
-            permissions.add("android.permission.health.READ_HEALTH_DATA_HISTORY")
+            if (includeHistoryPermission) {
+                permissions.add("android.permission.health.READ_HEALTH_DATA_HISTORY")
+            }
             return permissions
         }
 

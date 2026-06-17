@@ -309,4 +309,22 @@
     <string name="about_notifications_desc">Gotify, ntfy, Telegram, Discord, Pushover konfigurieren</string>
     <string name="webhooks_notification_section">Bei Erfolg/Fehler benachrichtigen</string>
     <string name="webhooks_notification_none">Keine</string>
+
+    <!-- Battery Optimization Banner -->
+    <string name="battery_banner_title">Akkuoptimierung aktiv</string>
+    <string name="battery_banner_desc">Android kann Hintergrundsynchronisierungen verzögern oder überspringen. Deaktivieren Sie die Akkuoptimierung für eine zuverlässige automatische Synchronisierung.</string>
+    <string name="battery_banner_action_fix">Jetzt beheben</string>
+    <string name="battery_banner_action_oem">%1$s</string>
+    <string name="battery_banner_action_dismiss">Schließen</string>
+    <string name="battery_banner_dialog_title">Akkuoptimierung deaktivieren</string>
+    <string name="battery_banner_dialog_desc">Tippen Sie im Systemdialog auf "Zulassen", damit HC Webhook im Hintergrund ohne Einschränkungen ausgeführt werden kann.</string>
+
+    <!-- Exact Alarm Warning -->
+    <string name="exact_alarm_warning">Exakte Alarme nicht erlaubt — geplante Zeiten können abweichen. Tippen Sie, um die Einstellung zu aktivieren.</string>
+
+    <!-- Sync Foreground Service -->
+    <string name="sync_service_channel_name">Hintergrundsynchronisierung</string>
+    <string name="sync_service_channel_desc">Wird kurz während der Synchronisierung von Gesundheitsdaten im Hintergrund angezeigt</string>
+    <string name="sync_service_notification_title">Gesundheitsdaten werden synchronisiert…</string>
+    <string name="sync_service_notification_text">Daten werden an Ihre konfigurierten Webhooks gesendet</string>
 </resources>
