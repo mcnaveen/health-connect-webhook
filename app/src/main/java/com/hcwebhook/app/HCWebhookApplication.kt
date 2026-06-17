@@ -1,9 +1,8 @@
 package com.hcwebhook.app
 
 import android.app.Application
-import androidx.work.Constraints
+import androidx.work.BackoffPolicy
 import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
@@ -46,15 +45,19 @@ class HCWebhookApplication : Application() {
 
         val syncIntervalMinutes = preferencesManager.getSyncIntervalMinutes()
 
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-
+        // No network constraint: let SyncWorker fail gracefully and retry via
+        // backoff when there is no connection, rather than deferring the job
+        // indefinitely (which is what NetworkType.CONNECTED causes on Samsung
+        // devices with aggressive battery management).
         val syncWorkRequest = PeriodicWorkRequestBuilder<SyncWorker>(
             repeatInterval = syncIntervalMinutes.toLong(),
             repeatIntervalTimeUnit = TimeUnit.MINUTES
         )
-            .setConstraints(constraints)
+            .setBackoffCriteria(
+                BackoffPolicy.EXPONENTIAL,
+                5,
+                TimeUnit.MINUTES
+            )
             .build()
 
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(

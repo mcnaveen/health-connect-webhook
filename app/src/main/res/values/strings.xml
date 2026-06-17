@@ -321,6 +321,24 @@
     <string name="about_notifications_desc">Configure Gotify, ntfy, Telegram, Discord, Pushover</string>
     <string name="webhooks_notification_section">Notify on Success/Failure</string>
     <string name="webhooks_notification_none">None</string>
+
+    <!-- Battery Optimization Banner -->
+    <string name="battery_banner_title">Battery Optimization Active</string>
+    <string name="battery_banner_desc">Android may delay or skip background syncs. Disable battery optimization for reliable automatic syncing.</string>
+    <string name="battery_banner_action_fix">Fix Now</string>
+    <string name="battery_banner_action_oem">%1$s</string>
+    <string name="battery_banner_action_dismiss">Dismiss</string>
+    <string name="battery_banner_dialog_title">Disable Battery Optimization</string>
+    <string name="battery_banner_dialog_desc">Tap \"Allow\" in the system dialog to let HC Webhook run in the background without restrictions.</string>
+
+    <!-- Exact Alarm Warning -->
+    <string name="exact_alarm_warning">Exact alarms not permitted — scheduled times may drift. Tap to enable in settings.</string>
+
+    <!-- Sync Foreground Service -->
+    <string name="sync_service_channel_name">Background Sync</string>
+    <string name="sync_service_channel_desc">Shown briefly while syncing health data in the background</string>
+    <string name="sync_service_notification_title">Syncing health data…</string>
+    <string name="sync_service_notification_text">Sending data to your configured webhooks</string>
 </resources>
 
 
