@@ -331,4 +331,22 @@
     <string name="about_notifications_desc">Gotify, ntfy, Telegram, Discord, Pushover 구성</string>
     <string name="webhooks_notification_section">성공/실패 시 알림</string>
     <string name="webhooks_notification_none">없음</string>
+
+    <!-- Battery Optimization Banner -->
+    <string name="battery_banner_title">배터리 최적화 활성화됨</string>
+    <string name="battery_banner_desc">Android가 백그라운드 동기화를 지연하거나 건너뛸 수 있습니다. 안정적인 자동 동기화를 위해 배터리 최적화를 비활성화하세요.</string>
+    <string name="battery_banner_action_fix">지금 해결</string>
+    <string name="battery_banner_action_oem">%1$s</string>
+    <string name="battery_banner_action_dismiss">닫기</string>
+    <string name="battery_banner_dialog_title">배터리 최적화 비활성화</string>
+    <string name="battery_banner_dialog_desc">시스템 대화상자에서 "허용"을 탭하여 HC Webhook이 제한 없이 백그라운드에서 실행될 수 있도록 하세요.</string>
+
+    <!-- Exact Alarm Warning -->
+    <string name="exact_alarm_warning">정확한 알람이 허용되지 않음 — 예약된 시간이 달라질 수 있습니다. 설정에서 활성화하려면 탭하세요.</string>
+
+    <!-- Sync Foreground Service -->
+    <string name="sync_service_channel_name">백그라운드 동기화</string>
+    <string name="sync_service_channel_desc">백그라운드에서 건강 데이터를 동기화하는 동안 잊시 표시됨</string>
+    <string name="sync_service_notification_title">건강 데이터 동기화 중…</string>
+    <string name="sync_service_notification_text">설정된 웹훅에 데이터 전송 중</string>
 </resources>

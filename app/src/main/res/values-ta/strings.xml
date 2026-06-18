@@ -331,4 +331,22 @@
     <string name="about_notifications_desc">Gotify, ntfy, Telegram, Discord, Pushover உள்ளமை</string>
     <string name="webhooks_notification_section">வெற்றி/தோல்வியில் அறிவிக்கவும்</string>
     <string name="webhooks_notification_none">எதுவுமில்லை</string>
+
+    <!-- Battery Optimization Banner -->
+    <string name="battery_banner_title">பாட்டரி மேம்பாடு இயங்குகிறது</string>
+    <string name="battery_banner_desc">Android பின்னணி ஒத்திசைவுகளை தாமதப்படுத்தலாம் அல்லது தவிர்க்கலாம். தானியல்பட தோல்விகளுக்கான தொடர்ச்சியான ஒத்திசைவுக்காக பாட்டரி மேம்பாடுவை உள்ளே முடக்குக.</string>
+    <string name="battery_banner_action_fix">இப்போது சரிப்படுத்து</string>
+    <string name="battery_banner_action_oem">%1$s</string>
+    <string name="battery_banner_action_dismiss">தள்ளிவிடு</string>
+    <string name="battery_banner_dialog_title">பாட்டரி மேம்பாடுவை முடக்குக</string>
+    <string name="battery_banner_dialog_desc">கொள்கை இல்லாமல் HC Webhook பின்னணியில் இயங்க அனுமதிக்க கணினி உரையாடலில் “அனுமதி” என்பதை தடவுக.</string>
+
+    <!-- Exact Alarm Warning -->
+    <string name="exact_alarm_warning">சரியான எச்சரிக்கைகள் அனுமதிக்கப்படவில்லை — திட்டமிட்ட நேரங்கள் மாறலாம். அமைப்புகளில் இயக்க தடவுக.</string>
+
+    <!-- Sync Foreground Service -->
+    <string name="sync_service_channel_name">பின்னணி ஒத்திசைவு</string>
+    <string name="sync_service_channel_desc">பின்னணியில் ஜீவன தரவுகளை ஒத்திசைக்கும்போது சுருக்கமாக காட்டப்படுகிறது</string>
+    <string name="sync_service_notification_title">ஜீவன தரவுகளை ஒத்திசைக்கிறது…</string>
+    <string name="sync_service_notification_text">உங்கள் கூற்றப்பட்ட webhooksக்கு தரவுகளை அனுப்புகிறது</string>
 </resources>
