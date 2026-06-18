@@ -1722,10 +1722,11 @@ class HealthConnectManager(private val context: Context) {
         val all = mutableListOf<T>()
         var token: String? = null
         var firstPage = true
+        val throttlePages = request.recordType in PAGINATED_READ_THROTTLE_TYPES
         do {
-            // Gentle inter-page throttle so a multi-page read (e.g. heart rate over a
-            // long window) doesn't trip Health Connect's burst quota in the first place.
-            if (!firstPage) delay(120)
+            // Gentle inter-page throttle on heavy, multi-page reads (e.g. heart rate over a
+            // long window) so they don't trip Health Connect's burst quota in the first place.
+            if (throttlePages && !firstPage) delay(READ_PAGE_DELAY_MS)
             firstPage = false
             val current = if (token == null) request else ReadRecordsRequest(
                 recordType = request.recordType,
@@ -1749,9 +1750,12 @@ class HealthConnectManager(private val context: Context) {
      * separate daily quota still needs real time to replenish, so after the last
      * attempt the original exception is rethrown for the UI to surface.
      */
-    private suspend fun <T> withHealthConnectRetry(maxAttempts: Int = 4, block: suspend () -> T): T {
+    private suspend fun <T> withHealthConnectRetry(
+        maxAttempts: Int = RATE_LIMIT_MAX_ATTEMPTS,
+        block: suspend () -> T,
+    ): T {
         var attempt = 0
-        var delayMs = 1_000L
+        var delayMs = RATE_LIMIT_INITIAL_DELAY_MS
         while (true) {
             try {
                 return block()
@@ -1762,7 +1766,7 @@ class HealthConnectManager(private val context: Context) {
                 attempt++
                 if (!isRateLimit || attempt >= maxAttempts) throw e
                 delay(delayMs)
-                delayMs = (delayMs * 2).coerceAtMost(8_000L)
+                delayMs = (delayMs * 2).coerceAtMost(RATE_LIMIT_MAX_DELAY_MS)
             }
         }
     }
@@ -1800,6 +1804,20 @@ class HealthConnectManager(private val context: Context) {
 
     companion object {
         private const val LOOKBACK_HOURS = 48L
+
+        private const val RATE_LIMIT_MAX_ATTEMPTS = 4
+        private const val RATE_LIMIT_INITIAL_DELAY_MS = 1_000L
+        private const val RATE_LIMIT_MAX_DELAY_MS = 8_000L
+        private const val READ_PAGE_DELAY_MS = 120L
+
+        /** Record types that commonly paginate and benefit from inter-page throttling. */
+        private val PAGINATED_READ_THROTTLE_TYPES = setOf(
+            HeartRateRecord::class,
+            HeartRateVariabilityRmssdRecord::class,
+            StepsRecord::class,
+            SleepSessionRecord::class,
+            ExerciseSessionRecord::class,
+        )
 
         fun grantedDataTypes(grantedPermissions: Set<String>): List<HealthDataType> =
             HealthDataType.entries.filter { type ->
