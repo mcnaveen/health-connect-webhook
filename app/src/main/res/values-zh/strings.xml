@@ -331,4 +331,22 @@
     <string name="about_notifications_desc">配置 Gotify、ntfy、Telegram、Discord、Pushover</string>
     <string name="webhooks_notification_section">成功/失败时通知</string>
     <string name="webhooks_notification_none">无</string>
+
+    <!-- Battery Optimization Banner -->
+    <string name="battery_banner_title">电池优化已开启</string>
+    <string name="battery_banner_desc">Android 可能延迟或跳过后台同步。请禁用电池优化以实现可靠的自动同步。</string>
+    <string name="battery_banner_action_fix">立即修复</string>
+    <string name="battery_banner_action_oem">%1$s</string>
+    <string name="battery_banner_action_dismiss">关闭</string>
+    <string name="battery_banner_dialog_title">禁用电池优化</string>
+    <string name="battery_banner_dialog_desc">在系统对话框中点击“允许”，允许 HC Webhook 在后台无限制运行。</string>
+
+    <!-- Exact Alarm Warning -->
+    <string name="exact_alarm_warning">精确闹钟不被允许 — 定时时间可能会偏差。点击在设置中启用。</string>
+
+    <!-- Sync Foreground Service -->
+    <string name="sync_service_channel_name">后台同步</string>
+    <string name="sync_service_channel_desc">后台同步健康数据时短暂显示</string>
+    <string name="sync_service_notification_title">正在同步健康数据…</string>
+    <string name="sync_service_notification_text">正在将数据发送到您配置的 Webhook</string>
 </resources>

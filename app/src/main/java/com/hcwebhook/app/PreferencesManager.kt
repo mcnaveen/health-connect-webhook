@@ -47,6 +47,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_HR_DOWNSAMPLE_MINUTES = "hr_downsample_minutes"
         private const val KEY_STEPS_RESOLUTION_MINUTES = "steps_resolution_minutes"
         private const val KEY_DATA_TYPE_RESOLUTIONS = "data_type_resolutions"
+        private const val KEY_BATTERY_BANNER_DISMISSED = "battery_banner_dismissed"
     }
 
 
@@ -433,6 +434,13 @@ class PreferencesManager(context: Context) {
         writeResolutionMap(map)
         map[HealthDataType.HEART_RATE.name]?.let { syncLegacyResolutionKeys(HealthDataType.HEART_RATE, it) }
         map[HealthDataType.STEPS.name]?.let { syncLegacyResolutionKeys(HealthDataType.STEPS, it) }
+    }
+
+    fun isBatteryBannerDismissed(): Boolean =
+        prefs.getBoolean(KEY_BATTERY_BANNER_DISMISSED, false)
+
+    fun setBatteryBannerDismissed(dismissed: Boolean) {
+        prefs.edit().putBoolean(KEY_BATTERY_BANNER_DISMISSED, dismissed).apply()
     }
 
     // -------------------------------------------------------------------------

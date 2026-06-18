@@ -5,6 +5,7 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import kotlinx.coroutines.CancellationException
 import androidx.health.connect.client.records.*
+import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
@@ -121,6 +122,32 @@ data class HealthData(
     val boneMass: List<BoneMassData>
 )
 
+/**
+ * Provenance of a Health Connect record: which app wrote it, how it was recorded, and on what
+ * device. Lets downstream consumers tell e.g. an automatically-detected session apart from one
+ * recorded by gym equipment, and deduplicate records that arrive from multiple source apps.
+ */
+data class RecordMetadata(
+    val dataOrigin: String,
+    val recordingMethod: String,
+    val deviceManufacturer: String? = null,
+    val deviceModel: String? = null,
+    val deviceType: Int? = null
+)
+
+fun Metadata.toRecordMetadata(): RecordMetadata = RecordMetadata(
+    dataOrigin = dataOrigin.packageName,
+    recordingMethod = when (recordingMethod) {
+        Metadata.RECORDING_METHOD_ACTIVELY_RECORDED -> "actively_recorded"
+        Metadata.RECORDING_METHOD_AUTOMATICALLY_RECORDED -> "automatically_recorded"
+        Metadata.RECORDING_METHOD_MANUAL_ENTRY -> "manual_entry"
+        else -> "unknown"
+    },
+    deviceManufacturer = device?.manufacturer,
+    deviceModel = device?.model,
+    deviceType = device?.type,
+)
+
 data class StepsData(
     val count: Long,
     val startTime: Instant,
@@ -130,7 +157,8 @@ data class StepsData(
 data class SleepData(
     val sessionEndTime: Instant,
     val duration: Duration,
-    val stages: List<SleepStage>
+    val stages: List<SleepStage>,
+    val metadata: RecordMetadata? = null
 )
 
 data class SleepStage(
@@ -141,10 +169,11 @@ data class SleepStage(
 )
 
 data class HeartRateData(
-    val bpm: Long,        // sample bpm (full-res) or rounded average (downsampled bucket)
-    val time: Instant,    // sample time (full-res) or bucket start (downsampled bucket)
-    val min: Long? = null, // non-null marks an aggregated bucket
-    val max: Long? = null
+    val bpm: Long,
+    val time: Instant,
+    val min: Long? = null,
+    val max: Long? = null,
+    val metadata: RecordMetadata? = null,
 )
 
 data class HeartRateVariabilityData(
@@ -152,6 +181,7 @@ data class HeartRateVariabilityData(
     val time: Instant,
     val min: Double? = null,
     val max: Double? = null,
+    val metadata: RecordMetadata? = null,
 )
 
 data class DistanceData(
@@ -169,28 +199,33 @@ data class ActiveCaloriesData(
 data class TotalCaloriesData(
     val calories: Double,
     val startTime: Instant,
-    val endTime: Instant
+    val endTime: Instant,
+    val metadata: RecordMetadata? = null
 )
 
 data class WeightData(
     val kilograms: Double,
-    val time: Instant
+    val time: Instant,
+    val metadata: RecordMetadata? = null
 )
 
 data class HeightData(
     val meters: Double,
-    val time: Instant
+    val time: Instant,
+    val metadata: RecordMetadata? = null
 )
 
 data class BloodPressureData(
     val systolic: Double,
     val diastolic: Double,
-    val time: Instant
+    val time: Instant,
+    val metadata: RecordMetadata? = null
 )
 
 data class BloodGlucoseData(
     val mmolPerLiter: Double,
-    val time: Instant
+    val time: Instant,
+    val metadata: RecordMetadata? = null
 )
 
 data class OxygenSaturationData(
@@ -198,11 +233,13 @@ data class OxygenSaturationData(
     val time: Instant,
     val min: Double? = null,
     val max: Double? = null,
+    val metadata: RecordMetadata? = null,
 )
 
 data class BodyTemperatureData(
     val celsius: Double,
-    val time: Instant
+    val time: Instant,
+    val metadata: RecordMetadata? = null
 )
 
 data class SkinTemperatureData(
@@ -212,6 +249,7 @@ data class SkinTemperatureData(
     val measurementLocation: Int,
     val minDeltaCelsius: Double? = null,
     val maxDeltaCelsius: Double? = null,
+    val metadata: RecordMetadata? = null,
 )
 
 data class RespiratoryRateData(
@@ -219,11 +257,13 @@ data class RespiratoryRateData(
     val time: Instant,
     val min: Double? = null,
     val max: Double? = null,
+    val metadata: RecordMetadata? = null,
 )
 
 data class RestingHeartRateData(
     val bpm: Long,
-    val time: Instant
+    val time: Instant,
+    val metadata: RecordMetadata? = null
 )
 
 data class ExerciseData(
@@ -235,13 +275,15 @@ data class ExerciseData(
     val steps: Long? = null,
     val avgCadenceSpm: Double? = null,
     val maxCadenceSpm: Double? = null,
-    val strideLengthMeters: Double? = null
+    val strideLengthMeters: Double? = null,
+    val metadata: RecordMetadata? = null
 )
 
 data class HydrationData(
     val liters: Double,
     val startTime: Instant,
-    val endTime: Instant
+    val endTime: Instant,
+    val metadata: RecordMetadata? = null
 )
 
 data class NutritionData(
@@ -254,32 +296,38 @@ data class NutritionData(
     val dietaryFiber: Double?,
     val name: String?,
     val startTime: Instant,
-    val endTime: Instant
+    val endTime: Instant,
+    val metadata: RecordMetadata? = null
 )
 
 data class BasalMetabolicRateData(
     val watts: Double,
-    val time: Instant
+    val time: Instant,
+    val metadata: RecordMetadata? = null
 )
 
 data class BodyFatData(
     val percentage: Double,
-    val time: Instant
+    val time: Instant,
+    val metadata: RecordMetadata? = null
 )
 
 data class LeanBodyMassData(
     val kilograms: Double,
-    val time: Instant
+    val time: Instant,
+    val metadata: RecordMetadata? = null
 )
 
 data class Vo2MaxData(
     val mlPerKgPerMin: Double,
-    val time: Instant
+    val time: Instant,
+    val metadata: RecordMetadata? = null
 )
 
 data class BoneMassData(
     val kilograms: Double,
-    val time: Instant
+    val time: Instant,
+    val metadata: RecordMetadata? = null
 )
 
 class HealthConnectManager(private val context: Context) {
@@ -812,7 +860,8 @@ class HealthConnectManager(private val context: Context) {
                 SleepData(
                     sessionEndTime = record.endTime,
                     duration = Duration.between(record.startTime, record.endTime),
-                    stages = stages
+                    stages = stages,
+                    metadata = record.metadata.toRecordMetadata()
                 )
             }
     }
@@ -825,29 +874,31 @@ class HealthConnectManager(private val context: Context) {
     ): List<HeartRateData> {
         val request = ReadRecordsRequest(recordType = HeartRateRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
-        val samples = response
-            .flatMap { record -> record.samples }
-            .filter { lastSync == null || it.time >= lastSync }
-
-        if (downsampleMinutes <= 0) {
-            // Full resolution: one record per raw sample.
-            return samples.map { HeartRateData(it.beatsPerMinute, it.time) }
+        val samples = response.flatMap { record ->
+            val metadata = record.metadata.toRecordMetadata()
+            record.samples
+                .filter { lastSync == null || it.time >= lastSync }
+                .map { Triple(it.time, it.beatsPerMinute, metadata) }
         }
 
-        // Downsample: group samples into fixed time buckets and emit one summary
-        // (avg/min/max/count) per bucket. Drastically reduces payload size while
-        // preserving the trend.
+        if (downsampleMinutes <= 0) {
+            return samples.map { (time, bpm, metadata) ->
+                HeartRateData(bpm = bpm, time = time, metadata = metadata)
+            }
+        }
+
         val bucketSeconds = downsampleMinutes.toLong() * 60L
         return samples
-            .groupBy { it.time.epochSecond / bucketSeconds }
+            .groupBy { it.first.epochSecond / bucketSeconds }
             .toSortedMap()
             .map { (bucketIndex, bucketSamples) ->
-                val bpms = bucketSamples.map { it.beatsPerMinute }
+                val bpms = bucketSamples.map { it.second }
                 HeartRateData(
                     bpm = bpms.average().roundToLong(),
                     time = Instant.ofEpochSecond(bucketIndex * bucketSeconds),
                     min = bpms.min(),
-                    max = bpms.max()
+                    max = bpms.max(),
+                    metadata = bucketSamples.first().third,
                 )
             }
     }
@@ -864,16 +915,28 @@ class HealthConnectManager(private val context: Context) {
         )
         val samples = readAllRecords(request)
             .filter { lastSync == null || it.time >= lastSync }
-            .map { it.time to it.heartRateVariabilityMillis }
+            .map { Triple(it.time, it.heartRateVariabilityMillis, it.metadata.toRecordMetadata()) }
 
-        return bucketDoubleSamples(
-            samples,
-            resolutionMinutes,
-            mapFull = { time, value -> HeartRateVariabilityData(rmssdMillis = value, time = time) },
-            mapBucket = { time, avg, min, max ->
-                HeartRateVariabilityData(rmssdMillis = avg, time = time, min = min, max = max)
-            },
-        )
+        if (resolutionMinutes <= 0) {
+            return samples.map { (time, value, metadata) ->
+                HeartRateVariabilityData(rmssdMillis = value, time = time, metadata = metadata)
+            }
+        }
+
+        val bucketSeconds = resolutionMinutes.toLong() * 60L
+        return samples
+            .groupBy { it.first.epochSecond / bucketSeconds }
+            .toSortedMap()
+            .map { (bucketIndex, bucketSamples) ->
+                val values = bucketSamples.map { it.second }
+                HeartRateVariabilityData(
+                    rmssdMillis = values.average(),
+                    time = Instant.ofEpochSecond(bucketIndex * bucketSeconds),
+                    min = values.min(),
+                    max = values.max(),
+                    metadata = bucketSamples.first().third,
+                )
+            }
     }
 
     private suspend fun readDistanceData(
@@ -1112,7 +1175,7 @@ class HealthConnectManager(private val context: Context) {
         )
         return readAllRecords(request)
             .filter { lastSync == null || it.endTime >= lastSync }
-            .map { TotalCaloriesData(it.energy.inKilocalories, it.startTime, it.endTime) }
+            .map { TotalCaloriesData(it.energy.inKilocalories, it.startTime, it.endTime, it.metadata.toRecordMetadata()) }
     }
 
     private suspend fun readBucketedTotalCaloriesData(
@@ -1178,28 +1241,28 @@ class HealthConnectManager(private val context: Context) {
         val request = ReadRecordsRequest(recordType = WeightRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
         return response.filter { lastSync == null || it.time >= lastSync }
-            .map { WeightData(it.weight.inKilograms, it.time) }
+            .map { WeightData(it.weight.inKilograms, it.time, it.metadata.toRecordMetadata()) }
     }
 
     private suspend fun readHeightData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<HeightData> {
         val request = ReadRecordsRequest(recordType = HeightRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
         return response.filter { lastSync == null || it.time >= lastSync }
-            .map { HeightData(it.height.inMeters, it.time) }
+            .map { HeightData(it.height.inMeters, it.time, it.metadata.toRecordMetadata()) }
     }
 
     private suspend fun readBloodPressureData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BloodPressureData> {
         val request = ReadRecordsRequest(recordType = BloodPressureRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
         return response.filter { lastSync == null || it.time >= lastSync }
-            .map { BloodPressureData(it.systolic.inMillimetersOfMercury, it.diastolic.inMillimetersOfMercury, it.time) }
+            .map { BloodPressureData(it.systolic.inMillimetersOfMercury, it.diastolic.inMillimetersOfMercury, it.time, it.metadata.toRecordMetadata()) }
     }
 
     private suspend fun readBloodGlucoseData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BloodGlucoseData> {
         val request = ReadRecordsRequest(recordType = BloodGlucoseRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
         return response.filter { lastSync == null || it.time >= lastSync }
-            .map { BloodGlucoseData(it.level.inMillimolesPerLiter, it.time) }
+            .map { BloodGlucoseData(it.level.inMillimolesPerLiter, it.time, it.metadata.toRecordMetadata()) }
     }
 
     private suspend fun readOxygenSaturationData(
@@ -1214,23 +1277,35 @@ class HealthConnectManager(private val context: Context) {
         )
         val samples = readAllRecords(request)
             .filter { lastSync == null || it.time >= lastSync }
-            .map { it.time to it.percentage.value }
+            .map { Triple(it.time, it.percentage.value, it.metadata.toRecordMetadata()) }
 
-        return bucketDoubleSamples(
-            samples,
-            resolutionMinutes,
-            mapFull = { time, value -> OxygenSaturationData(percentage = value, time = time) },
-            mapBucket = { time, avg, min, max ->
-                OxygenSaturationData(percentage = avg, time = time, min = min, max = max)
-            },
-        )
+        if (resolutionMinutes <= 0) {
+            return samples.map { (time, value, metadata) ->
+                OxygenSaturationData(percentage = value, time = time, metadata = metadata)
+            }
+        }
+
+        val bucketSeconds = resolutionMinutes.toLong() * 60L
+        return samples
+            .groupBy { it.first.epochSecond / bucketSeconds }
+            .toSortedMap()
+            .map { (bucketIndex, bucketSamples) ->
+                val values = bucketSamples.map { it.second }
+                OxygenSaturationData(
+                    percentage = values.average(),
+                    time = Instant.ofEpochSecond(bucketIndex * bucketSeconds),
+                    min = values.min(),
+                    max = values.max(),
+                    metadata = bucketSamples.first().third,
+                )
+            }
     }
 
     private suspend fun readBodyTemperatureData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BodyTemperatureData> {
         val request = ReadRecordsRequest(recordType = BodyTemperatureRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
         return response.filter { lastSync == null || it.time >= lastSync }
-            .map { BodyTemperatureData(it.temperature.inCelsius, it.time) }
+            .map { BodyTemperatureData(it.temperature.inCelsius, it.time, it.metadata.toRecordMetadata()) }
     }
 
     private suspend fun readSkinTemperatureData(
@@ -1252,6 +1327,7 @@ class HealthConnectManager(private val context: Context) {
                         deltaCelsius = delta.delta.inCelsius,
                         baselineCelsius = record.baseline?.inCelsius,
                         measurementLocation = record.measurementLocation,
+                        metadata = record.metadata.toRecordMetadata(),
                     )
                 }
         }
@@ -1274,6 +1350,7 @@ class HealthConnectManager(private val context: Context) {
                     measurementLocation = first.measurementLocation,
                     minDeltaCelsius = deltas.min(),
                     maxDeltaCelsius = deltas.max(),
+                    metadata = first.metadata,
                 )
             }
     }
@@ -1290,23 +1367,35 @@ class HealthConnectManager(private val context: Context) {
         )
         val samples = readAllRecords(request)
             .filter { lastSync == null || it.time >= lastSync }
-            .map { it.time to it.rate }
+            .map { Triple(it.time, it.rate, it.metadata.toRecordMetadata()) }
 
-        return bucketDoubleSamples(
-            samples,
-            resolutionMinutes,
-            mapFull = { time, value -> RespiratoryRateData(rate = value, time = time) },
-            mapBucket = { time, avg, min, max ->
-                RespiratoryRateData(rate = avg, time = time, min = min, max = max)
-            },
-        )
+        if (resolutionMinutes <= 0) {
+            return samples.map { (time, value, metadata) ->
+                RespiratoryRateData(rate = value, time = time, metadata = metadata)
+            }
+        }
+
+        val bucketSeconds = resolutionMinutes.toLong() * 60L
+        return samples
+            .groupBy { it.first.epochSecond / bucketSeconds }
+            .toSortedMap()
+            .map { (bucketIndex, bucketSamples) ->
+                val values = bucketSamples.map { it.second }
+                RespiratoryRateData(
+                    rate = values.average(),
+                    time = Instant.ofEpochSecond(bucketIndex * bucketSeconds),
+                    min = values.min(),
+                    max = values.max(),
+                    metadata = bucketSamples.first().third,
+                )
+            }
     }
 
     private suspend fun readRestingHeartRateData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<RestingHeartRateData> {
         val request = ReadRecordsRequest(recordType = RestingHeartRateRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
         return response.filter { lastSync == null || it.time >= lastSync }
-            .map { RestingHeartRateData(it.beatsPerMinute, it.time) }
+            .map { RestingHeartRateData(it.beatsPerMinute, it.time, it.metadata.toRecordMetadata()) }
     }
 
     private suspend fun readExerciseData(
@@ -1333,7 +1422,8 @@ class HealthConnectManager(private val context: Context) {
                     steps = steps,
                     avgCadenceSpm = cadenceMetrics.avg ?: deriveAverageCadenceSpm(steps, duration),
                     maxCadenceSpm = cadenceMetrics.max,
-                    strideLengthMeters = deriveStrideLengthMeters(distanceMeters, steps)
+                    strideLengthMeters = deriveStrideLengthMeters(distanceMeters, steps),
+                    metadata = it.metadata.toRecordMetadata()
                 )
             }
     }
@@ -1434,7 +1524,7 @@ class HealthConnectManager(private val context: Context) {
         )
         return readAllRecords(request)
             .filter { lastSync == null || it.endTime >= lastSync }
-            .map { HydrationData(it.volume.inLiters, it.startTime, it.endTime) }
+            .map { HydrationData(it.volume.inLiters, it.startTime, it.endTime, it.metadata.toRecordMetadata()) }
     }
 
     private suspend fun readBucketedHydrationData(
@@ -1524,6 +1614,7 @@ class HealthConnectManager(private val context: Context) {
                     name = it.name,
                     startTime = it.startTime,
                     endTime = it.endTime,
+                    metadata = it.metadata.toRecordMetadata(),
                 )
             }
     }
@@ -1591,63 +1682,39 @@ class HealthConnectManager(private val context: Context) {
         return result
     }
 
-    private fun <T> bucketDoubleSamples(
-        samples: List<Pair<Instant, Double>>,
-        resolutionMinutes: Int,
-        mapFull: (Instant, Double) -> T,
-        mapBucket: (Instant, Double, Double, Double) -> T,
-    ): List<T> {
-        if (resolutionMinutes <= 0) {
-            return samples.map { (time, value) -> mapFull(time, value) }
-        }
-        val bucketSeconds = resolutionMinutes.toLong() * 60L
-        return samples
-            .groupBy { it.first.epochSecond / bucketSeconds }
-            .toSortedMap()
-            .map { (bucketIndex, bucketSamples) ->
-                val values = bucketSamples.map { it.second }
-                mapBucket(
-                    Instant.ofEpochSecond(bucketIndex * bucketSeconds),
-                    values.average(),
-                    values.min(),
-                    values.max(),
-                )
-            }
-    }
-
     private suspend fun readBasalMetabolicRateData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BasalMetabolicRateData> {
         val request = ReadRecordsRequest(recordType = BasalMetabolicRateRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
         return response.filter { lastSync == null || it.time >= lastSync }
-            .map { BasalMetabolicRateData(it.basalMetabolicRate.inWatts, it.time) }
+            .map { BasalMetabolicRateData(it.basalMetabolicRate.inWatts, it.time, it.metadata.toRecordMetadata()) }
     }
 
     private suspend fun readBodyFatData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BodyFatData> {
         val request = ReadRecordsRequest(recordType = BodyFatRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
         return response.filter { lastSync == null || it.time >= lastSync }
-            .map { BodyFatData(it.percentage.value, it.time) }
+            .map { BodyFatData(it.percentage.value, it.time, it.metadata.toRecordMetadata()) }
     }
 
     private suspend fun readLeanBodyMassData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<LeanBodyMassData> {
         val request = ReadRecordsRequest(recordType = LeanBodyMassRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
         return response.filter { lastSync == null || it.time >= lastSync }
-            .map { LeanBodyMassData(it.mass.inKilograms, it.time) }
+            .map { LeanBodyMassData(it.mass.inKilograms, it.time, it.metadata.toRecordMetadata()) }
     }
 
     private suspend fun readVo2MaxData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<Vo2MaxData> {
         val request = ReadRecordsRequest(recordType = Vo2MaxRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
         return response.filter { lastSync == null || it.time >= lastSync }
-            .map { Vo2MaxData(it.vo2MillilitersPerMinuteKilogram, it.time) }
+            .map { Vo2MaxData(it.vo2MillilitersPerMinuteKilogram, it.time, it.metadata.toRecordMetadata()) }
     }
 
     private suspend fun readBoneMassData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BoneMassData> {
         val request = ReadRecordsRequest(recordType = BoneMassRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
         return response.filter { lastSync == null || it.time >= lastSync }
-            .map { BoneMassData(it.mass.inKilograms, it.time) }
+            .map { BoneMassData(it.mass.inKilograms, it.time, it.metadata.toRecordMetadata()) }
     }
 
     private suspend fun <T : Record> readAllRecords(request: ReadRecordsRequest<T>): List<T> {
@@ -1707,16 +1774,20 @@ class HealthConnectManager(private val context: Context) {
 
         fun getPermissionsForTypes(
             types: Set<HealthDataType>,
-            includeBackgroundPermission: Boolean = true
+            includeBackgroundPermission: Boolean = true,
+            includeHistoryPermission: Boolean = true,
+            includeStepsCadence: Boolean = true
         ): Set<String> {
             val permissions = types.map { HealthPermission.getReadPermission(it.recordClass) }.toMutableSet()
-            if (HealthDataType.STEPS in types) {
+            if (includeStepsCadence && HealthDataType.STEPS in types) {
                 permissions.add(HealthPermission.getReadPermission(StepsCadenceRecord::class))
             }
             if (includeBackgroundPermission) {
                 permissions.add(BACKGROUND_PERMISSION_STR)
             }
-            permissions.add("android.permission.health.READ_HEALTH_DATA_HISTORY")
+            if (includeHistoryPermission) {
+                permissions.add("android.permission.health.READ_HEALTH_DATA_HISTORY")
+            }
             return permissions
         }
 

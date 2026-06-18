@@ -4,6 +4,7 @@
 
     <!-- Health Connect Permissions -->
     <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_STEPS_CADENCE" />
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
     <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
     <uses-permission android:name="android.permission.health.READ_DISTANCE" />
@@ -43,6 +44,9 @@
     <!-- Scheduled Sync Permissions -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!-- Battery Optimization -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <!-- Query for Health Connect -->
     <queries>
@@ -93,6 +97,13 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+
+        <!-- One-shot foreground service for scheduled sync -->
+        <service
+            android:name=".SyncForegroundService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <!-- Scheduled Sync Receiver -->
         <receiver
