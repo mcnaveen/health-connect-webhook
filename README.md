@@ -1,7 +1,5 @@
 # Health Connect to Webhook
 
-![HC Webhook](image.png)
-
 <table role="presentation" border="0" cellspacing="0" cellpadding="0">
   <tr>
     <td valign="middle"><a href="https://play.google.com/store/apps/details?id=com.hcwebhook.app"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="90"></a></td>
@@ -9,6 +7,8 @@
     <td valign="middle"><a href="https://apps.apple.com/app/health-webhook/id6763619597"><img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" alt="Download on the App Store" height="60"></a></td>
   </tr>
 </table>
+
+![HC Webhook](image.png)
 
 An Android app that bridges Google Fit, Samsung Health, Fitbit, and other health apps to your webhooks or local tools via Health Connect APIs, enabling seamless integration with your custom endpoints, agents, and services.
 
