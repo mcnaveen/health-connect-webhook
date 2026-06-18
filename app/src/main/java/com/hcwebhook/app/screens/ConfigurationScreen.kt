@@ -19,6 +19,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -41,6 +42,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -75,8 +77,6 @@ fun ConfigurationScreen(
     var syncInterval by remember { mutableStateOf(preferencesManager.getSyncIntervalMinutes().toString()) }
     var scheduledSyncs by remember { mutableStateOf(preferencesManager.getScheduledSyncs()) }
     var enabledDataTypes by remember { mutableStateOf(preferencesManager.getEnabledDataTypes()) }
-    var hrDownsampleMinutes by remember { mutableStateOf(preferencesManager.getHeartRateDownsampleMinutes()) }
-    var stepsResolutionMinutes by remember { mutableStateOf(preferencesManager.getStepsResolutionMinutes()) }
 
     var showDataTypesSheet by remember { mutableStateOf(false) }
     var showPermissionsSheet by remember { mutableStateOf(false) }
@@ -452,47 +452,6 @@ fun ConfigurationScreen(
                 }
             }
 
-            // ── Heart rate resolution ─────────────────────────────────────────
-            if (HealthDataType.HEART_RATE in enabledDataTypes) {
-                ResolutionCard(
-                    icon = iconForDataType(HealthDataType.HEART_RATE),
-                    title = stringResource(R.string.config_hr_resolution_title),
-                    description = stringResource(R.string.config_hr_resolution_desc),
-                    options = listOf(
-                        0 to stringResource(R.string.config_hr_resolution_full),
-                        1 to stringResource(R.string.config_hr_resolution_1m),
-                        5 to stringResource(R.string.config_hr_resolution_5m),
-                        15 to stringResource(R.string.config_hr_resolution_15m)
-                    ),
-                    selected = hrDownsampleMinutes,
-                    onSelect = {
-                        hrDownsampleMinutes = it
-                        preferencesManager.setHeartRateDownsampleMinutes(it)
-                    }
-                )
-            }
-
-            // ── Steps resolution ──────────────────────────────────────────────
-            if (HealthDataType.STEPS in enabledDataTypes) {
-                ResolutionCard(
-                    icon = iconForDataType(HealthDataType.STEPS),
-                    title = stringResource(R.string.config_steps_resolution_title),
-                    description = stringResource(R.string.config_steps_resolution_desc),
-                    options = listOf(
-                        -1 to stringResource(R.string.config_steps_resolution_daily),
-                        0 to stringResource(R.string.config_steps_resolution_full),
-                        1 to stringResource(R.string.config_steps_resolution_1m),
-                        5 to stringResource(R.string.config_steps_resolution_5m),
-                        15 to stringResource(R.string.config_steps_resolution_15m)
-                    ),
-                    selected = stepsResolutionMinutes,
-                    onSelect = {
-                        stepsResolutionMinutes = it
-                        preferencesManager.setStepsResolutionMinutes(it)
-                    }
-                )
-            }
-
             // ── Manual sync ───────────────────────────────────────────────────
             com.hcwebhook.app.components.ManualSyncCard(onSyncCompleted = {
                 lastSyncTime = preferencesManager.getLastSyncTime()
@@ -524,55 +483,85 @@ fun ConfigurationScreen(
     }
 }
 
+@Composable
+private fun resolutionChipOptions(family: DataResolutionFamily): List<Pair<Int, String>> {
+    val full = stringResource(R.string.config_hr_resolution_full)
+    val oneMin = stringResource(R.string.config_hr_resolution_1m)
+    val fiveMin = stringResource(R.string.config_hr_resolution_5m)
+    val fifteenMin = stringResource(R.string.config_hr_resolution_15m)
+    val daily = stringResource(R.string.config_steps_resolution_daily)
+    val sleepFull = stringResource(R.string.config_sleep_resolution_full)
+    val sleepSummary = stringResource(R.string.config_sleep_resolution_summary)
+    val intervalBuckets = listOf(
+        1 to oneMin,
+        5 to fiveMin,
+        15 to fifteenMin,
+    )
+    return when (family) {
+        DataResolutionFamily.INTERVAL_WITH_DAILY -> listOf(
+            RESOLUTION_DAILY to daily,
+            RESOLUTION_FULL to full,
+        ) + intervalBuckets
+        DataResolutionFamily.INTERVAL_RAW_DEFAULT -> listOf(
+            RESOLUTION_FULL to full,
+            RESOLUTION_DAILY to daily,
+        ) + intervalBuckets
+        DataResolutionFamily.SAMPLE_SERIES -> listOf(RESOLUTION_FULL to full) + intervalBuckets
+        DataResolutionFamily.SLEEP_SESSION -> listOf(
+            RESOLUTION_FULL to sleepFull,
+            SLEEP_SUMMARY to sleepSummary,
+        )
+    }
+}
+
 /**
- * A card that lets the user pick a data-granularity option for a health data
- * type, rendered as a row of selectable chips. Shared by the Heart Rate and
- * Steps resolution settings. [options] maps each stored value to its label;
- * [selected] is the currently stored value.
+ * Nested resolution picker shown under an enabled data type in the sheet.
+ * [options] maps each stored value to its label; [selected] is the current value.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ResolutionCard(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    description: String,
+private fun ResolutionChipRow(
+    subtitle: String,
     options: List<Pair<Int, String>>,
     selected: Int,
-    onSelect: (Int) -> Unit
+    onSelect: (Int) -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 32.dp, end = 4.dp, top = 2.dp, bottom = 10.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.config_resolution_label),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            options.forEach { (value, label) ->
+                FilterChip(
+                    selected = selected == value,
+                    onClick = { onSelect(value) },
+                    label = { Text(label, style = MaterialTheme.typography.labelSmall) },
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(title, style = MaterialTheme.typography.titleSmall)
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                options.forEach { (value, label) ->
-                    FilterChip(
-                        selected = selected == value,
-                        onClick = { onSelect(value) },
-                        label = { Text(label) }
-                    )
-                }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun DataTypesBottomSheet(
     enabledDataTypes: Set<HealthDataType>,
@@ -582,6 +571,9 @@ fun DataTypesBottomSheet(
     onToggleDataType: (HealthDataType, Boolean) -> Unit,
     onRequestPermissions: () -> Unit
 ) {
+    val context = LocalContext.current
+    val preferencesManager = remember { PreferencesManager(context) }
+    var resolutions by remember { mutableStateOf(preferencesManager.getDataTypeResolutions()) }
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -597,20 +589,71 @@ fun DataTypesBottomSheet(
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = stringResource(id = R.string.dt_hc_rationale), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(16.dp))
-            androidx.compose.foundation.lazy.LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 480.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            androidx.compose.foundation.lazy.LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 items(HealthDataType.entries) { dataType ->
                     val isPermissionGranted = HealthPermission.getReadPermission(dataType.recordClass) in grantedPermissionsSet
-                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).alpha(if (isPermissionGranted) 1f else 0.5f), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Row(modifier = Modifier.weight(1f).padding(end = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Icon(imageVector = iconForDataType(dataType), contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                            Column {
-                                Text(text = stringResource(id = dataType.nameResId), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-                                Text(text = stringResource(id = dataType.rationaleResId), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    val isEnabled = dataType in enabledDataTypes
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .alpha(if (isPermissionGranted) 1f else 0.5f),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Row(
+                                modifier = Modifier.weight(1f).padding(end = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Icon(
+                                    imageVector = iconForDataType(dataType),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                                Column {
+                                    Text(
+                                        text = stringResource(id = dataType.nameResId),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium,
+                                    )
+                                    Text(
+                                        text = stringResource(id = dataType.rationaleResId),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                            Switch(
+                                checked = isEnabled,
+                                onCheckedChange = { checked -> onToggleDataType(dataType, checked) },
+                            )
+                        }
+                        val resolutionFamily = dataType.resolutionFamily
+                        if (resolutionFamily != null) {
+                            AnimatedVisibility(
+                                visible = isEnabled,
+                                enter = expandVertically(),
+                                exit = shrinkVertically(),
+                            ) {
+                                ResolutionChipRow(
+                                    subtitle = stringResource(resolutionSubtitleResId(resolutionFamily)),
+                                    options = resolutionChipOptions(resolutionFamily),
+                                    selected = resolutions[dataType] ?: dataType.defaultResolutionMinutes,
+                                    onSelect = {
+                                        resolutions = resolutions + (dataType to it)
+                                        preferencesManager.setDataTypeResolution(dataType, it)
+                                    },
+                                )
                             }
                         }
-                        Switch(checked = dataType in enabledDataTypes, onCheckedChange = { checked -> onToggleDataType(dataType, checked) })
+                        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                     }
-                    HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                 }
             }
             if (missingPermissionsForEnabled.isNotEmpty()) {
