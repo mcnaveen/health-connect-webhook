@@ -16,5 +16,8 @@ data class SettingsExport(
     val scheduledSyncs: List<ScheduledSync> = emptyList(),
     val localTcpEnabled: Boolean = false,
     val localTcpPort: Int = 8787,
-    val notificationConfigs: List<NotificationConfig> = emptyList()
+    val notificationConfigs: List<NotificationConfig> = emptyList(),
+    val heartRateDownsampleMinutes: Int = 0,
+    val stepsResolutionMinutes: Int = -1,
+    val dataTypeResolutions: Map<String, Int> = emptyMap(),
 )

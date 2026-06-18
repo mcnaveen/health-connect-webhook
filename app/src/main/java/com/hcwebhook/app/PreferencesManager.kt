@@ -44,6 +44,9 @@ class PreferencesManager(context: Context) {
         private const val KEY_LOCAL_HTTP_AUTH_ENABLED = "local_http_auth_enabled"
         private const val KEY_LOCAL_HTTP_TOKEN = "local_http_token"
         private const val KEY_NOTIFICATION_CONFIGS = "notification_configs"
+        private const val KEY_HR_DOWNSAMPLE_MINUTES = "hr_downsample_minutes"
+        private const val KEY_STEPS_RESOLUTION_MINUTES = "steps_resolution_minutes"
+        private const val KEY_DATA_TYPE_RESOLUTIONS = "data_type_resolutions"
         private const val KEY_BATTERY_BANNER_DISMISSED = "battery_banner_dismissed"
     }
 
@@ -349,6 +352,90 @@ class PreferencesManager(context: Context) {
         prefs.edit().putString(KEY_NOTIFICATION_CONFIGS, configsJson).apply()
     }
 
+    /**
+     * Heart rate downsampling interval in minutes. 0 means full resolution
+     * (every raw sample is sent). A positive value groups samples into buckets
+     * of that size and sends one avg/min/max summary per bucket, shrinking the
+     * payload. Defaults to 0 to preserve the existing full-resolution behavior.
+     */
+    fun getHeartRateDownsampleMinutes(): Int =
+        getDataTypeResolution(HealthDataType.HEART_RATE)
+
+    fun setHeartRateDownsampleMinutes(minutes: Int) {
+        setDataTypeResolution(HealthDataType.HEART_RATE, minutes.coerceAtLeast(0))
+    }
+
+    /**
+     * Steps resolution in minutes: negative = daily cumulative total (default,
+     * the original behavior), 0 = full (every raw interval), positive = group raw
+     * intervals into buckets of that size and sum the counts. Controls how
+     * granular the step data sent to webhooks is.
+     */
+    fun getStepsResolutionMinutes(): Int =
+        getDataTypeResolution(HealthDataType.STEPS)
+
+    fun setStepsResolutionMinutes(minutes: Int) {
+        setDataTypeResolution(HealthDataType.STEPS, minutes)
+    }
+
+    fun getDataTypeResolution(type: HealthDataType): Int {
+        val stored = readResolutionMap()[type.name]
+        return stored ?: type.defaultResolutionMinutes
+    }
+
+    fun setDataTypeResolution(type: HealthDataType, minutes: Int) {
+        val map = readResolutionMap().toMutableMap()
+        map[type.name] = minutes
+        writeResolutionMap(map)
+        syncLegacyResolutionKeys(type, minutes)
+    }
+
+    fun getDataTypeResolutions(): Map<HealthDataType, Int> =
+        HealthDataType.entries
+            .filter { it.supportsResolution }
+            .associateWith { getDataTypeResolution(it) }
+
+    private fun readResolutionMap(): Map<String, Int> {
+        val json = prefs.getString(KEY_DATA_TYPE_RESOLUTIONS, null)
+        if (json != null) {
+            return try {
+                Json.decodeFromString<Map<String, Int>>(json)
+            } catch (_: Exception) {
+                emptyMap()
+            }
+        }
+        return buildMap {
+            if (prefs.contains(KEY_HR_DOWNSAMPLE_MINUTES)) {
+                put(HealthDataType.HEART_RATE.name, prefs.getInt(KEY_HR_DOWNSAMPLE_MINUTES, RESOLUTION_FULL))
+            }
+            if (prefs.contains(KEY_STEPS_RESOLUTION_MINUTES)) {
+                put(HealthDataType.STEPS.name, prefs.getInt(KEY_STEPS_RESOLUTION_MINUTES, RESOLUTION_DAILY))
+            }
+        }
+    }
+
+    private fun writeResolutionMap(map: Map<String, Int>) {
+        prefs.edit()
+            .putString(KEY_DATA_TYPE_RESOLUTIONS, Json.encodeToString(map))
+            .apply()
+    }
+
+    private fun syncLegacyResolutionKeys(type: HealthDataType, minutes: Int) {
+        when (type) {
+            HealthDataType.HEART_RATE ->
+                prefs.edit().putInt(KEY_HR_DOWNSAMPLE_MINUTES, minutes.coerceAtLeast(0)).apply()
+            HealthDataType.STEPS ->
+                prefs.edit().putInt(KEY_STEPS_RESOLUTION_MINUTES, minutes).apply()
+            else -> Unit
+        }
+    }
+
+    private fun applyResolutionMap(map: Map<String, Int>) {
+        writeResolutionMap(map)
+        map[HealthDataType.HEART_RATE.name]?.let { syncLegacyResolutionKeys(HealthDataType.HEART_RATE, it) }
+        map[HealthDataType.STEPS.name]?.let { syncLegacyResolutionKeys(HealthDataType.STEPS, it) }
+    }
+
     fun isBatteryBannerDismissed(): Boolean =
         prefs.getBoolean(KEY_BATTERY_BANNER_DISMISSED, false)
 
@@ -373,7 +460,10 @@ class PreferencesManager(context: Context) {
             scheduledSyncs = getScheduledSyncs(),
             localTcpEnabled = isLocalTcpEnabled(),
             localTcpPort = getLocalTcpPort(),
-            notificationConfigs = getNotificationConfigs()
+            notificationConfigs = getNotificationConfigs(),
+            heartRateDownsampleMinutes = getHeartRateDownsampleMinutes(),
+            stepsResolutionMinutes = getStepsResolutionMinutes(),
+            dataTypeResolutions = getDataTypeResolutions().mapKeys { it.key.name },
         )
     }
 
@@ -396,5 +486,11 @@ class PreferencesManager(context: Context) {
         setLocalTcpEnabled(export.localTcpEnabled)
         setLocalTcpPort(export.localTcpPort)
         setNotificationConfigs(export.notificationConfigs)
+        if (export.dataTypeResolutions.isNotEmpty()) {
+            applyResolutionMap(export.dataTypeResolutions)
+        } else {
+            setHeartRateDownsampleMinutes(export.heartRateDownsampleMinutes)
+            setStepsResolutionMinutes(export.stepsResolutionMinutes)
+        }
     }
 }
