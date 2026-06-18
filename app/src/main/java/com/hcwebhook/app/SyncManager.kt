@@ -44,8 +44,7 @@ class SyncManager(private val context: Context) {
                 timeRangeDays = timeRangeDays,
                 start = start,
                 end = end,
-                heartRateDownsampleMinutes = preferencesManager.getHeartRateDownsampleMinutes(),
-                stepsResolutionMinutes = preferencesManager.getStepsResolutionMinutes()
+                dataTypeResolutions = preferencesManager.getDataTypeResolutions(),
             )
             if (healthDataResult.isFailure) {
                 return@withContext Result.failure(
@@ -103,8 +102,7 @@ class SyncManager(private val context: Context) {
                 timeRangeDays = timeRangeDays,
                 start = start,
                 end = end,
-                heartRateDownsampleMinutes = preferencesManager.getHeartRateDownsampleMinutes(),
-                stepsResolutionMinutes = preferencesManager.getStepsResolutionMinutes()
+                dataTypeResolutions = preferencesManager.getDataTypeResolutions(),
             )
             if (healthDataResult.isFailure) {
                 return@withContext Result.failure(healthDataResult.exceptionOrNull() ?: Exception("Failed to read health data"))
@@ -480,9 +478,16 @@ class SyncManager(private val context: Context) {
 
             if (healthData.heartRateVariability.isNotEmpty()) {
                 putJsonArray("heart_rate_variability") {
-                    healthData.heartRateVariability.forEach { add(buildJsonObject {
-                        put("rmssd_millis", it.rmssdMillis)
-                        put("time", it.time.toString())
+                    healthData.heartRateVariability.forEach { hrv -> add(buildJsonObject {
+                        if (hrv.min != null) {
+                            put("time", hrv.time.toString())
+                            put("avg", hrv.rmssdMillis)
+                            put("min", hrv.min)
+                            put("max", hrv.max)
+                        } else {
+                            put("rmssd_millis", hrv.rmssdMillis)
+                            put("time", hrv.time.toString())
+                        }
                     }) }
                 }
             }
@@ -556,9 +561,16 @@ class SyncManager(private val context: Context) {
 
             if (healthData.oxygenSaturation.isNotEmpty()) {
                 putJsonArray("oxygen_saturation") {
-                    healthData.oxygenSaturation.forEach { add(buildJsonObject {
-                        put("percentage", it.percentage)
-                        put("time", it.time.toString())
+                    healthData.oxygenSaturation.forEach { o2 -> add(buildJsonObject {
+                        if (o2.min != null) {
+                            put("time", o2.time.toString())
+                            put("avg", o2.percentage)
+                            put("min", o2.min)
+                            put("max", o2.max)
+                        } else {
+                            put("percentage", o2.percentage)
+                            put("time", o2.time.toString())
+                        }
                     }) }
                 }
             }
@@ -574,20 +586,33 @@ class SyncManager(private val context: Context) {
 
             if (healthData.skinTemperature.isNotEmpty()) {
                 putJsonArray("skin_temperature") {
-                    healthData.skinTemperature.forEach { add(buildJsonObject {
-                        put("time", it.time.toString())
-                        put("delta_celsius", it.deltaCelsius)
-                        it.baselineCelsius?.let { baseline -> put("baseline_celsius", baseline) }
-                        put("measurement_location", it.measurementLocation)
+                    healthData.skinTemperature.forEach { skin -> add(buildJsonObject {
+                        put("time", skin.time.toString())
+                        if (skin.minDeltaCelsius != null) {
+                            put("avg_delta_celsius", skin.deltaCelsius)
+                            put("min_delta_celsius", skin.minDeltaCelsius)
+                            put("max_delta_celsius", skin.maxDeltaCelsius)
+                        } else {
+                            put("delta_celsius", skin.deltaCelsius)
+                        }
+                        skin.baselineCelsius?.let { baseline -> put("baseline_celsius", baseline) }
+                        put("measurement_location", skin.measurementLocation)
                     }) }
                 }
             }
 
             if (healthData.respiratoryRate.isNotEmpty()) {
                 putJsonArray("respiratory_rate") {
-                    healthData.respiratoryRate.forEach { add(buildJsonObject {
-                        put("rate", it.rate)
-                        put("time", it.time.toString())
+                    healthData.respiratoryRate.forEach { resp -> add(buildJsonObject {
+                        if (resp.min != null) {
+                            put("time", resp.time.toString())
+                            put("avg", resp.rate)
+                            put("min", resp.min)
+                            put("max", resp.max)
+                        } else {
+                            put("rate", resp.rate)
+                            put("time", resp.time.toString())
+                        }
                     }) }
                 }
             }

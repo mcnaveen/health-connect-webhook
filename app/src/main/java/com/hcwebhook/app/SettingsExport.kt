@@ -18,5 +18,6 @@ data class SettingsExport(
     val localTcpPort: Int = 8787,
     val notificationConfigs: List<NotificationConfig> = emptyList(),
     val heartRateDownsampleMinutes: Int = 0,
-    val stepsResolutionMinutes: Int = -1
+    val stepsResolutionMinutes: Int = -1,
+    val dataTypeResolutions: Map<String, Int> = emptyMap(),
 )
