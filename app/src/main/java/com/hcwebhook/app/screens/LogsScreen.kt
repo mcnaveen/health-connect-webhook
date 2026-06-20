@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterList
@@ -61,11 +62,17 @@ fun LogsScreen() {
 
     // ── Webhook logs ──────────────────────────────────────────────────────────
     var allLogs by remember { mutableStateOf(preferencesManager.getWebhookLogs()) }
+    val urlToName = remember {
+        preferencesManager.getWebhookConfigs()
+            .filter { it.name.isNotBlank() }
+            .associate { it.url to it.name }
+    }
     var showClearSheet by remember { mutableStateOf(false) }
     var showFilterSheet by remember { mutableStateOf(false) }
     var detailLog by remember { mutableStateOf<WebhookLog?>(null) }
 
     // filter state
+    var searchQuery by remember { mutableStateOf("") }
     var selectedUrl by remember { mutableStateOf<String?>(null) }
     var statusFilter by remember { mutableIntStateOf(0) } // 0=All 1=Success 2=Error
     var syncTypeFilter by remember { mutableIntStateOf(0) } // 0=All 1=Manual 2=Auto 3=Test 4=Notification
@@ -75,12 +82,21 @@ fun LogsScreen() {
 
     val isFiltered = selectedUrl != null || statusFilter != 0 || syncTypeFilter != 0
 
-    fun matchesFilter(log: WebhookLog) =
-        (selectedUrl == null || log.url == selectedUrl) &&
-        when (statusFilter) { 1 -> log.success; 2 -> !log.success; else -> true } &&
-        when (syncTypeFilter) { 1 -> log.syncType == "manual"; 2 -> log.syncType == "auto"; 3 -> log.syncType == "test"; 4 -> log.syncType == "notification"; else -> true }
+    fun matchesFilter(log: WebhookLog): Boolean {
+        val q = searchQuery.trim().lowercase()
+        if (q.isNotEmpty()) {
+            val nameMatch = urlToName[log.url]?.lowercase()?.contains(q) == true
+            val urlMatch = log.url.lowercase().contains(q)
+            val errorMatch = log.errorMessage?.lowercase()?.contains(q) == true
+            val typeMatch = log.dataType?.lowercase()?.contains(q) == true
+            if (!nameMatch && !urlMatch && !errorMatch && !typeMatch) return false
+        }
+        return (selectedUrl == null || log.url == selectedUrl) &&
+            when (statusFilter) { 1 -> log.success; 2 -> !log.success; else -> true } &&
+            when (syncTypeFilter) { 1 -> log.syncType == "manual"; 2 -> log.syncType == "auto"; 3 -> log.syncType == "test"; 4 -> log.syncType == "notification"; else -> true }
+    }
 
-    val filtered = remember(allLogs, selectedUrl, statusFilter, syncTypeFilter, displayLimit) {
+    val filtered = remember(allLogs, searchQuery, selectedUrl, statusFilter, syncTypeFilter, displayLimit) {
         allLogs.filter { matchesFilter(it) }.take(displayLimit)
     }
 
@@ -266,6 +282,28 @@ fun LogsScreen() {
                             FilterChip(
                                 selected = displayLimit == limit,
                                 onClick = { displayLimit = limit },
+                                label = { Text("$limit", style = MaterialTheme.typography.labelSmall) }
+                            )
+                        }
+                    }
+                }
+
+                // Retention
+                var maxLogs by remember { mutableIntStateOf(preferencesManager.getMaxLogs()) }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Keep (max stored)",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        PreferencesManager.MAX_LOG_OPTIONS.forEach { limit ->
+                            FilterChip(
+                                selected = maxLogs == limit,
+                                onClick = {
+                                    maxLogs = limit
+                                    preferencesManager.setMaxLogs(limit)
+                                },
                                 label = { Text("$limit", style = MaterialTheme.typography.labelSmall) }
                             )
                         }
@@ -520,6 +558,25 @@ fun LogsScreen() {
                 }
             }
 
+            if (allLogs.isNotEmpty()) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Search URL, error, data type…", style = MaterialTheme.typography.bodySmall) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 8.dp),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodySmall,
+                    trailingIcon = if (searchQuery.isNotEmpty()) {
+                        { IconButton(onClick = { searchQuery = "" }) {
+                            Icon(Icons.Filled.Close, contentDescription = "Clear search", modifier = Modifier.size(18.dp))
+                        } }
+                    } else null
+                )
+            }
+
             if (allLogs.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -531,13 +588,24 @@ fun LogsScreen() {
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                 }
+            } else if (filtered.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "No logs match.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                }
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
                 ) {
                     items(filtered, key = { it.id }) { log ->
-                        LogRow(log = log, onClick = { detailLog = log })
+                        LogRow(log = log, webhookName = urlToName[log.url], onClick = { detailLog = log })
                         HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
                     }
                     item { Spacer(modifier = Modifier.height(80.dp)) }
@@ -780,7 +848,7 @@ private fun FilterUrlRow(label: String, selected: Boolean, onClick: () -> Unit) 
 }
 
 @Composable
-private fun LogRow(log: WebhookLog, onClick: () -> Unit) {
+private fun LogRow(log: WebhookLog, webhookName: String? = null, onClick: () -> Unit) {
     val dotColor = if (log.success) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error
 
     Row(
@@ -798,12 +866,22 @@ private fun LogRow(log: WebhookLog, onClick: () -> Unit) {
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+            if (webhookName != null) {
+                Text(
+                    text = webhookName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
             Text(
                 text = log.url,
-                style = MaterialTheme.typography.bodyMedium,
+                style = if (webhookName != null) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface
+                color = if (webhookName != null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(2.dp))
             Row(

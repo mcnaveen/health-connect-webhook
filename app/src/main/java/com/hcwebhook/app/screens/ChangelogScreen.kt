@@ -7,12 +7,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.hcwebhook.app.BuildConfig
 import com.hcwebhook.app.R
 import com.hcwebhook.app.releases.GithubRelease
 import com.hcwebhook.app.releases.ReleaseArticle
@@ -33,9 +35,11 @@ fun ChangelogScreen(onBack: () -> Unit) {
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.changelog_title)) },
+                windowInsets = WindowInsets(0),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -77,12 +81,34 @@ fun ChangelogScreen(onBack: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 else -> {
+                    val currentVersion = BuildConfig.VERSION_NAME
                     releases.forEachIndexed { index, release ->
                         if (index > 0) {
                             HorizontalDivider(
                                 modifier = Modifier.padding(vertical = 20.dp),
                                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                             )
+                        }
+                        val isInstalled = release.tagName.removePrefix("v") == currentVersion ||
+                            release.tagName == currentVersion
+                        if (isInstalled) {
+                            Row(
+                                modifier = Modifier.padding(bottom = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Surface(
+                                    shape = MaterialTheme.shapes.extraSmall,
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                ) {
+                                    Text(
+                                        text = "Installed",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    )
+                                }
+                            }
                         }
                         ReleaseArticle(release = release)
                     }

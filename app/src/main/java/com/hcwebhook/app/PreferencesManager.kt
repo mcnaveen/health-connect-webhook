@@ -48,6 +48,9 @@ class PreferencesManager(context: Context) {
         private const val KEY_STEPS_RESOLUTION_MINUTES = "steps_resolution_minutes"
         private const val KEY_DATA_TYPE_RESOLUTIONS = "data_type_resolutions"
         private const val KEY_BATTERY_BANNER_DISMISSED = "battery_banner_dismissed"
+        private const val KEY_MAX_LOGS = "max_logs"
+        val MAX_LOG_OPTIONS = listOf(50, 100, 500)
+        private const val DEFAULT_MAX_LOGS = 100
     }
 
 
@@ -156,13 +159,20 @@ class PreferencesManager(context: Context) {
         }
     }
 
+    fun getMaxLogs(): Int = prefs.getInt(KEY_MAX_LOGS, DEFAULT_MAX_LOGS)
+
+    fun setMaxLogs(max: Int) {
+        prefs.edit().putInt(KEY_MAX_LOGS, max).apply()
+        val current = getWebhookLogs()
+        if (current.size > max) {
+            prefs.edit().putString(KEY_WEBHOOK_LOGS, Json.encodeToString(current.take(max))).apply()
+        }
+    }
+
     fun addWebhookLog(log: WebhookLog) {
         val currentLogs = getWebhookLogs().toMutableList()
-        currentLogs.add(0, log) // Add to beginning
-
-        // Keep only the most recent MAX_LOGS entries
-        val trimmedLogs = currentLogs.take(MAX_LOGS)
-
+        currentLogs.add(0, log)
+        val trimmedLogs = currentLogs.take(getMaxLogs())
         val logsJson = Json.encodeToString(trimmedLogs)
         prefs.edit().putString(KEY_WEBHOOK_LOGS, logsJson).apply()
     }

@@ -114,6 +114,20 @@ fun ConfigurationScreen(
     var lastSyncSummary by remember { mutableStateOf(preferencesManager.getLastSyncSummary()) }
     var lastSyncRelativeTime by remember { mutableStateOf("") }
     val isLocalHttpEnabled = preferencesManager.isLocalTcpEnabled()
+
+    val reliabilityStat = remember {
+        val cutoff = System.currentTimeMillis() - 24 * 60 * 60 * 1000L
+        val logs = preferencesManager.getWebhookLogs()
+            .filter { it.timestamp >= cutoff && it.syncType != "test" }
+        if (logs.isEmpty()) null
+        else "${logs.count { it.success }}/${logs.size}"
+    }
+    val reliabilityAllOk = remember {
+        val cutoff = System.currentTimeMillis() - 24 * 60 * 60 * 1000L
+        preferencesManager.getWebhookLogs()
+            .filter { it.timestamp >= cutoff && it.syncType != "test" }
+            .all { it.success }
+    }
     val localHttpPort = preferencesManager.getLocalTcpPort()
 
     LaunchedEffect(lastSyncTime) {
@@ -196,7 +210,7 @@ fun ConfigurationScreen(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "Health Connect",
+                        "Health Connect Webhook",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                     )
@@ -205,6 +219,13 @@ fun ConfigurationScreen(
                             text = "Last sync $lastSyncRelativeTime",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (reliabilityStat != null) {
+                        Text(
+                            text = "24h: $reliabilityStat ok",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (reliabilityAllOk) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error,
                         )
                     }
                 }
@@ -428,6 +449,30 @@ fun ConfigurationScreen(
                 }
             }
 
+            // ── Battery optimization hint (after banner dismissed) ─────────────
+            if (isBatteryOptimized && batteryBannerDismissed) {
+                TextButton(
+                    onClick = {
+                        batteryBannerDismissed = false
+                        preferencesManager.setBatteryBannerDismissed(false)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        Icons.Filled.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        stringResource(R.string.battery_banner_title),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
             // ── Permission status ─────────────────────────────────────────────
             when {
                 hasPermissions == null -> {
@@ -639,7 +684,7 @@ fun ConfigurationScreen(
                         }
                     }
                 }
-            } else if (hasPermissions == true) {
+            } else if (hasPermissions == true && !isBackgroundGranted) {
                 OutlinedCard(
                     modifier = Modifier.fillMaxWidth(),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)

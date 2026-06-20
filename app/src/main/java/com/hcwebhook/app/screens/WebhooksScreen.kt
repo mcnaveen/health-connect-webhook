@@ -60,6 +60,7 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
         val config = webhookConfigs[sheetIndex]
         val capturedIndex = sheetIndex
 
+        var editName by remember(capturedIndex) { mutableStateOf(config.name) }
         var editUrl by remember(capturedIndex) { mutableStateOf(config.url) }
         var currentHeaders by remember(capturedIndex) { mutableStateOf(config.headers) }
         var manageHeaders by remember(capturedIndex) { mutableStateOf(config.headers.isNotEmpty()) }
@@ -90,8 +91,9 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
             if (orphanedIds.isNotEmpty()) showUnlinkConfirm = true
         }
 
-        val hasUnsavedChanges by remember(editUrl, currentHeaders, filterAll, selectedTypes, selectedNotificationIds) {
+        val hasUnsavedChanges by remember(editName, editUrl, currentHeaders, filterAll, selectedTypes, selectedNotificationIds) {
             derivedStateOf {
+                editName.trim() != config.name ||
                 editUrl.trim() != config.url ||
                 currentHeaders != config.headers ||
                 filterAll != (config.dataTypeFilter == null) ||
@@ -153,7 +155,16 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                     )
                 }
 
-                // ── URL edit ─────────────────────────────────────────────────
+                // ── Name / URL edit ───────────────────────────────────────────
+                OutlinedTextField(
+                    value = editName,
+                    onValueChange = { editName = it },
+                    label = { Text("Label (optional)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyMedium,
+                    placeholder = { Text("e.g. Home Assistant", style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))) }
+                )
                 OutlinedTextField(
                     value = editUrl,
                     onValueChange = { editUrl = it },
@@ -548,6 +559,7 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                             val newFilter = if (filterAll) null else selectedTypes.ifEmpty { null }
                             val list = webhookConfigs.toMutableList()
                             list[capturedIndex] = webhookConfigs[capturedIndex].copy(
+                                name = editName.trim(),
                                 url = trimmedUrl,
                                 headers = currentHeaders,
                                 dataTypeFilter = newFilter,
@@ -560,6 +572,22 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                     ) {
                         Text(stringResource(R.string.action_save))
                     }
+                }
+
+                // ── Duplicate ─────────────────────────────────────────────────
+                TextButton(
+                    onClick = {
+                        val duplicate = config.copy(
+                            url = config.url,
+                            name = if (config.name.isNotBlank()) "${config.name} (copy)" else "",
+                            isEnabled = false
+                        )
+                        webhookConfigs = webhookConfigs + duplicate
+                        sheetIndex = -1
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Duplicate webhook", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
 
                 // ── Delete ────────────────────────────────────────────────────
@@ -647,15 +675,26 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                                    val baseAlpha = if (config.isEnabled) 1f else 0.4f
+                                    if (config.name.isNotBlank()) {
+                                        Text(
+                                            text = config.name,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = baseAlpha)
+                                        )
+                                    }
                                     Text(
                                         text = config.url,
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        style = if (config.name.isNotBlank()) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
-                                        color = if (config.isEnabled)
-                                            MaterialTheme.colorScheme.onSurface
+                                        color = if (config.name.isNotBlank())
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = baseAlpha)
                                         else
-                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                            MaterialTheme.colorScheme.onSurface.copy(alpha = baseAlpha)
                                     )
                                     val meta = buildList {
                                         val h = config.getHeaderCount()

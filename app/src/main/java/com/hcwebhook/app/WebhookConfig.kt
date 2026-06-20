@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class WebhookConfig(
     val url: String,
+    val name: String = "",
     val headers: Map<String, String> = emptyMap(),
     val isEnabled: Boolean = true,
     // null = send all globally-enabled data types; non-null = send only these types
