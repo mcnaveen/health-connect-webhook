@@ -43,6 +43,7 @@ class PreferencesManager(context: Context) {
         private const val DEFAULT_LOCAL_TCP_PORT = 8787
         private const val KEY_LOCAL_HTTP_AUTH_ENABLED = "local_http_auth_enabled"
         private const val KEY_LOCAL_HTTP_TOKEN = "local_http_token"
+        private const val KEY_WRITE_TOKEN = "write_token"
         private const val KEY_NOTIFICATION_CONFIGS = "notification_configs"
         private const val KEY_HR_DOWNSAMPLE_MINUTES = "hr_downsample_minutes"
         private const val KEY_STEPS_RESOLUTION_MINUTES = "steps_resolution_minutes"
@@ -342,6 +343,21 @@ class PreferencesManager(context: Context) {
     fun regenerateLocalHttpToken(): String {
         val token = java.util.UUID.randomUUID().toString()
         prefs.edit().putString(KEY_LOCAL_HTTP_TOKEN, token).apply()
+        return token
+    }
+
+    /** Token required on POST /write. A random default is generated on first read. */
+    fun getWriteToken(): String {
+        val existing = prefs.getString(KEY_WRITE_TOKEN, null)
+        if (!existing.isNullOrBlank()) return existing
+        val generated = java.util.UUID.randomUUID().toString()
+        prefs.edit().putString(KEY_WRITE_TOKEN, generated).apply()
+        return generated
+    }
+
+    fun regenerateWriteToken(): String {
+        val token = java.util.UUID.randomUUID().toString()
+        prefs.edit().putString(KEY_WRITE_TOKEN, token).apply()
         return token
     }
 
