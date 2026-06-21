@@ -10,6 +10,9 @@ import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import androidx.health.connect.client.units.Energy
+import androidx.health.connect.client.units.Mass
+import androidx.health.connect.client.units.Volume
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -1802,6 +1805,148 @@ class HealthConnectManager(private val context: Context) {
         return contract.createIntent(context, permissions.toTypedArray())
     }
 
+    // ── Write-back inserts ───────────────────────────────────────────────────
+    // Only nutrition, hydration and weight are supported (see WriteBackManager).
+
+    suspend fun insertNutrition(
+        calories: Double?,
+        protein: Double?,
+        carbs: Double?,
+        fat: Double?,
+        startTime: Instant,
+        endTime: Instant,
+        name: String? = null,
+        mealType: Int = MealType.MEAL_TYPE_UNKNOWN,
+        saturatedFat: Double? = null,
+        monounsaturatedFat: Double? = null,
+        polyunsaturatedFat: Double? = null,
+        transFat: Double? = null,
+        dietaryFiber: Double? = null,
+        sugar: Double? = null,
+        cholesterol: Double? = null,
+        caffeine: Double? = null,
+        vitaminA: Double? = null,
+        vitaminB6: Double? = null,
+        vitaminB12: Double? = null,
+        vitaminC: Double? = null,
+        vitaminD: Double? = null,
+        vitaminE: Double? = null,
+        vitaminK: Double? = null,
+        biotin: Double? = null,
+        folate: Double? = null,
+        folicAcid: Double? = null,
+        niacin: Double? = null,
+        pantothenicAcid: Double? = null,
+        riboflavin: Double? = null,
+        thiamin: Double? = null,
+        calcium: Double? = null,
+        iron: Double? = null,
+        magnesium: Double? = null,
+        zinc: Double? = null,
+        potassium: Double? = null,
+        sodium: Double? = null,
+        phosphorus: Double? = null,
+        manganese: Double? = null,
+        copper: Double? = null,
+        selenium: Double? = null,
+        chromium: Double? = null,
+        iodine: Double? = null,
+        molybdenum: Double? = null,
+        chloride: Double? = null
+    ): Result<Unit> {
+        return try {
+            val record = NutritionRecord(
+                startTime = startTime,
+                startZoneOffset = ZoneId.systemDefault().rules.getOffset(startTime),
+                endTime = endTime,
+                endZoneOffset = ZoneId.systemDefault().rules.getOffset(endTime),
+                name = name,
+                mealType = mealType,
+                energy = calories?.let { Energy.kilocalories(it) },
+                protein = protein?.let { Mass.grams(it) },
+                totalCarbohydrate = carbs?.let { Mass.grams(it) },
+                totalFat = fat?.let { Mass.grams(it) },
+                saturatedFat = saturatedFat?.let { Mass.grams(it) },
+                monounsaturatedFat = monounsaturatedFat?.let { Mass.grams(it) },
+                polyunsaturatedFat = polyunsaturatedFat?.let { Mass.grams(it) },
+                transFat = transFat?.let { Mass.grams(it) },
+                dietaryFiber = dietaryFiber?.let { Mass.grams(it) },
+                sugar = sugar?.let { Mass.grams(it) },
+                cholesterol = cholesterol?.let { Mass.milligrams(it) },
+                caffeine = caffeine?.let { Mass.milligrams(it) },
+                vitaminA = vitaminA?.let { Mass.micrograms(it) },
+                vitaminB6 = vitaminB6?.let { Mass.milligrams(it) },
+                vitaminB12 = vitaminB12?.let { Mass.micrograms(it) },
+                vitaminC = vitaminC?.let { Mass.milligrams(it) },
+                vitaminD = vitaminD?.let { Mass.micrograms(it) },
+                vitaminE = vitaminE?.let { Mass.milligrams(it) },
+                vitaminK = vitaminK?.let { Mass.micrograms(it) },
+                biotin = biotin?.let { Mass.micrograms(it) },
+                folate = folate?.let { Mass.micrograms(it) },
+                folicAcid = folicAcid?.let { Mass.micrograms(it) },
+                niacin = niacin?.let { Mass.milligrams(it) },
+                pantothenicAcid = pantothenicAcid?.let { Mass.milligrams(it) },
+                riboflavin = riboflavin?.let { Mass.milligrams(it) },
+                thiamin = thiamin?.let { Mass.milligrams(it) },
+                calcium = calcium?.let { Mass.milligrams(it) },
+                iron = iron?.let { Mass.milligrams(it) },
+                magnesium = magnesium?.let { Mass.milligrams(it) },
+                zinc = zinc?.let { Mass.milligrams(it) },
+                potassium = potassium?.let { Mass.milligrams(it) },
+                sodium = sodium?.let { Mass.milligrams(it) },
+                phosphorus = phosphorus?.let { Mass.milligrams(it) },
+                manganese = manganese?.let { Mass.milligrams(it) },
+                copper = copper?.let { Mass.milligrams(it) },
+                selenium = selenium?.let { Mass.micrograms(it) },
+                chromium = chromium?.let { Mass.micrograms(it) },
+                iodine = iodine?.let { Mass.micrograms(it) },
+                molybdenum = molybdenum?.let { Mass.micrograms(it) },
+                chloride = chloride?.let { Mass.milligrams(it) }
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertHydration(
+        liters: Double,
+        startTime: Instant,
+        endTime: Instant
+    ): Result<Unit> {
+        return try {
+            val record = HydrationRecord(
+                startTime = startTime,
+                startZoneOffset = ZoneId.systemDefault().rules.getOffset(startTime),
+                endTime = endTime,
+                endZoneOffset = ZoneId.systemDefault().rules.getOffset(endTime),
+                volume = Volume.liters(liters)
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun insertWeight(
+        kilograms: Double,
+        time: Instant
+    ): Result<Unit> {
+        return try {
+            val record = WeightRecord(
+                time = time,
+                zoneOffset = ZoneId.systemDefault().rules.getOffset(time),
+                weight = Mass.kilograms(kilograms)
+            )
+            healthConnectClient.insertRecords(listOf(record))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     companion object {
         private const val LOOKBACK_HOURS = 48L
 
@@ -1875,6 +2020,13 @@ class HealthConnectManager(private val context: Context) {
             HealthPermission.getReadPermission(Vo2MaxRecord::class),
             HealthPermission.getReadPermission(BoneMassRecord::class),
             "android.permission.health.READ_HEALTH_DATA_HISTORY"
+        )
+
+        /** Write grants for the only record types write-back supports. */
+        val WRITE_PERMISSIONS = setOf(
+            HealthPermission.getWritePermission(NutritionRecord::class),
+            HealthPermission.getWritePermission(HydrationRecord::class),
+            HealthPermission.getWritePermission(WeightRecord::class),
         )
     }
 }
