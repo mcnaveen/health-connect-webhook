@@ -152,12 +152,19 @@ object LocalHttpServerManager {
                 logPath = rawPath.substringBefore("?")
 
                 var authorizationHeader: String? = null
+                var writeToken: String? = null
+                var contentLength = 0
                 while (true) {
                     val headerLine = reader.readLine() ?: break
                     if (headerLine.isBlank()) break
                     val lower = headerLine.lowercase()
-                    if (lower.startsWith("authorization:")) {
-                        authorizationHeader = headerLine.substringAfter(":").trim()
+                    when {
+                        lower.startsWith("authorization:") ->
+                            authorizationHeader = headerLine.substringAfter(":").trim()
+                        lower.startsWith("x-write-token:") ->
+                            writeToken = headerLine.substringAfter(":").trim()
+                        lower.startsWith("content-length:") ->
+                            contentLength = headerLine.substringAfter(":").trim().toIntOrNull() ?: 0
                     }
                 }
 
@@ -241,9 +248,18 @@ object LocalHttpServerManager {
                         logStatus = handleSyncRequest(writer, context, days)
                     }
 
+                    method == "POST" && path == "/write" -> {
+                        val context = appContext ?: run {
+                            reply(500, """{"status":"error","message":"Server context unavailable"}""")
+                            return
+                        }
+                        val body = readBody(reader, contentLength)
+                        logStatus = handleWriteRequest(writer, context, writeToken, body)
+                    }
+
                     else -> reply(
                         404,
-                        """{"status":"error","message":"Unknown endpoint. Available: GET /, /ping, /latest, /logs, /stats, /health, /server-logs; POST /sync"}"""
+                        """{"status":"error","message":"Unknown endpoint. Available: GET /, /ping, /latest, /logs, /stats, /health, /server-logs; POST /sync, /write"}"""
                     )
                 }
             } catch (_: Exception) {
@@ -263,6 +279,64 @@ object LocalHttpServerManager {
                     )
                 }
             }
+        }
+    }
+
+    private fun readBody(reader: BufferedReader, contentLength: Int): String {
+        if (contentLength <= 0) return ""
+        val buffer = CharArray(contentLength)
+        var read = 0
+        while (read < contentLength) {
+            val n = reader.read(buffer, read, contentLength - read)
+            if (n == -1) break
+            read += n
+        }
+        return String(buffer, 0, read)
+    }
+
+    // Direct receive: writes a posted record straight into Health Connect.
+    private suspend fun handleWriteRequest(
+        writer: BufferedWriter,
+        context: Context,
+        writeToken: String?,
+        body: String
+    ): Int {
+        val expected = PreferencesManager(context).getWriteToken()
+        if (writeToken.isNullOrBlank() || writeToken != expected) {
+            writeHttpResponse(writer, 401, """{"status":"error","message":"Invalid or missing X-Write-Token"}""")
+            return 401
+        }
+
+        val type: String
+        val data: org.json.JSONObject
+        try {
+            val root = org.json.JSONObject(body)
+            type = root.getString("type")
+            data = root.getJSONObject("data")
+        } catch (e: Exception) {
+            writeHttpResponse(writer, 400, """{"status":"error","message":"Bad request: ${(e.message ?: "invalid body").escapeJson()}"}""")
+            return 400
+        }
+
+        val result = try {
+            WriteBackManager(context).write(type, data)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+
+        return if (result.isSuccess) {
+            writeHttpResponse(writer, 200, """{"status":"ok","written":"${type.escapeJson()}"}""")
+            200
+        } else {
+            val msg = result.exceptionOrNull()?.message ?: "Write failed"
+            // Bad field/parse problems are the caller's fault (400); anything else is a server/HC failure (500).
+            val isClientError = result.exceptionOrNull().let {
+                it is IllegalArgumentException || it is org.json.JSONException ||
+                    it is java.time.format.DateTimeParseException
+            }
+            val code = if (isClientError) 400 else 500
+            writeHttpResponse(writer, code, """{"status":"error","message":"${msg.escapeJson()}"}""")
+            code
         }
     }
 
