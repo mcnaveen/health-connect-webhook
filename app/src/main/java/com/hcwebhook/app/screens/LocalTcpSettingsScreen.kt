@@ -133,6 +133,7 @@ fun LocalHttpSettingsScreen(onBack: () -> Unit) {
     var savedPort by remember { mutableStateOf(preferencesManager.getLocalTcpPort()) }
     var authEnabled by remember { mutableStateOf(preferencesManager.isLocalHttpAuthEnabled()) }
     var authToken by remember { mutableStateOf(preferencesManager.getLocalHttpToken()) }
+    val writeToken = remember { preferencesManager.getWriteToken() }
     val deviceIp = remember { getLocalIpAddress(context) }
     BackHandler(onBack = onBack)
 
@@ -288,6 +289,7 @@ fun LocalHttpSettingsScreen(onBack: () -> Unit) {
                     Endpoint("GET",  "/health",       "Server uptime & last sync info"),
                     Endpoint("GET",  "/server-logs",  "HTTP access log · ?limit · ?method · ?path · ?since"),
                     Endpoint("POST", "/sync",         "Trigger sync · ?days=N"),
+                    Endpoint("POST", "/write",        "Write a record to Health Connect · header X-Write-Token"),
                 )
                 Card {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -301,11 +303,13 @@ fun LocalHttpSettingsScreen(onBack: () -> Unit) {
                         Spacer(modifier = Modifier.height(8.dp))
                         endpoints.forEach { endpoint ->
                             val baseUrl = "http://$deviceIp:$savedPort"
-                            val copyText = if (endpoint.method == "POST") {
-                                val authFlag = if (authEnabled) " -H \"Authorization: Bearer $authToken\"" else ""
-                                "curl -X POST$authFlag $baseUrl${endpoint.path}"
-                            } else {
-                                "$baseUrl${endpoint.path}"
+                            val authFlag = if (authEnabled) " -H \"Authorization: Bearer $authToken\"" else ""
+                            val copyText = when {
+                                endpoint.path == "/write" ->
+                                    "curl -X POST$authFlag -H \"X-Write-Token: $writeToken\" -H \"Content-Type: application/json\" " +
+                                        "-d '{\"type\":\"weight\",\"data\":{\"kilograms\":75.0,\"time\":\"2024-01-01T08:00:00Z\"}}' $baseUrl/write"
+                                endpoint.method == "POST" -> "curl -X POST$authFlag $baseUrl${endpoint.path}"
+                                else -> "$baseUrl${endpoint.path}"
                             }
                             Row(
                                 modifier = Modifier
@@ -407,6 +411,43 @@ fun LocalHttpSettingsScreen(onBack: () -> Unit) {
                                 }
                             ) {
                                 Text("Regenerate token", style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                    }
+                }
+
+                Card {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(text = "Write token", style = MaterialTheme.typography.titleSmall)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Required on POST /write. Pass as header: X-Write-Token: <token>",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = writeToken,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(
+                                onClick = {
+                                    clipboard.setText(AnnotatedString(writeToken))
+                                    Toast.makeText(context, "Write token copied", Toast.LENGTH_SHORT).show()
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Filled.ContentCopy,
+                                    contentDescription = "Copy write token",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                     }

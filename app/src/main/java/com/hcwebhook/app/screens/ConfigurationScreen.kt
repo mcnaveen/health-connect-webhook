@@ -158,6 +158,8 @@ fun ConfigurationScreen(
         if (baseMissing.isNotEmpty() && "android.permission.health.READ_HEALTH_DATA_HISTORY" !in grantedPermissionsSet) {
             baseMissing.add("android.permission.health.READ_HEALTH_DATA_HISTORY")
         }
+        // Write-back grants ride along with the normal permission request.
+        baseMissing.addAll(HealthConnectManager.WRITE_PERMISSIONS.filter { it !in grantedPermissionsSet })
         baseMissing.toSet()
     }
     val isBackgroundGranted = HealthConnectManager.BACKGROUND_PERMISSION_STR in grantedPermissionsSet
