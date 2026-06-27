@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Health Connect Webhook**
-_Last updated: April 3, 2026_
+_Last updated: June 27, 2026_
 
 ## Overview
 
@@ -9,25 +9,46 @@ Health Connect Webhook is an open-source Android application that reads health d
 
 ## Data We Access
 
-With your explicit permission, the app may read the following health data types from Android Health Connect:
+With your explicit permission, the app may read the following health data types from Android Health Connect. The app supports **24 data types**; you choose which to enable in **Settings → Data Types**. Health Connect permissions are requested **only** for types you turn on. The app only reads data for types you have explicitly enabled and granted permission for.
 
-- Steps
-- Sleep sessions
-- Heart rate & heart rate variability (HRV)
+**Activity & fitness**
+
+- Steps (including step cadence where available)
 - Distance
-- Active calories burned & total calories burned
-- Weight & height
+- Active calories burned
+- Total calories burned
+- Exercise sessions
+- VO₂ max
+
+**Heart & vitals**
+
+- Heart rate
+- Resting heart rate
+- Heart rate variability (HRV / RMSSD)
 - Blood pressure
 - Blood glucose
 - Oxygen saturation (SpO₂)
 - Body temperature
+- Skin temperature
 - Respiratory rate
-- Resting heart rate
-- Exercise sessions
-- Hydration
-- Nutrition
 
-You choose which data types to enable. The app only reads data for the types you have explicitly granted permission for.
+**Sleep**
+
+- Sleep sessions (duration and stage breakdown)
+
+**Body composition**
+
+- Weight
+- Height
+- Body fat percentage
+- Lean body mass
+- Bone mass
+- Basal metabolic rate (BMR)
+
+**Nutrition & hydration**
+
+- Nutrition (calories, macronutrients, and related fields where provided by Health Connect)
+- Hydration (water intake)
 
 ## How Your Data Is Used
 
@@ -61,9 +82,11 @@ For privacy questions or to request clarification (not applicable for on-device 
 
 ## Permissions
 
-The app requests the following permissions:
+The app declares Health Connect read permissions in its manifest for every data type it supports, as required by Android. At runtime, it requests **only** the permissions that correspond to data types you have enabled.
 
-- **Health Connect read permissions** — to access the health data types you enable.
+- **Health Connect read permissions** — one per data type listed above; requested only when you enable that type.
+- **Health Connect background read** — optional; allows scheduled background sync without opening the app.
+- **Health Connect history read** — optional; allows manual sync over past date ranges you choose.
 - **Internet** — to send data to your configured webhook URLs.
 - **Receive boot completed** — to reschedule sync alarms after device restart.
 - **Schedule exact alarms** — to run syncs at your configured times.
