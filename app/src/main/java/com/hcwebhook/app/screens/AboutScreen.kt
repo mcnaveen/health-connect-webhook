@@ -9,7 +9,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Security
@@ -30,10 +29,15 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.automirrored.filled.Notes
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.ChevronRight
 import com.hcwebhook.app.ui.theme.IconBackgroundBlue
 import com.hcwebhook.app.ui.theme.IconBackgroundGreen
+import com.hcwebhook.app.ui.theme.IconBackgroundPurple
 import com.hcwebhook.app.ui.theme.IconTintBlue
 import com.hcwebhook.app.ui.theme.IconTintGreen
+import com.hcwebhook.app.ui.theme.IconTintPurple
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,7 +49,10 @@ fun AboutScreen(
     onOpenChangelog: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showFeedbackSheet by remember { mutableStateOf(false) }
+    val feedbackSuccessMessage = stringResource(R.string.feedback_success)
 
     // ── Version info ──────────────────────────────────────────────────────────
     val versionName = try {
@@ -121,6 +128,57 @@ fun AboutScreen(
                         text = stringResource(R.string.about_app_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showFeedbackSheet = true },
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(IconBackgroundPurple),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Chat,
+                            contentDescription = null,
+                            tint = IconTintPurple,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.about_link_feedback),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.about_feedback_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.Filled.ChevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -227,16 +285,6 @@ fun AboutScreen(
                     }
 
                     LinkRow(
-                        label = "Provide Feedback",
-                        icon = Icons.AutoMirrored.Filled.OpenInNew,
-                        onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://hc-webhook.feedbackjar.com/"))
-                            context.startActivity(intent)
-                        }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                    LinkRow(
                         label = stringResource(R.string.about_link_changelog),
                         subtitle = stringResource(R.string.about_link_changelog_desc),
                         icon = Icons.AutoMirrored.Filled.Notes,
@@ -259,6 +307,16 @@ fun AboutScreen(
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
+        )
+
+        FeedbackSheet(
+            visible = showFeedbackSheet,
+            onDismiss = { showFeedbackSheet = false },
+            onSubmitted = {
+                scope.launch {
+                    snackbarHostState.showSnackbar(feedbackSuccessMessage)
+                }
+            },
         )
     }
 }

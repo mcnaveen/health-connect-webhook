@@ -224,6 +224,17 @@
     <string name="about_links_title">リンク</string>
     <string name="about_link_github">GitHub リポジトリ</string>
     <string name="about_link_feedback">フィードバックを提供する</string>
+    <string name="about_feedback_desc">バグ報告、機能リクエスト、提案の共有</string>
+    <string name="feedback_title">フィードバック</string>
+    <string name="feedback_submit_title">ご意見をお聞かせください</string>
+    <string name="feedback_hint">バグ報告、機能アイデア、一般的なフィードバック…</string>
+    <string name="feedback_submit">送信</string>
+    <string name="feedback_submitting">送信中…</string>
+    <string name="feedback_success">ありがとうございます！フィードバックを送信しました。</string>
+    <string name="feedback_error">フィードバックを送信できませんでした。もう一度お試しください。</string>
+    <string name="feedback_rate_limited">送信回数が多すぎます。数分お待ちください。</string>
+    <string name="feedback_history_title">送信履歴</string>
+    <string name="feedback_view_all">すべての機能リクエストを見る</string>
     <string name="about_link_intro">概要を見る</string>
     <string name="about_link_changelog">新機能</string>
     <string name="about_link_changelog_desc">リリース履歴とアップデート</string>

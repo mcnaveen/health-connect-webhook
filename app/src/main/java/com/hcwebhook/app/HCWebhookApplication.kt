@@ -1,6 +1,7 @@
 package com.hcwebhook.app
 
 import android.app.Application
+import com.feedbackjar.sdk.FeedbackJar
 import androidx.work.BackoffPolicy
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -13,6 +14,7 @@ class HCWebhookApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        FeedbackJar.init(this, FEEDBACKJAR_WIDGET_ID)
         preferencesManager = PreferencesManager(this)
 
         // Schedule syncs based on the selected sync mode
@@ -73,5 +75,6 @@ class HCWebhookApplication : Application() {
 
     companion object {
         private const val SYNC_WORK_NAME = "health_data_sync"
+        const val FEEDBACKJAR_WIDGET_ID = "cmk94cys90006cwfp1b67iip5"
     }
 }

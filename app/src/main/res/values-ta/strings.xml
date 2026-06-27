@@ -224,6 +224,17 @@
     <string name="about_links_title">இணைப்புகள்</string>
     <string name="about_link_github">கிட்ஹப் களஞ்சியம்</string>
     <string name="about_link_feedback">கருத்துக்களை வழங்கவும்</string>
+    <string name="about_feedback_desc">பிழை அறிக்கைகள், அம்சக் கோரிக்கைகள் அல்லது பரிந்துரைகளைப் பகிரவும்</string>
+    <string name="feedback_title">கருத்து</string>
+    <string name="feedback_submit_title">உங்கள் எண்ணங்களைப் பகிரவும்</string>
+    <string name="feedback_hint">பிழை அறிக்கைகள், அம்ச யோசனைகள் அல்லது பொதுவான கருத்து…</string>
+    <string name="feedback_submit">சமர்ப்பிக்கவும்</string>
+    <string name="feedback_submitting">சமர்ப்பிக்கப்படுகிறது…</string>
+    <string name="feedback_success">நன்றி! உங்கள் கருத்து சமர்ப்பிக்கப்பட்டது.</string>
+    <string name="feedback_error">கருத்தைச் சமர்ப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.</string>
+    <string name="feedback_rate_limited">அதிகமான சமர்ப்பிப்புகள். சில நிமிடங்கள் காத்திருக்கவும்.</string>
+    <string name="feedback_history_title">உங்கள் சமர்ப்பிப்புகள்</string>
+    <string name="feedback_view_all">அனைத்து அம்சக் கோரிக்கைகளையும் பார்க்கவும்</string>
     <string name="about_link_intro">அறிமுகத்தைப் பார்க்கவும்</string>
     <string name="about_link_changelog">புதியவை</string>
     <string name="about_link_changelog_desc">வெளியீட்டு வரலாறு மற்றும் புதுப்பிப்புகள்</string>

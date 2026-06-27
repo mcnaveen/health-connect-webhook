@@ -224,6 +224,17 @@
     <string name="about_links_title">Campo de golf</string>
     <string name="about_link_github">Repositorio GitHub</string>
     <string name="about_link_feedback">Proporcionar comentarios</string>
+    <string name="about_feedback_desc">Informar errores, solicitar funciones o compartir sugerencias</string>
+    <string name="feedback_title">Comentarios</string>
+    <string name="feedback_submit_title">Comparte tus ideas</string>
+    <string name="feedback_hint">Informes de errores, ideas de funciones o comentarios generales…</string>
+    <string name="feedback_submit">Enviar</string>
+    <string name="feedback_submitting">Enviando…</string>
+    <string name="feedback_success">¡Gracias! Tu comentario fue enviado.</string>
+    <string name="feedback_error">No se pudo enviar el comentario. Inténtalo de nuevo.</string>
+    <string name="feedback_rate_limited">Demasiados envíos. Espera unos minutos.</string>
+    <string name="feedback_history_title">Tus envíos</string>
+    <string name="feedback_view_all">Ver todas las solicitudes de funciones</string>
     <string name="about_link_intro">Ver introducción</string>
     <string name="about_link_changelog">Novedades</string>
     <string name="about_link_changelog_desc">Historial de versiones y actualizaciones</string>
