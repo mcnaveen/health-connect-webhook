@@ -61,7 +61,7 @@ Health Connect aggregates data from these popular health and fitness apps:
 - 💾 **Settings Backup** - Export/import webhook configs, data type selections, and sync schedule
 - 🎨 **Modern UI** - Built with Jetpack Compose and Material 3 design
 - ⚡ **Real-time Status** - Visual indicators for permission status and sync state
-- 💬 **Feedback** - Easy access to provide feedback and suggestions through the app menu
+- 💬 **In-app Feedback** - Submit bugs, feature ideas, and suggestions from the About screen via a bottom sheet; submissions are stored locally and synced to [FeedbackJar](https://hc-webhook.feedbackjar.com/)
 
 ## API reference
 
@@ -218,8 +218,11 @@ Default port is **8787** (configurable **1024–65535**). Example: `http://192.1
 
 ### Providing Feedback
 
-- Access the feedback form from the menu (⋮) → "Feedback"
-- Share your thoughts, suggestions, or report issues directly through the feedback portal
+- Open the **About** tab and tap **Provide Feedback**
+- Submit bugs, feature ideas, or general suggestions in the bottom sheet
+- Your past submissions are saved on-device and shown in the sheet
+- Tap **View all feature requests** to browse the public board at [hc-webhook.feedbackjar.com](https://hc-webhook.feedbackjar.com/)
+- Submissions include device metadata (app version, Android version, screen size, locale) plus the build flavor (`foss` or `playstore`)
 
 ## Configuration
 
@@ -267,6 +270,7 @@ The local server returns the **same JSON schema** via **`GET`**; semantics (incr
 - **Background Work**: WorkManager
 - **Scheduled Alarms**: AlarmManager (exact alarms where available)
 - **Networking**: OkHttp
+- **Feedback**: [FeedbackJar Android SDK](https://central.sonatype.com/artifact/com.feedbackjar/sdk) (`com.feedbackjar:sdk`)
 - **Local Server**: Foreground service with a lightweight HTTP socket listener
 - **Serialization**: Kotlinx Serialization
 
@@ -284,7 +288,10 @@ The local server returns the **same JSON schema** via **`GET`**; semantics (incr
 - `PreferencesManager` - Manages app configuration and preferences
 - `ConfigurationScreen` - Main settings UI
 - `LogsScreen` - Displays webhook request/response logs
-- `AboutScreen` - App info, feedback links, and settings export/import
+- `AboutScreen` - App info, feedback entry point, and settings export/import
+- `FeedbackSheet` - Bottom sheet for submitting feedback and viewing local submission history
+- `FeedbackSubmitter` - App-side submit wrapper that adds build flavor to FeedbackJar metadata
+- `LocalFeedbackEntry` - On-device record of submitted feedback
 
 ### Permissions
 
@@ -319,6 +326,8 @@ app/
 │   │   │   ├── LocalHttpServerService.kt # Local HTTP Foreground Service
 │   │   │   ├── LocalTcpServerManager.kt # Local HTTP Socket Server
 │   │   │   ├── PreferencesManager.kt    # DataStore Preferences
+│   │   │   ├── FeedbackSubmitter.kt     # FeedbackJar submit with flavor metadata
+│   │   │   ├── LocalFeedbackEntry.kt    # On-device feedback history model
 │   │   │   ├── ScheduledSyncManager.kt  # Alarm Manager Logic
 │   │   │   ├── ScheduledSyncReceiver.kt # Broadcast Receiver
 │   │   │   ├── components/              # UI Components
@@ -370,7 +379,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 For issues, feature requests, or questions, you can:
 
 - Open an issue on GitHub
-- Provide feedback directly through the app: Menu (⋮) → "Feedback" or visit [https://hc-webhook.feedbackjar.com/](https://hc-webhook.feedbackjar.com/)
+- Submit feedback in the app: **About** → **Provide Feedback**
+- Browse and vote on community requests at [hc-webhook.feedbackjar.com](https://hc-webhook.feedbackjar.com/)
 
 ## Acknowledgments
 
