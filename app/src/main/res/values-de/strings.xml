@@ -224,6 +224,17 @@
     <string name="about_links_title">Links</string>
     <string name="about_link_github">GitHub-Repository</string>
     <string name="about_link_feedback">Geben Sie Feedback</string>
+    <string name="about_feedback_desc">Fehler melden, Funktionen anfragen oder Vorschläge teilen</string>
+    <string name="feedback_title">Feedback</string>
+    <string name="feedback_submit_title">Teilen Sie Ihre Gedanken</string>
+    <string name="feedback_hint">Fehlerberichte, Funktionsideen oder allgemeines Feedback…</string>
+    <string name="feedback_submit">Absenden</string>
+    <string name="feedback_submitting">Wird gesendet…</string>
+    <string name="feedback_success">Danke! Ihr Feedback wurde gesendet.</string>
+    <string name="feedback_error">Feedback konnte nicht gesendet werden. Bitte versuchen Sie es erneut.</string>
+    <string name="feedback_rate_limited">Zu viele Einreichungen. Bitte warten Sie ein paar Minuten.</string>
+    <string name="feedback_history_title">Ihre Einreichungen</string>
+    <string name="feedback_view_all">Alle Funktionsanfragen anzeigen</string>
     <string name="about_link_intro">Einführung ansehen</string>
     <string name="about_link_changelog">Neuigkeiten</string>
     <string name="about_link_changelog_desc">Versionsverlauf und Updates</string>

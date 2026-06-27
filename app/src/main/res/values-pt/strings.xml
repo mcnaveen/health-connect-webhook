@@ -224,6 +224,17 @@
     <string name="about_links_title">Ligações</string>
     <string name="about_link_github">Repositório GitHub</string>
     <string name="about_link_feedback">Fornecer comentários</string>
+    <string name="about_feedback_desc">Reportar bugs, solicitar recursos ou compartilhar sugestões</string>
+    <string name="feedback_title">Feedback</string>
+    <string name="feedback_submit_title">Compartilhe suas ideias</string>
+    <string name="feedback_hint">Relatórios de bugs, ideias de recursos ou feedback geral…</string>
+    <string name="feedback_submit">Enviar</string>
+    <string name="feedback_submitting">Enviando…</string>
+    <string name="feedback_success">Obrigado! Seu feedback foi enviado.</string>
+    <string name="feedback_error">Não foi possível enviar o feedback. Tente novamente.</string>
+    <string name="feedback_rate_limited">Muitos envios. Aguarde alguns minutos.</string>
+    <string name="feedback_history_title">Seus envios</string>
+    <string name="feedback_view_all">Ver todas as solicitações de recursos</string>
     <string name="about_link_intro">Ver introdução</string>
     <string name="about_link_changelog">Novidades</string>
     <string name="about_link_changelog_desc">Histórico de versões e atualizações</string>

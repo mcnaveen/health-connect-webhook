@@ -224,6 +224,17 @@
     <string name="about_links_title">모래밭</string>
     <string name="about_link_github">GitHub 저장소</string>
     <string name="about_link_feedback">피드백 제공</string>
+    <string name="about_feedback_desc">버그 신고, 기능 요청 또는 제안 공유</string>
+    <string name="feedback_title">피드백</string>
+    <string name="feedback_submit_title">의견을 공유해 주세요</string>
+    <string name="feedback_hint">버그 신고, 기능 아이디어 또는 일반 피드백…</string>
+    <string name="feedback_submit">제출</string>
+    <string name="feedback_submitting">제출 중…</string>
+    <string name="feedback_success">감사합니다! 피드백이 제출되었습니다.</string>
+    <string name="feedback_error">피드백을 제출할 수 없습니다. 다시 시도해 주세요.</string>
+    <string name="feedback_rate_limited">제출 횟수가 너무 많습니다. 몇 분 후에 다시 시도해 주세요.</string>
+    <string name="feedback_history_title">제출 내역</string>
+    <string name="feedback_view_all">모든 기능 요청 보기</string>
     <string name="about_link_intro">소개 보기</string>
     <string name="about_link_changelog">새로운 기능</string>
     <string name="about_link_changelog_desc">릴리스 기록 및 업데이트</string>

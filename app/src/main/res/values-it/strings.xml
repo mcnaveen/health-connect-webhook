@@ -224,6 +224,17 @@
     <string name="about_links_title">Collegamenti</string>
     <string name="about_link_github">Repository GitHub</string>
     <string name="about_link_feedback">Fornire feedback</string>
+    <string name="about_feedback_desc">Segnala bug, richiedi funzionalità o condividi suggerimenti</string>
+    <string name="feedback_title">Feedback</string>
+    <string name="feedback_submit_title">Condividi i tuoi pensieri</string>
+    <string name="feedback_hint">Segnalazioni di bug, idee per funzionalità o feedback generale…</string>
+    <string name="feedback_submit">Invia</string>
+    <string name="feedback_submitting">Invio in corso…</string>
+    <string name="feedback_success">Grazie! Il tuo feedback è stato inviato.</string>
+    <string name="feedback_error">Impossibile inviare il feedback. Riprova.</string>
+    <string name="feedback_rate_limited">Troppe invii. Attendi qualche minuto.</string>
+    <string name="feedback_history_title">I tuoi invii</string>
+    <string name="feedback_view_all">Visualizza tutte le richieste di funzionalità</string>
     <string name="about_link_intro">Visualizza l\'introduzione</string>
     <string name="about_link_changelog">Novità</string>
     <string name="about_link_changelog_desc">Cronologia versioni e aggiornamenti</string>

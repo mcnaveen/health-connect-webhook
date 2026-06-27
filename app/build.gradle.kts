@@ -82,6 +82,15 @@ android {
     }
 }
 
+configurations.all {
+    resolutionStrategy {
+        force(
+            "org.jetbrains.kotlinx:kotlinx-serialization-json:${libs.versions.kotlinxSerialization.get()}",
+            "org.jetbrains.kotlinx:kotlinx-serialization-core:${libs.versions.kotlinxSerialization.get()}",
+        )
+    }
+}
+
 dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
@@ -98,6 +107,7 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.feedbackjar.sdk)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

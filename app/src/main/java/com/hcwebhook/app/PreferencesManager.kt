@@ -49,8 +49,10 @@ class PreferencesManager(context: Context) {
         private const val KEY_DATA_TYPE_RESOLUTIONS = "data_type_resolutions"
         private const val KEY_BATTERY_BANNER_DISMISSED = "battery_banner_dismissed"
         private const val KEY_MAX_LOGS = "max_logs"
+        private const val KEY_LOCAL_FEEDBACK = "local_feedback"
         val MAX_LOG_OPTIONS = listOf(50, 100, 500)
         private const val DEFAULT_MAX_LOGS = 100
+        private const val MAX_LOCAL_FEEDBACK = 50
     }
 
 
@@ -502,5 +504,19 @@ class PreferencesManager(context: Context) {
             setHeartRateDownsampleMinutes(export.heartRateDownsampleMinutes)
             setStepsResolutionMinutes(export.stepsResolutionMinutes)
         }
+    }
+
+    fun getLocalFeedback(): List<LocalFeedbackEntry> {
+        val json = prefs.getString(KEY_LOCAL_FEEDBACK, null) ?: return emptyList()
+        return try {
+            Json.decodeFromString<List<LocalFeedbackEntry>>(json)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    fun addLocalFeedback(entry: LocalFeedbackEntry) {
+        val updated = (listOf(entry) + getLocalFeedback()).take(MAX_LOCAL_FEEDBACK)
+        prefs.edit().putString(KEY_LOCAL_FEEDBACK, Json.encodeToString(updated)).apply()
     }
 }
