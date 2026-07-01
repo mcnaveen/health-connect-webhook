@@ -220,6 +220,48 @@ object MockPayloadBuilder {
                     add(buildJsonObject { put("kilograms", 3.2); put("time", t(7, 30).toString()) })
                 }
             }
+            if (include(HealthDataType.MENSTRUATION_FLOW.name)) {
+                putJsonArray("menstruation_flow") {
+                    add(buildJsonObject { put("flow", 2); put("time", t(8, 0).toString()) })
+                }
+            }
+            if (include(HealthDataType.MENSTRUATION_PERIOD.name)) {
+                putJsonArray("menstruation_period") {
+                    add(buildJsonObject {
+                        put("start_time", yesterday.toString())
+                        put("end_time", t(23, 59).toString())
+                    })
+                }
+            }
+            if (include(HealthDataType.INTERMENSTRUAL_BLEEDING.name)) {
+                putJsonArray("intermenstrual_bleeding") {
+                    add(buildJsonObject { put("time", t(14, 0).toString()) })
+                }
+            }
+            if (include(HealthDataType.OVULATION_TEST.name)) {
+                putJsonArray("ovulation_test") {
+                    add(buildJsonObject { put("result", 1); put("time", t(9, 0).toString()) })
+                }
+            }
+            if (include(HealthDataType.CERVICAL_MUCUS.name)) {
+                putJsonArray("cervical_mucus") {
+                    add(buildJsonObject { put("appearance", 3); put("time", t(8, 30).toString()) })
+                }
+            }
+            if (include(HealthDataType.SEXUAL_ACTIVITY.name)) {
+                putJsonArray("sexual_activity") {
+                    add(buildJsonObject { put("protection_used", 1); put("time", t(22, 0).toString()) })
+                }
+            }
+            if (include(HealthDataType.BASAL_BODY_TEMPERATURE.name)) {
+                putJsonArray("basal_body_temperature") {
+                    add(buildJsonObject {
+                        put("celsius", 36.4)
+                        put("measurement_location", 1)
+                        put("time", t(6, 30).toString())
+                    })
+                }
+            }
         }.toString()
     }
 }

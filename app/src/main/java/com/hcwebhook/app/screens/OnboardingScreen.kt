@@ -471,6 +471,13 @@ fun iconForDataType(type: HealthDataType): ImageVector = when (type) {
     HealthDataType.VO2_MAX             -> Icons.Filled.Speed
     HealthDataType.NUTRITION           -> Icons.Filled.Restaurant
     HealthDataType.HYDRATION           -> Icons.Filled.WaterDrop
+    HealthDataType.MENSTRUATION_FLOW,
+    HealthDataType.MENSTRUATION_PERIOD,
+    HealthDataType.INTERMENSTRUAL_BLEEDING,
+    HealthDataType.OVULATION_TEST,
+    HealthDataType.CERVICAL_MUCUS,
+    HealthDataType.SEXUAL_ACTIVITY     -> Icons.Filled.Favorite
+    HealthDataType.BASAL_BODY_TEMPERATURE -> Icons.Filled.DeviceThermostat
 }
 
 @Composable
