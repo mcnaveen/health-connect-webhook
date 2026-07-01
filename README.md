@@ -51,7 +51,7 @@ Health Connect aggregates data from these popular health and fitness apps:
 ## Features
 
 - 🔄 **Flexible Background Sync** - Choose between interval-based sync (WorkManager) or fixed-time scheduled syncs (AlarmManager)
-- 🎯 **Selective Data Types** - Choose which health data types to sync (24 supported types)
+- 🎯 **Selective Data Types** - Choose which health data types to sync (31 supported types)
 - 🔗 **Multiple Webhooks** - Send data to multiple webhook URLs simultaneously
 - 🖥️ **Local HTTP Server** - Expose realtime Health Connect JSON on your local network for agents, scripts, and automation tools
 - 📊 **Manual Sync** - Trigger immediate data synchronization on demand
@@ -113,6 +113,13 @@ The app supports reading and syncing the following health data types from Health
 22. **Lean Body Mass** - Lean body mass measurements
 23. **VO2 Max** - Cardiorespiratory fitness measurements
 24. **Bone Mass** - Bone mass measurements
+25. **Menstruation Flow** - Menstrual flow intensity readings
+26. **Menstruation Period** - Period start and end dates
+27. **Intermenstrual Bleeding** - Spotting or bleeding events between periods
+28. **Ovulation Test** - Ovulation test results
+29. **Cervical Mucus** - Cervical mucus observations
+30. **Sexual Activity** - Sexual activity logs
+31. **Basal Body Temperature** - Morning basal body temperature readings
 
 ## Requirements
 

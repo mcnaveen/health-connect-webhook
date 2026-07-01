@@ -241,6 +241,55 @@ Health Connect can store multiple samples per interval; the app emits **one JSON
 | `kilograms` | number | Mass in kg. |
 | `time` | string | Measurement time. |
 
+### `menstruation_flow` — array of objects
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `flow` | number (integer) | Flow intensity (e.g., light, medium, heavy as defined by Health Connect constants). |
+| `time` | string | Measurement time. |
+
+### `menstruation_period` — array of objects
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `start_time` | string | Period start time. |
+| `end_time` | string | Period end time. |
+
+### `intermenstrual_bleeding` — array of objects
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `time` | string | Occurrence time. |
+
+### `ovulation_test` — array of objects
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `result` | number (integer) | Ovulation test result (as defined by Health Connect constants). |
+| `time` | string | Measurement time. |
+
+### `cervical_mucus` — array of objects
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `appearance` | number (integer) | Cervical mucus appearance (as defined by Health Connect constants). |
+| `time` | string | Measurement time. |
+
+### `sexual_activity` — array of objects
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `protection_used` | number (integer) | Protection used (as defined by Health Connect constants). |
+| `time` | string | Measurement time. |
+
+### `basal_body_temperature` — array of objects
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `celsius` | number | Temperature in °C. |
+| `measurement_location` | number (integer) | Measurement location (as defined by Health Connect constants). |
+| `time` | string | Measurement time. |
+
 ---
 
 ## Example (illustrative only)
