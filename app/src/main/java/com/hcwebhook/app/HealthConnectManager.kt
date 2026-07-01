@@ -93,6 +93,27 @@ enum class HealthDataType(val nameResId: Int, val recordClass: KClass<out Record
     ),
     BONE_MASS(
         R.string.dt_bone_name, BoneMassRecord::class, R.string.dt_bone_rationale
+    ),
+    MENSTRUATION_FLOW(
+        R.string.dt_menstruation_flow_name, MenstruationFlowRecord::class, R.string.dt_menstruation_flow_rationale
+    ),
+    MENSTRUATION_PERIOD(
+        R.string.dt_menstruation_period_name, MenstruationPeriodRecord::class, R.string.dt_menstruation_period_rationale
+    ),
+    INTERMENSTRUAL_BLEEDING(
+        R.string.dt_intermenstrual_bleeding_name, IntermenstrualBleedingRecord::class, R.string.dt_intermenstrual_bleeding_rationale
+    ),
+    OVULATION_TEST(
+        R.string.dt_ovulation_test_name, OvulationTestRecord::class, R.string.dt_ovulation_test_rationale
+    ),
+    CERVICAL_MUCUS(
+        R.string.dt_cervical_mucus_name, CervicalMucusRecord::class, R.string.dt_cervical_mucus_rationale
+    ),
+    SEXUAL_ACTIVITY(
+        R.string.dt_sexual_activity_name, SexualActivityRecord::class, R.string.dt_sexual_activity_rationale
+    ),
+    BASAL_BODY_TEMPERATURE(
+        R.string.dt_basal_body_temp_name, BasalBodyTemperatureRecord::class, R.string.dt_basal_body_temp_rationale
     )
 }
 
@@ -120,7 +141,14 @@ data class HealthData(
     val bodyFat: List<BodyFatData>,
     val leanBodyMass: List<LeanBodyMassData>,
     val vo2Max: List<Vo2MaxData>,
-    val boneMass: List<BoneMassData>
+    val boneMass: List<BoneMassData>,
+    val menstruationFlow: List<MenstruationFlowData>,
+    val menstruationPeriod: List<MenstruationPeriodData>,
+    val intermenstrualBleeding: List<IntermenstrualBleedingData>,
+    val ovulationTest: List<OvulationTestData>,
+    val cervicalMucus: List<CervicalMucusData>,
+    val sexualActivity: List<SexualActivityData>,
+    val basalBodyTemperature: List<BasalBodyTemperatureData>
 )
 
 /**
@@ -331,6 +359,48 @@ data class BoneMassData(
     val metadata: RecordMetadata? = null
 )
 
+data class MenstruationFlowData(
+    val flow: Int,
+    val time: Instant,
+    val metadata: RecordMetadata? = null
+)
+
+data class MenstruationPeriodData(
+    val startTime: Instant,
+    val endTime: Instant,
+    val metadata: RecordMetadata? = null
+)
+
+data class IntermenstrualBleedingData(
+    val time: Instant,
+    val metadata: RecordMetadata? = null
+)
+
+data class OvulationTestData(
+    val result: Int,
+    val time: Instant,
+    val metadata: RecordMetadata? = null
+)
+
+data class CervicalMucusData(
+    val appearance: Int,
+    val time: Instant,
+    val metadata: RecordMetadata? = null
+)
+
+data class SexualActivityData(
+    val protectionUsed: Int,
+    val time: Instant,
+    val metadata: RecordMetadata? = null
+)
+
+data class BasalBodyTemperatureData(
+    val celsius: Double,
+    val measurementLocation: Int,
+    val time: Instant,
+    val metadata: RecordMetadata? = null
+)
+
 class HealthConnectManager(private val context: Context) {
 
     private val healthConnectClient by lazy {
@@ -418,6 +488,20 @@ class HealthConnectManager(private val context: Context) {
                 readVo2MaxData(startTime, endTime, lastSyncTimestamps[HealthDataType.VO2_MAX]) else emptyList()
             val boneMassData = if (HealthDataType.BONE_MASS in enabledTypes)
                 readBoneMassData(startTime, endTime, lastSyncTimestamps[HealthDataType.BONE_MASS]) else emptyList()
+            val menstruationFlowData = if (HealthDataType.MENSTRUATION_FLOW in enabledTypes)
+                readMenstruationFlowData(startTime, endTime, lastSyncTimestamps[HealthDataType.MENSTRUATION_FLOW]) else emptyList()
+            val menstruationPeriodData = if (HealthDataType.MENSTRUATION_PERIOD in enabledTypes)
+                readMenstruationPeriodData(startTime, endTime, lastSyncTimestamps[HealthDataType.MENSTRUATION_PERIOD]) else emptyList()
+            val intermenstrualBleedingData = if (HealthDataType.INTERMENSTRUAL_BLEEDING in enabledTypes)
+                readIntermenstrualBleedingData(startTime, endTime, lastSyncTimestamps[HealthDataType.INTERMENSTRUAL_BLEEDING]) else emptyList()
+            val ovulationTestData = if (HealthDataType.OVULATION_TEST in enabledTypes)
+                readOvulationTestData(startTime, endTime, lastSyncTimestamps[HealthDataType.OVULATION_TEST]) else emptyList()
+            val cervicalMucusData = if (HealthDataType.CERVICAL_MUCUS in enabledTypes)
+                readCervicalMucusData(startTime, endTime, lastSyncTimestamps[HealthDataType.CERVICAL_MUCUS]) else emptyList()
+            val sexualActivityData = if (HealthDataType.SEXUAL_ACTIVITY in enabledTypes)
+                readSexualActivityData(startTime, endTime, lastSyncTimestamps[HealthDataType.SEXUAL_ACTIVITY]) else emptyList()
+            val basalBodyTemperatureData = if (HealthDataType.BASAL_BODY_TEMPERATURE in enabledTypes)
+                readBasalBodyTemperatureData(startTime, endTime, lastSyncTimestamps[HealthDataType.BASAL_BODY_TEMPERATURE]) else emptyList()
 
             Result.success(HealthData(
                 steps = stepsData,
@@ -443,7 +527,14 @@ class HealthConnectManager(private val context: Context) {
                 bodyFat = bodyFatData,
                 leanBodyMass = leanBodyMassData,
                 vo2Max = vo2MaxData,
-                boneMass = boneMassData
+                boneMass = boneMassData,
+                menstruationFlow = menstruationFlowData,
+                menstruationPeriod = menstruationPeriodData,
+                intermenstrualBleeding = intermenstrualBleedingData,
+                ovulationTest = ovulationTestData,
+                cervicalMucus = cervicalMucusData,
+                sexualActivity = sexualActivityData,
+                basalBodyTemperature = basalBodyTemperatureData
             ))
         } catch (e: CancellationException) {
             throw e
@@ -652,6 +743,60 @@ class HealthConnectManager(private val context: Context) {
             readBoneMassData(dayStart, dayEnd, null).maxByOrNull { it.time }?.kilograms,
             DashboardFormatter::formatWeightKg,
             R.string.dashboard_sub_kg_latest,
+        )
+        HealthDataType.MENSTRUATION_FLOW -> {
+            val latest = readMenstruationFlowData(dayStart, dayEnd, null).maxByOrNull { it.time }
+            DashboardMetric(
+                type,
+                if (latest != null) latest.flow.toString() else DashboardFormatter.NO_DATA,
+                if (latest != null) R.string.dashboard_sub_today else R.string.dashboard_sub_no_data,
+            )
+        }
+        HealthDataType.MENSTRUATION_PERIOD -> {
+            val count = readMenstruationPeriodData(dayStart, dayEnd, null).size
+            DashboardMetric(
+                type,
+                if (count > 0) count.toString() else DashboardFormatter.NO_DATA,
+                if (count > 0) R.string.dashboard_sub_today else R.string.dashboard_sub_no_data,
+            )
+        }
+        HealthDataType.INTERMENSTRUAL_BLEEDING -> {
+            val count = readIntermenstrualBleedingData(dayStart, dayEnd, null).size
+            DashboardMetric(
+                type,
+                if (count > 0) count.toString() else DashboardFormatter.NO_DATA,
+                if (count > 0) R.string.dashboard_sub_today else R.string.dashboard_sub_no_data,
+            )
+        }
+        HealthDataType.OVULATION_TEST -> {
+            val latest = readOvulationTestData(dayStart, dayEnd, null).maxByOrNull { it.time }
+            DashboardMetric(
+                type,
+                if (latest != null) latest.result.toString() else DashboardFormatter.NO_DATA,
+                if (latest != null) R.string.dashboard_sub_today else R.string.dashboard_sub_no_data,
+            )
+        }
+        HealthDataType.CERVICAL_MUCUS -> {
+            val latest = readCervicalMucusData(dayStart, dayEnd, null).maxByOrNull { it.time }
+            DashboardMetric(
+                type,
+                if (latest != null) latest.appearance.toString() else DashboardFormatter.NO_DATA,
+                if (latest != null) R.string.dashboard_sub_today else R.string.dashboard_sub_no_data,
+            )
+        }
+        HealthDataType.SEXUAL_ACTIVITY -> {
+            val count = readSexualActivityData(dayStart, dayEnd, null).size
+            DashboardMetric(
+                type,
+                if (count > 0) count.toString() else DashboardFormatter.NO_DATA,
+                if (count > 0) R.string.dashboard_sub_today else R.string.dashboard_sub_no_data,
+            )
+        }
+        HealthDataType.BASAL_BODY_TEMPERATURE -> latestMetric(
+            type,
+            readBasalBodyTemperatureData(dayStart, dayEnd, null).maxByOrNull { it.time }?.celsius,
+            DashboardFormatter::formatCelsius,
+            R.string.dashboard_sub_celsius_latest,
         )
     }
 
@@ -1718,6 +1863,55 @@ class HealthConnectManager(private val context: Context) {
             .map { BoneMassData(it.mass.inKilograms, it.time, it.metadata.toRecordMetadata()) }
     }
 
+    private suspend fun readMenstruationFlowData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<MenstruationFlowData> {
+        val request = ReadRecordsRequest(recordType = MenstruationFlowRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
+        return readAllRecords(request)
+            .filter { lastSync == null || it.time >= lastSync }
+            .map { MenstruationFlowData(it.flow, it.time, it.metadata.toRecordMetadata()) }
+    }
+
+    private suspend fun readMenstruationPeriodData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<MenstruationPeriodData> {
+        val request = ReadRecordsRequest(recordType = MenstruationPeriodRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
+        return readAllRecords(request)
+            .filter { lastSync == null || it.endTime >= lastSync }
+            .map { MenstruationPeriodData(it.startTime, it.endTime, it.metadata.toRecordMetadata()) }
+    }
+
+    private suspend fun readIntermenstrualBleedingData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<IntermenstrualBleedingData> {
+        val request = ReadRecordsRequest(recordType = IntermenstrualBleedingRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
+        return readAllRecords(request)
+            .filter { lastSync == null || it.time >= lastSync }
+            .map { IntermenstrualBleedingData(it.time, it.metadata.toRecordMetadata()) }
+    }
+
+    private suspend fun readOvulationTestData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<OvulationTestData> {
+        val request = ReadRecordsRequest(recordType = OvulationTestRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
+        return readAllRecords(request)
+            .filter { lastSync == null || it.time >= lastSync }
+            .map { OvulationTestData(it.result, it.time, it.metadata.toRecordMetadata()) }
+    }
+
+    private suspend fun readCervicalMucusData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<CervicalMucusData> {
+        val request = ReadRecordsRequest(recordType = CervicalMucusRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
+        return readAllRecords(request)
+            .filter { lastSync == null || it.time >= lastSync }
+            .map { CervicalMucusData(it.appearance, it.time, it.metadata.toRecordMetadata()) }
+    }
+
+    private suspend fun readSexualActivityData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<SexualActivityData> {
+        val request = ReadRecordsRequest(recordType = SexualActivityRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
+        return readAllRecords(request)
+            .filter { lastSync == null || it.time >= lastSync }
+            .map { SexualActivityData(it.protectionUsed, it.time, it.metadata.toRecordMetadata()) }
+    }
+
+    private suspend fun readBasalBodyTemperatureData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BasalBodyTemperatureData> {
+        val request = ReadRecordsRequest(recordType = BasalBodyTemperatureRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
+        return readAllRecords(request)
+            .filter { lastSync == null || it.time >= lastSync }
+            .map { BasalBodyTemperatureData(it.temperature.inCelsius, it.measurementLocation, it.time, it.metadata.toRecordMetadata()) }
+    }
+
     private suspend fun <T : Record> readAllRecords(request: ReadRecordsRequest<T>): List<T> {
         val all = mutableListOf<T>()
         var token: String? = null
@@ -1874,6 +2068,13 @@ class HealthConnectManager(private val context: Context) {
             HealthPermission.getReadPermission(LeanBodyMassRecord::class),
             HealthPermission.getReadPermission(Vo2MaxRecord::class),
             HealthPermission.getReadPermission(BoneMassRecord::class),
+            HealthPermission.getReadPermission(MenstruationFlowRecord::class),
+            HealthPermission.getReadPermission(MenstruationPeriodRecord::class),
+            HealthPermission.getReadPermission(IntermenstrualBleedingRecord::class),
+            HealthPermission.getReadPermission(OvulationTestRecord::class),
+            HealthPermission.getReadPermission(CervicalMucusRecord::class),
+            HealthPermission.getReadPermission(SexualActivityRecord::class),
+            HealthPermission.getReadPermission(BasalBodyTemperatureRecord::class),
             "android.permission.health.READ_HEALTH_DATA_HISTORY"
         )
     }
