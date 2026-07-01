@@ -491,6 +491,7 @@ class SyncManager(private val context: Context) {
                             put("count", step.count)
                             put("start_time", step.startTime.toString())
                             put("end_time", step.endTime.toString())
+                            step.metadata?.let { meta -> putRecordMetadata(meta) }
                         })
                     }
                 }
@@ -558,6 +559,7 @@ class SyncManager(private val context: Context) {
                         put("meters", it.meters)
                         put("start_time", it.startTime.toString())
                         put("end_time", it.endTime.toString())
+                        it.metadata?.let { meta -> putRecordMetadata(meta) }
                     }) }
                 }
             }
@@ -568,6 +570,7 @@ class SyncManager(private val context: Context) {
                         put("calories", it.calories)
                         put("start_time", it.startTime.toString())
                         put("end_time", it.endTime.toString())
+                        it.metadata?.let { meta -> putRecordMetadata(meta) }
                     }) }
                 }
             }
