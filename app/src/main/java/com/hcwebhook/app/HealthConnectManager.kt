@@ -180,7 +180,8 @@ fun Metadata.toRecordMetadata(): RecordMetadata = RecordMetadata(
 data class StepsData(
     val count: Long,
     val startTime: Instant,
-    val endTime: Instant
+    val endTime: Instant,
+    val metadata: RecordMetadata? = null
 )
 
 data class SleepData(
@@ -216,13 +217,15 @@ data class HeartRateVariabilityData(
 data class DistanceData(
     val meters: Double,
     val startTime: Instant,
-    val endTime: Instant
+    val endTime: Instant,
+    val metadata: RecordMetadata? = null
 )
 
 data class ActiveCaloriesData(
     val calories: Double,
     val startTime: Instant,
-    val endTime: Instant
+    val endTime: Instant,
+    val metadata: RecordMetadata? = null
 )
 
 data class TotalCaloriesData(
@@ -879,7 +882,7 @@ class HealthConnectManager(private val context: Context) {
         return readAllRecords(request)
             .filter { lastSync == null || it.endTime >= lastSync }
             .filter { it.count > 0 }
-            .map { StepsData(count = it.count, startTime = it.startTime, endTime = it.endTime) }
+            .map { StepsData(count = it.count, startTime = it.startTime, endTime = it.endTime, metadata = it.metadata.toRecordMetadata()) }
     }
 
     private suspend fun readBucketedStepsData(
@@ -1110,7 +1113,7 @@ class HealthConnectManager(private val context: Context) {
         return readAllRecords(request)
             .filter { lastSync == null || it.endTime >= lastSync }
             .filter { it.distance.inMeters > 0.0 }
-            .map { DistanceData(it.distance.inMeters, it.startTime, it.endTime) }
+            .map { DistanceData(it.distance.inMeters, it.startTime, it.endTime, it.metadata.toRecordMetadata()) }
     }
 
     private suspend fun readBucketedDistanceData(
@@ -1217,7 +1220,7 @@ class HealthConnectManager(private val context: Context) {
         return readAllRecords(request)
             .filter { lastSync == null || it.endTime >= lastSync }
             .filter { it.energy.inKilocalories > 0.0 }
-            .map { ActiveCaloriesData(it.energy.inKilocalories, it.startTime, it.endTime) }
+            .map { ActiveCaloriesData(it.energy.inKilocalories, it.startTime, it.endTime, it.metadata.toRecordMetadata()) }
     }
 
     private suspend fun readBucketedActiveCaloriesData(

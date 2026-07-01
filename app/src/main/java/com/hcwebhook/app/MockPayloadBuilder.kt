@@ -3,6 +3,7 @@ package com.hcwebhook.app
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -33,6 +34,10 @@ object MockPayloadBuilder {
                         put("count", 8432L)
                         put("start_time", yesterday.toString())
                         put("end_time", t(10, 30).toString())
+                        putJsonObject("metadata") {
+                            put("data_origin", "com.google.android.apps.fitness")
+                            put("recording_method", "automatically_recorded")
+                        }
                     })
                 }
             }
@@ -80,6 +85,10 @@ object MockPayloadBuilder {
                         put("meters", 5420.0)
                         put("start_time", t(8, 0).toString())
                         put("end_time", t(9, 0).toString())
+                        putJsonObject("metadata") {
+                            put("data_origin", "com.google.android.apps.fitness")
+                            put("recording_method", "automatically_recorded")
+                        }
                     })
                 }
             }
@@ -89,6 +98,10 @@ object MockPayloadBuilder {
                         put("calories", 312.0)
                         put("start_time", t(8, 0).toString())
                         put("end_time", t(9, 0).toString())
+                        putJsonObject("metadata") {
+                            put("data_origin", "com.google.android.apps.fitness")
+                            put("recording_method", "automatically_recorded")
+                        }
                     })
                 }
             }
