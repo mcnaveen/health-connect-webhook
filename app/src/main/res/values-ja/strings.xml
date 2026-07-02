@@ -28,6 +28,7 @@
     <string name="onboarding_group_sleep">睡眠</string>
     <string name="onboarding_group_body_composition">体組成</string>
     <string name="onboarding_group_nutrition">栄養と水分補給</string>
+    <string name="onboarding_group_cycle_tracking">生理周期トラッキング</string>
     
     <string name="onboarding_privacy_title">データをあなた自身で管理</string>
     <string name="onboarding_privacy_subtitle">このアプリは透明性の高いデータ転送ツールです。データの取り扱いについては以下の通りです：</string>
@@ -39,6 +40,8 @@
     <string name="onboarding_privacy_footer">ご意見やご提案がありましたら、いつでも「設定」タブからお知らせください。</string>
     <string name="onboarding_privacy_warning_title">公式版のみを使用してください</string>
     <string name="onboarding_privacy_warning_desc">このアプリの不正改造版などは、Webhook URLを盗んだり、健康データを未知のサーバーに送信するおそれがあります。必ずGoogle Playからダウンロードしてください。</string>
+    <string name="medical_disclaimer_title">このアプリは医療機器ではありません</string>
+    <string name="medical_disclaimer_desc">このアプリは医療機器ではなく、病気や医療上の状態を診断・治療・治癒・予防することを目的としていません。表示される健康データはHealth Connectから取得されており、個人的な情報提供のみを目的としています。医療上のアドバイスについては、必ず資格のある医療専門家にご相談ください。</string>
     <string name="dt_steps_name">歩数</string>
     <string name="dt_steps_rationale">毎日の歩数を追跡し、Webhookに送信して習慣追跡やフィットネスの自動化を行います。</string>
     <string name="dt_sleep_name">睡眠</string>

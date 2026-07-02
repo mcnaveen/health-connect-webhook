@@ -28,6 +28,7 @@
     <string name="onboarding_group_sleep">Sono</string>
     <string name="onboarding_group_body_composition">Composição Corporal</string>
     <string name="onboarding_group_nutrition">Nutrição e Hidratação</string>
+    <string name="onboarding_group_cycle_tracking">Rastreamento do ciclo</string>
     
     <string name="onboarding_privacy_title">Seus Dados, Seu Controle</string>
     <string name="onboarding_privacy_subtitle">Este aplicativo é um encaminhador transparente. Veja exatamente como seus dados são tratados:</string>
@@ -39,6 +40,8 @@
     <string name="onboarding_privacy_footer">Tem comentários ou sugestões? Acesse a guia Configurações a qualquer momento — adoraríamos ouvi-lo.</string>
     <string name="onboarding_privacy_warning_title">Use apenas a versão oficial</string>
     <string name="onboarding_privacy_warning_desc">Versões piratas ou modificadas deste aplicativo podem roubar seus URLs de webhook ou enviar seus dados de saúde para servidores desconhecidos. Baixe sempre do Google Play.</string>
+    <string name="medical_disclaimer_title">Este app não é um dispositivo médico</string>
+    <string name="medical_disclaimer_desc">Este aplicativo não é um dispositivo médico e não se destina a diagnosticar, tratar, curar ou prevenir qualquer doença ou condição médica. Os dados de saúde exibidos são provenientes do Health Connect e têm finalidade exclusivamente informativa e pessoal. Consulte sempre um profissional de saúde qualificado para obter orientação médica.</string>
     <string name="dt_steps_name">Passos</string>
     <string name="dt_steps_rationale">Acompanhe seus passos diários e envie ao seu webhook para automação fitness.</string>
     <string name="dt_sleep_name">Sono</string>

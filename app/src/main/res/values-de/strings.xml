@@ -28,6 +28,7 @@
     <string name="onboarding_group_sleep">Schlaf</string>
     <string name="onboarding_group_body_composition">Körperzusammensetzung</string>
     <string name="onboarding_group_nutrition">Ernährung &amp; Flüssigkeitszufuhr</string>
+    <string name="onboarding_group_cycle_tracking">Zyklusverfolgung</string>
     
     <string name="onboarding_privacy_title">Ihre Daten, Ihre Kontrolle</string>
     <string name="onboarding_privacy_subtitle">Diese App ist ein transparenter Weiterleiter. So werden Ihre Daten verarbeitet:</string>
@@ -39,6 +40,8 @@
     <string name="onboarding_privacy_footer">Haben Sie Feedback? Gehen Sie jederzeit zum Einstellungen-Tab – wir würden uns freuen, von Ihnen zu hören.</string>
     <string name="onboarding_privacy_warning_title">Nur die offizielle Version verwenden</string>
     <string name="onboarding_privacy_warning_desc">Modifizierte Versionen dieser App könnten Ihre Daten stehlen. Laden Sie immer nur von Google Play herunter.</string>
+    <string name="medical_disclaimer_title">Diese App ist kein Medizinprodukt</string>
+    <string name="medical_disclaimer_desc">Diese App ist kein Medizinprodukt und nicht dazu bestimmt, Krankheiten oder Gesundheitszustände zu diagnostizieren, zu behandeln, zu heilen oder zu verhindern. Die angezeigten Gesundheitsdaten stammen aus Health Connect und dienen ausschließlich persönlichen Informationszwecken. Konsultieren Sie bei medizinischen Fragen stets einen qualifizierten Arzt.</string>
     <string name="dt_steps_name">Schritte</string>
     <string name="dt_steps_rationale">Verfolgen Sie die täglichen Schrittzahlen und senden Sie die Aktivitätsdaten für Automatisierungen an Ihren Webhook.</string>
     <string name="dt_sleep_name">Schlaf</string>

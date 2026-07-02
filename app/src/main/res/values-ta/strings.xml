@@ -28,6 +28,7 @@
     <string name="onboarding_group_sleep">உறக்கம்</string>
     <string name="onboarding_group_body_composition">உடல் அமைப்பு</string>
     <string name="onboarding_group_nutrition">ஊட்டச்சத்து &amp; நீரேற்றம்</string>
+    <string name="onboarding_group_cycle_tracking">மாதவிடாய் சுழற்சி கண்காணிப்பு</string>
     
     <string name="onboarding_privacy_title">உங்கள் தரவு, உங்கள் கட்டுப்பாடு</string>
     <string name="onboarding_privacy_subtitle">இந்த செயலி வெளிப்படையானதாகும். உங்கள் தரவுகள் எவ்வாறு கையாளப்படுகின்றன என்பது இங்கே:</string>
@@ -39,6 +40,8 @@
     <string name="onboarding_privacy_footer">கருத்து அல்லது பரிந்துரைகள் உள்ளதா? அமைப்புகள் தாவலுக்கு எப்போது வேண்டுமானாலும் செல்லவும் — உங்களோடு பேச ஆர்வமாக உள்ளோம்.</string>
     <string name="onboarding_privacy_warning_title">அதிகாரப்பூர்வ பதிப்பை மட்டும் பயன்படுத்தவும்</string>
     <string name="onboarding_privacy_warning_desc">இந்த செயலியின் மாற்றியமைக்கப்பட்ட பதிப்புகள் உங்கள் webhook URL-களை திருடலாம் அல்லது உங்கள் சுகாதார தரவை தெரியாத சர்வருக்கு அனுப்பலாம். எப்போதும் Google Play-ல் இருந்து மட்டுமே பதிவிறக்கம் செய்யவும்.</string>
+    <string name="medical_disclaimer_title">இந்த செயலி மருத்துவ சாதனம் அல்ல</string>
+    <string name="medical_disclaimer_desc">இந்த செயலி மருத்துவ சாதனம் அல்ல; எந்தவொரு நோயையும் அல்லது மருத்துவ நிலையையும் கண்டறிய, சிகிச்சையளிக்க, குணப்படுத்த அல்லது தடுக்க இது வடிவமைக்கப்படவில்லை. காட்டப்படும் ஆரோக்கிய தரவு Health Connect-இலிருந்து பெறப்படுகிறது மற்றும் தனிப்பட்ட தகவல் நோக்கங்களுக்காக மட்டுமே உள்ளது. மருத்துவ ஆலோசனைக்கு எப்போதும் தகுதிவாய்ந்த மருத்துவரை அணுகவும்.</string>
     <string name="dt_steps_name">நடைகள்</string>
     <string name="dt_steps_rationale">தினசரி நடை எண்ணிக்கையை கண்காணிக்கவும் மற்றும் செயல்பாட்டுத் தரவுகளை ஆட்டோமேஷன் செய்ய Webhook-க்கு அனுப்பவும்.</string>
     <string name="dt_sleep_name">உறக்கம்</string>

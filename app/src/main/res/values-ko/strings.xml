@@ -28,6 +28,7 @@
     <string name="onboarding_group_sleep">수면</string>
     <string name="onboarding_group_body_composition">체성분</string>
     <string name="onboarding_group_nutrition">영양 및 수분</string>
+    <string name="onboarding_group_cycle_tracking">생리 주기 추적</string>
     
     <string name="onboarding_privacy_title">내 데이터, 내 마음대로</string>
     <string name="onboarding_privacy_subtitle">이 앱은 투명하게 데이터를 전달합니다. 데이터 처리 방식은 다음과 같습니다:</string>
@@ -39,6 +40,8 @@
     <string name="onboarding_privacy_footer">의견이나 제안 사항이 있으신가요? 언제든지 ’설정’ 탭을 방문하여 알려주세요.</string>
     <string name="onboarding_privacy_warning_title">공식 버전만 사용하세요</string>
     <string name="onboarding_privacy_warning_desc">앱을 무단으로 변경한 버전은 웹훅 URL을 훔치거나 알 수 없는 서버로 모바일 건강 데이터를 전송할 수 있습니다. 항상 Google Play에서 다운로드하세요.</string>
+    <string name="medical_disclaimer_title">이 앱은 의료기기가 아닙니다</string>
+    <string name="medical_disclaimer_desc">이 앱은 의료기기가 아니며, 질병이나 의학적 상태를 진단, 치료, 치유 또는 예방하기 위한 목적으로 설계되지 않았습니다. 표시되는 건강 데이터는 Health Connect에서 제공되며 개인 정보 제공 목적으로만 사용됩니다. 의료 조언은 항상 자격을 갖춘 의료 전문가와 상담하시기 바랍니다.</string>
     <string name="dt_steps_name">걸음 수</string>
     <string name="dt_steps_rationale">일일 걸음 수를 추적하고 자동화를 위해 Webhook으로 전송합니다.</string>
     <string name="dt_sleep_name">수면</string>

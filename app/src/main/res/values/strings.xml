@@ -27,6 +27,7 @@
     <string name="onboarding_group_sleep">Sleep</string>
     <string name="onboarding_group_body_composition">Body Composition</string>
     <string name="onboarding_group_nutrition">Nutrition &amp; Hydration</string>
+    <string name="onboarding_group_cycle_tracking">Cycle Tracking</string>
     
     <string name="onboarding_privacy_title">Your Data, Your Control</string>
     <string name="onboarding_privacy_subtitle">This app is a transparent forwarder. Here’s exactly how your data is handled:</string>
@@ -38,6 +39,8 @@
     <string name="onboarding_privacy_footer">Have feedback or suggestions? Head to the Settings tab anytime — we’d love to hear from you.</string>
     <string name="onboarding_privacy_warning_title">Use only the official version</string>
     <string name="onboarding_privacy_warning_desc">Cracked or modified versions of this app may steal your webhook URLs or send your health data to unknown servers. Always download from Google Play.</string>
+    <string name="medical_disclaimer_title">This app is not a medical device</string>
+    <string name="medical_disclaimer_desc">This app is not a medical device and is not intended to diagnose, treat, cure, or prevent any medical condition or disease. Health data displayed is sourced from Health Connect and is for personal informational purposes only. Always consult a qualified healthcare professional for medical advice.</string>
     <string name="dt_steps_name">Steps</string>
     <string name="dt_steps_rationale">Track daily step counts and send activity totals to your webhook for fitness automation and habit tracking.</string>
     <string name="dt_sleep_name">Sleep</string>

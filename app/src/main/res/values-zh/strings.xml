@@ -28,6 +28,7 @@
     <string name="onboarding_group_sleep">睡眠</string>
     <string name="onboarding_group_body_composition">身体成分</string>
     <string name="onboarding_group_nutrition">营养与水分</string>
+    <string name="onboarding_group_cycle_tracking">周期追踪</string>
     
     <string name="onboarding_privacy_title">您的数据，由您掌控</string>
     <string name="onboarding_privacy_subtitle">此应用是一个透明的转发器。您的数据具体处理方式如下：</string>
@@ -39,6 +40,8 @@
     <string name="onboarding_privacy_footer">有反馈或建议？欢迎随时前往“设置”标签页 — 我们很乐意收到您的意见。</string>
     <string name="onboarding_privacy_warning_title">仅使用官方版本</string>
     <string name="onboarding_privacy_warning_desc">此应用的破解版或修改版可能会窃取您的 webhook URL 或将您的健康数据发送到未知服务器。请始终从 Google Play 下载。</string>
+    <string name="medical_disclaimer_title">本应用不是医疗设备</string>
+    <string name="medical_disclaimer_desc">本应用不是医疗设备，不用于诊断、治疗、治愈或预防任何疾病或医疗状况。所显示的健康数据来源于 Health Connect，仅供个人参考之用。如需医疗建议，请务必咨询具有资质的医疗专业人员。</string>
     <string name="dt_steps_name">步数</string>
     <string name="dt_steps_rationale">追踪每天的步数，并将活动总数发送到你的 Webhook 以进行习惯关联记录和自动化工作流。</string>
     <string name="dt_sleep_name">睡眠</string>

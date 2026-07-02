@@ -28,6 +28,7 @@
     <string name="onboarding_group_sleep">Sommeil</string>
     <string name="onboarding_group_body_composition">Composition corporelle</string>
     <string name="onboarding_group_nutrition">Nutrition &amp; Hydratation</string>
+    <string name="onboarding_group_cycle_tracking">Suivi du cycle</string>
     
     <string name="onboarding_privacy_title">Vos données, votre contrôle</string>
     <string name="onboarding_privacy_subtitle">Cette application est un transféreur transparent. Voici exactement comment vos données sont traitées :</string>
@@ -36,9 +37,11 @@
     <string name="onboarding_privacy_p3">Vos données sont envoyées directement à vos propres URL webhook - nulle part ailleurs</string>
     <string name="onboarding_privacy_p4">Rien n’est stocké sur un serveur externe</string>
     <string name="onboarding_privacy_p5">Vos données ne sont jamais vendues ou partagées avec quiconque</string>
-    <string name="onboarding_privacy_footer">Vous avez des commentaires ou des suggestions ? Allez dans l’onglet Paramètres à tout moment — nous serions ravis de vous entendre.</string>
-    <string name="onboarding_privacy_warning_title">N’utilisez que la version officielle</string>
+   <string name="onboarding_privacy_footer">Vous avez des commentaires ou des suggestions ? Allez dans l\'onglet Paramètres à tout moment — nous serions ravis de vous entendre.</string>
+    <string name="onboarding_privacy_warning_title">N\'utilisez que la version officielle</string>
     <string name="onboarding_privacy_warning_desc">Les versions piratées ou modifiées de cette application peuvent voler vos URL webhook ou envoyer vos données de santé à des serveurs inconnus. Téléchargez toujours depuis Google Play.</string>
+    <string name="medical_disclaimer_title">Cette app n\'est pas un dispositif médical</string>
+    <string name="medical_disclaimer_desc">Cette application n\'est pas un dispositif médical et n\'est pas destinée à diagnostiquer, traiter, guérir ou prévenir une maladie ou un état médical. Les données de santé affichées proviennent de Health Connect et sont uniquement à des fins d\'information personnelle. Consultez toujours un professionnel de santé qualifié pour tout conseil médical.</string>
     <string name="dt_steps_name">Pas</string>
     <string name="dt_steps_rationale">Suivez le nombre de pas quotidiens et envoyez les totaux d\’activité à votre webhook pour l\’automatisation de la condition physique.</string>
     <string name="dt_sleep_name">Sommeil</string>
