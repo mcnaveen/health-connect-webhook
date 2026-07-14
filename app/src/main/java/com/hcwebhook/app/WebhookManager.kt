@@ -36,7 +36,6 @@ class WebhookManager(
         .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        .followRedirects(false)
         .build()
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
@@ -104,9 +103,16 @@ class WebhookManager(
                             logWebhookCall(config.url, timestamp, statusCode, true, null, System.currentTimeMillis() - timestamp)
                             return Result.success(Unit)
                         } else {
+                            val location = response.header("Location")
+                            val detail = buildString {
+                                append(response.message)
+                                if (response.code in 300..399 && !location.isNullOrBlank()) {
+                                    append(" Location=").append(location)
+                                }
+                            }
                             val httpException = HttpResponseException(
                                 response.code,
-                                "HTTP ${response.code}: ${response.message}"
+                                "HTTP ${response.code}: $detail"
                             )
                             lastException = httpException
                             errorMessage = httpException.message
