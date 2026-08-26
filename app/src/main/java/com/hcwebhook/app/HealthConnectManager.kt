@@ -300,6 +300,7 @@ data class RestingHeartRateData(
 
 data class ExerciseData(
     val type: String,
+    val title: String? = null,
     val startTime: Instant,
     val endTime: Instant,
     val duration: Duration,
@@ -1560,6 +1561,7 @@ class HealthConnectManager(private val context: Context) {
                 val cadenceMetrics = if (includeSteps) readStepsCadenceMetrics(it.startTime, it.endTime) else StepsCadenceMetrics()
                 ExerciseData(
                     type = it.exerciseType.toString(),
+                    title = it.title?.takeIf { title -> title.isNotBlank() },
                     startTime = it.startTime,
                     endTime = it.endTime,
                     duration = duration,
