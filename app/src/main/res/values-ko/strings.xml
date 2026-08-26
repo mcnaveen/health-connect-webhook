@@ -240,7 +240,8 @@
     <string name="about_settings_backup_desc">웹훅 URL, 헤더 및 동기화 일정을 내보내거나 가져옵니다.</string>
     <string name="about_action_export">내보내다</string>
     <string name="about_action_import">수입</string>
-    <string name="about_links_title">모래밭</string>
+    <string name="about_section_settings">앱 설정</string>
+    <string name="about_links_title">도움말 및 리소스</string>
     <string name="about_link_github">GitHub 저장소</string>
     <string name="about_link_feedback">피드백 제공</string>
     <string name="about_feedback_desc">버그 신고, 기능 요청 또는 제안 공유</string>

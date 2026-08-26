@@ -240,7 +240,8 @@
     <string name="about_settings_backup_desc">导出或导入您的 Webhook URL、标头和同步计划</string>
     <string name="about_action_export">出口</string>
     <string name="about_action_import">进口</string>
-    <string name="about_links_title">链接</string>
+    <string name="about_section_settings">应用设置</string>
+    <string name="about_links_title">帮助与资源</string>
     <string name="about_link_github">GitHub 存储库</string>
     <string name="about_link_feedback">提供反馈</string>
     <string name="about_feedback_desc">报告错误、请求功能或分享建议</string>

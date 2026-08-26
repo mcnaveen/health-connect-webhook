@@ -240,7 +240,8 @@
     <string name="about_settings_backup_desc">Exporte o importe las URL de sus webhooks, encabezados y programación de sincronización</string>
     <string name="about_action_export">Exportar</string>
     <string name="about_action_import">Importar</string>
-    <string name="about_links_title">Campo de golf</string>
+    <string name="about_section_settings">Ajustes de la app</string>
+    <string name="about_links_title">Ayuda y recursos</string>
     <string name="about_link_github">Repositorio GitHub</string>
     <string name="about_link_feedback">Proporcionar comentarios</string>
     <string name="about_feedback_desc">Informar errores, solicitar funciones o compartir sugerencias</string>

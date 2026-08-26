@@ -80,67 +80,7 @@ fun AboutScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .then(
-                            if (BuildConfig.DEBUG) {
-                                Modifier.combinedClickable(
-                                    onClick = {},
-                                    onLongClick = {
-                                        preferencesManager.debugForceWeeklyFeedbackPrompt()
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.feedback_weekly_debug_forced),
-                                            Toast.LENGTH_SHORT,
-                                        ).show()
-                                    },
-                                )
-                            } else {
-                                Modifier
-                            },
-                        )
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(IconBackgroundBlue),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Info,
-                            contentDescription = null,
-                            tint = IconTintBlue,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            text = stringResource(R.string.about_app_title),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = stringResource(R.string.about_app_version, versionName, versionCode),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            // Description Card
+            // ── App identity ─────────────────────────────────────────────────
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -148,14 +88,102 @@ fun AboutScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(IconBackgroundBlue)
+                                .then(
+                                    if (BuildConfig.DEBUG) {
+                                        Modifier.combinedClickable(
+                                            onClick = {},
+                                            onLongClick = {
+                                                preferencesManager.debugForceWeeklyFeedbackPrompt()
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.feedback_weekly_debug_forced),
+                                                    Toast.LENGTH_SHORT,
+                                                ).show()
+                                            },
+                                        )
+                                    } else {
+                                        Modifier
+                                    },
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Info,
+                                contentDescription = null,
+                                tint = IconTintBlue,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = stringResource(R.string.about_app_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = stringResource(R.string.about_app_version, versionName, versionCode),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = stringResource(R.string.about_app_desc),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
 
+            // ── App settings ─────────────────────────────────────────────────
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column {
+                    Text(
+                        text = stringResource(R.string.about_section_settings),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp)
+                    )
+                    LinkRow(
+                        label = stringResource(R.string.about_local_http_title),
+                        subtitle = stringResource(R.string.config_local_tcp_desc),
+                        icon = Icons.Filled.Lan,
+                        onClick = { onOpenLocalHttpSettings() }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    LinkRow(
+                        label = stringResource(R.string.about_notifications_title),
+                        subtitle = stringResource(R.string.about_notifications_desc),
+                        icon = Icons.Filled.Add,
+                        onClick = { onOpenNotificationsSettings() }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    LinkRow(
+                        label = stringResource(R.string.about_settings_backup_title),
+                        subtitle = stringResource(R.string.about_settings_backup_desc),
+                        icon = Icons.Filled.Backup,
+                        onClick = { onOpenSettingsBackup() }
+                    )
+                }
+            }
+
+            LanguageSelectorCard()
+
+            // ── Feedback ─────────────────────────────────────────────────────
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -207,6 +235,7 @@ fun AboutScreen(
                 }
             }
 
+            // ── Help & resources ─────────────────────────────────────────────
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -214,32 +243,42 @@ fun AboutScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column {
+                    Text(
+                        text = stringResource(R.string.about_links_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp)
+                    )
+
                     LinkRow(
-                        label = stringResource(R.string.about_local_http_title),
-                        subtitle = stringResource(R.string.config_local_tcp_desc),
-                        icon = Icons.Filled.Lan,
-                        onClick = { onOpenLocalHttpSettings() }
+                        label = stringResource(R.string.about_link_changelog),
+                        subtitle = stringResource(R.string.about_link_changelog_desc),
+                        icon = Icons.AutoMirrored.Filled.Notes,
+                        onClick = { onOpenChangelog() }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                     LinkRow(
-                        label = stringResource(R.string.about_notifications_title),
-                        subtitle = stringResource(R.string.about_notifications_desc),
-                        icon = Icons.Filled.Add,
-                        onClick = { onOpenNotificationsSettings() }
+                        label = stringResource(R.string.about_link_intro),
+                        icon = Icons.Filled.PlayArrow,
+                        onClick = { onRestartOnboarding() }
                     )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    LinkRow(
-                        label = stringResource(R.string.about_settings_backup_title),
-                        subtitle = stringResource(R.string.about_settings_backup_desc),
-                        icon = Icons.Filled.Backup,
-                        onClick = { onOpenSettingsBackup() }
-                    )
+
+                    if (!FlavorUtils.isPlayStore) {
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        LinkRow(
+                            label = stringResource(R.string.about_link_github),
+                            icon = Icons.Filled.Code,
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/mcnaveen/health-connect-webhook"))
+                                context.startActivity(intent)
+                            }
+                        )
+                    }
                 }
             }
 
-            LanguageSelectorCard()
-
-                        // Privacy & Security Card
+            // ── Privacy ──────────────────────────────────────────────────────
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -283,48 +322,7 @@ fun AboutScreen(
                 }
             }
 
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column {
-                    Text(
-                        text = stringResource(R.string.about_links_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp)
-                    )
-
-                    if (!FlavorUtils.isPlayStore) {
-                        LinkRow(
-                            label = stringResource(R.string.about_link_github),
-                            icon = Icons.Filled.Code,
-                            onClick = {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/mcnaveen/health-connect-webhook"))
-                                context.startActivity(intent)
-                            }
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    }
-
-                    LinkRow(
-                        label = stringResource(R.string.about_link_changelog),
-                        subtitle = stringResource(R.string.about_link_changelog_desc),
-                        icon = Icons.AutoMirrored.Filled.Notes,
-                        onClick = { onOpenChangelog() }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                    LinkRow(
-                        label = stringResource(R.string.about_link_intro),
-                        icon = Icons.Filled.PlayArrow,
-                        onClick = { onRestartOnboarding() }
-                    )
-                }
-            }
-
-            // Medical disclaimer — required by Google Play Health Content policy
+            // ── Medical disclaimer ───────────────────────────────────────────
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer

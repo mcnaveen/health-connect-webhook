@@ -271,7 +271,8 @@
     <string name="about_settings_backup_desc">Export or import your webhook URLs, headers, and sync schedule</string>
     <string name="about_action_export">Export</string>
     <string name="about_action_import">Import</string>
-    <string name="about_links_title">Links</string>
+    <string name="about_section_settings">App settings</string>
+    <string name="about_links_title">Help &amp; resources</string>
     <string name="about_link_github">GitHub Repository</string>
     <string name="about_link_feedback">Provide Feedback</string>
     <string name="about_feedback_desc">Report bugs, request features, or share suggestions</string>

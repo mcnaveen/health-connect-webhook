@@ -240,7 +240,8 @@
     <string name="about_settings_backup_desc">உங்கள் வெப்ஹூக் URLகள், தலைப்புகள் மற்றும் ஒத்திசைவு அட்டவணையை ஏற்றுமதி செய்யவும் அல்லது இறக்குமதி செய்யவும்</string>
     <string name="about_action_export">ஏற்றுமதி</string>
     <string name="about_action_import">இறக்குமதி</string>
-    <string name="about_links_title">இணைப்புகள்</string>
+    <string name="about_section_settings">பயன்பாட்டு அமைப்புகள்</string>
+    <string name="about_links_title">உதவி மற்றும் வளங்கள்</string>
     <string name="about_link_github">கிட்ஹப் களஞ்சியம்</string>
     <string name="about_link_feedback">கருத்துக்களை வழங்கவும்</string>
     <string name="about_feedback_desc">பிழை அறிக்கைகள், அம்சக் கோரிக்கைகள் அல்லது பரிந்துரைகளைப் பகிரவும்</string>

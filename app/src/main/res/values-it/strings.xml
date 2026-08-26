@@ -240,7 +240,8 @@
     <string name="about_settings_backup_desc">Esporta o importa gli URL webhook, le intestazioni e la pianificazione della sincronizzazione</string>
     <string name="about_action_export">Esportare</string>
     <string name="about_action_import">Importare</string>
-    <string name="about_links_title">Collegamenti</string>
+    <string name="about_section_settings">Impostazioni app</string>
+    <string name="about_links_title">Aiuto e risorse</string>
     <string name="about_link_github">Repository GitHub</string>
     <string name="about_link_feedback">Fornire feedback</string>
     <string name="about_feedback_desc">Segnala bug, richiedi funzionalità o condividi suggerimenti</string>

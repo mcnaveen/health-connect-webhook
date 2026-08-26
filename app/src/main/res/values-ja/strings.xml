@@ -240,7 +240,8 @@
     <string name="about_settings_backup_desc">Webhook URL、ヘッダー、同期スケジュールをエクスポートまたはインポートする</string>
     <string name="about_action_export">輸出</string>
     <string name="about_action_import">輸入</string>
-    <string name="about_links_title">リンク</string>
+    <string name="about_section_settings">アプリ設定</string>
+    <string name="about_links_title">ヘルプとリソース</string>
     <string name="about_link_github">GitHub リポジトリ</string>
     <string name="about_link_feedback">フィードバックを提供する</string>
     <string name="about_feedback_desc">バグ報告、機能リクエスト、提案の共有</string>
