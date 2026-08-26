@@ -568,7 +568,7 @@ fun ConfigurationScreen(
                             ) { Text(stringResource(R.string.config_sync_mode_interval)) }
                             SegmentedButton(
                                 selected = syncMode == SyncMode.SCHEDULED,
-                                onClick = { syncMode = SyncMode.SCHEDULED; preferencesManager.setSyncMode(SyncMode.SCHEDULED); (activity.application as? HCWebhookApplication)?.cancelSyncWork(); ScheduledSyncManager(context).scheduleAllAlarms() },
+                                onClick = { syncMode = SyncMode.SCHEDULED; preferencesManager.setSyncMode(SyncMode.SCHEDULED); preferencesManager.setScheduledSyncs(scheduledSyncs); (activity.application as? HCWebhookApplication)?.cancelSyncWork(); ScheduledSyncManager(context).scheduleAllAlarms() },
                                 shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
                             ) { Text(stringResource(R.string.config_sync_mode_scheduled)) }
                         }
