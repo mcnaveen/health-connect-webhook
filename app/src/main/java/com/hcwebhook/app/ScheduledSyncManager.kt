@@ -35,6 +35,9 @@ class ScheduledSyncManager(private val context: Context) {
             return
         }
         
+        // Cancel known alarms first so repeated scheduleAllAlarms() cannot stack duplicates
+        cancelAllAlarms()
+
         val schedules = preferencesManager.getScheduledSyncs()
         // Only schedule enabled schedules
         schedules.filter { it.enabled }.forEach { schedule ->

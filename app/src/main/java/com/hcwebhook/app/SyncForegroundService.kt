@@ -17,6 +17,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * A short-lived foreground service that performs a single background sync.
@@ -57,30 +58,42 @@ class SyncForegroundService : Service() {
         val scheduleId = intent?.getStringExtra(EXTRA_SCHEDULE_ID)
         Log.d(TAG, "Starting foreground sync (scheduleId=$scheduleId)")
 
+        if (!isSyncRunning.compareAndSet(false, true)) {
+            Log.d(TAG, "Sync already in progress, skipping duplicate start (scheduleId=$scheduleId)")
+            // Still reschedule the incoming alarm so it is not lost while a sync runs
+            rescheduleAlarmIfNeeded(scheduleId)
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
+
         scope.launch {
             try {
                 val syncManager = SyncManager(this@SyncForegroundService)
                 syncManager.performSync(syncType = "auto")
 
                 // Reschedule the daily alarm for the next occurrence
-                if (scheduleId != null) {
-                    val prefsManager = PreferencesManager(this@SyncForegroundService)
-                    val schedule = prefsManager.getScheduledSyncs().find { it.id == scheduleId }
-                    if (schedule != null && schedule.enabled) {
-                        ScheduledSyncManager(this@SyncForegroundService).scheduleAlarm(schedule)
-                        Log.d(TAG, "Rescheduled alarm for next day: $scheduleId")
-                    }
-                }
+                rescheduleAlarmIfNeeded(scheduleId)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Sync failed in foreground service: ${e.message}", e)
             } finally {
+                isSyncRunning.set(false)
                 stopSelf(startId)
             }
         }
 
         return START_NOT_STICKY
+    }
+
+    private fun rescheduleAlarmIfNeeded(scheduleId: String?) {
+        if (scheduleId == null) return
+        val prefsManager = PreferencesManager(this)
+        val schedule = prefsManager.getScheduledSyncs().find { it.id == scheduleId }
+        if (schedule != null && schedule.enabled) {
+            ScheduledSyncManager(this).scheduleAlarm(schedule)
+            Log.d(TAG, "Rescheduled alarm for next day: $scheduleId")
+        }
     }
 
     override fun onDestroy() {
@@ -93,6 +106,7 @@ class SyncForegroundService : Service() {
         private const val NOTIFICATION_ID = 2001
         const val CHANNEL_ID = "hc_sync_service"
         const val EXTRA_SCHEDULE_ID = "schedule_id"
+        private val isSyncRunning = AtomicBoolean(false)
 
         fun start(context: Context, scheduleId: String? = null) {
             val intent = Intent(context, SyncForegroundService::class.java).apply {

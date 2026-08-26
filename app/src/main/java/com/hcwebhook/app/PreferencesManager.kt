@@ -242,8 +242,10 @@ class PreferencesManager(context: Context) {
             return try {
                 Json.decodeFromString<List<ScheduledSync>>(syncsJson)
             } catch (e: Exception) {
-                // If JSON parsing fails, return default schedules
-                getDefaultScheduledSyncs()
+                // If JSON parsing fails, persist defaults so schedule IDs stay stable
+                val defaults = getDefaultScheduledSyncs()
+                setScheduledSyncs(defaults)
+                defaults
             }
         }
         
@@ -256,7 +258,7 @@ class PreferencesManager(context: Context) {
         // Check if these are default values (8:00 and 21:00)
         val isDefaultValues = morningHour == 8 && morningMinute == 0 && eveningHour == 21 && eveningMinute == 0
         
-        return if (isDefaultValues) {
+        val syncs = if (isDefaultValues) {
             getDefaultScheduledSyncs()
         } else {
             // Migrate user's custom times
@@ -265,6 +267,9 @@ class PreferencesManager(context: Context) {
                 ScheduledSync.create(eveningHour, eveningMinute, "Evening")
             )
         }
+        // Persist so AlarmManager PendingIntent request codes stay stable across restarts
+        setScheduledSyncs(syncs)
+        return syncs
     }
 
     fun setScheduledSyncs(syncs: List<ScheduledSync>) {
