@@ -10,8 +10,8 @@
     <string name="onboarding_welcome_title">Health Connect to Webhook</string>
     <string name="onboarding_welcome_subtitle">Forward your health data to any webhook — automatically.</string>
     <string name="onboarding_thank_you">Thank you for your support!</string>
-    <string name="onboarding_thank_you_title">Thank You!</string>
-    <string name="onboarding_thank_you_desc">Your support helps keep this app alive and improving. Enjoy syncing your health data!</string>
+    <string name="onboarding_thank_you_title">You\'re all set!</string>
+    <string name="onboarding_thank_you_desc">Configure your webhooks and start syncing. If something breaks or you want a new feature, open Settings → Provide Feedback.</string>
     
     <string name="onboarding_feature1_title">You choose what to sync</string>
     <string name="onboarding_feature1_desc">Select only the health data types you want to forward.</string>
@@ -36,7 +36,7 @@
     <string name="onboarding_privacy_p3">Your data is sent directly to your own webhook URLs — nowhere else</string>
     <string name="onboarding_privacy_p4">Nothing is stored on any external server</string>
     <string name="onboarding_privacy_p5">Your data is never sold or shared with anyone</string>
-    <string name="onboarding_privacy_footer">Have feedback or suggestions? Head to the Settings tab anytime — we’d love to hear from you.</string>
+    <string name="onboarding_privacy_footer">Have feedback or suggestions? Open the Settings tab anytime and tap Provide Feedback.</string>
     <string name="onboarding_privacy_warning_title">Use only the official version</string>
     <string name="onboarding_privacy_warning_desc">Cracked or modified versions of this app may steal your webhook URLs or send your health data to unknown servers. Always download from Google Play.</string>
     <string name="medical_disclaimer_title">This app is not a medical device</string>
@@ -285,6 +285,12 @@
     <string name="feedback_rate_limited">Too many submissions. Please wait a few minutes.</string>
     <string name="feedback_history_title">Your submissions</string>
     <string name="feedback_view_all">View all feature requests</string>
+    <string name="feedback_weekly_title">We need your feedback</string>
+    <string name="feedback_weekly_desc">You have used HC Webhook for a week. Tell us what broke, what is missing, or what would make sync better. This takes about one minute.</string>
+    <string name="feedback_weekly_cta">Send feedback now</string>
+    <string name="feedback_weekly_dismiss">Dismiss</string>
+    <string name="feedback_weekly_dismiss_hint">You can send feedback anytime from Settings → Provide Feedback.</string>
+    <string name="feedback_weekly_debug_forced">Weekly feedback card unlocked. Open Home to see it.</string>
     <string name="about_link_intro">View Introduction</string>
     <string name="about_link_changelog">What\'s New</string>
     <string name="about_link_changelog_desc">Release history and updates</string>

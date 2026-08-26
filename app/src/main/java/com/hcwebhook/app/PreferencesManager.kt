@@ -50,6 +50,9 @@ class PreferencesManager(context: Context) {
         private const val KEY_BATTERY_BANNER_DISMISSED = "battery_banner_dismissed"
         private const val KEY_MAX_LOGS = "max_logs"
         private const val KEY_LOCAL_FEEDBACK = "local_feedback"
+        private const val KEY_FIRST_OPEN_TIME = "first_open_time"
+        private const val KEY_WEEKLY_FEEDBACK_PROMPT_DISMISSED = "weekly_feedback_prompt_dismissed"
+        private const val WEEKLY_FEEDBACK_PROMPT_MS = 7L * 24 * 60 * 60 * 1000
         val MAX_LOG_OPTIONS = listOf(50, 100, 500)
         private const val DEFAULT_MAX_LOGS = 100
         private const val MAX_LOCAL_FEEDBACK = 50
@@ -523,5 +526,30 @@ class PreferencesManager(context: Context) {
     fun addLocalFeedback(entry: LocalFeedbackEntry) {
         val updated = (listOf(entry) + getLocalFeedback()).take(MAX_LOCAL_FEEDBACK)
         prefs.edit().putString(KEY_LOCAL_FEEDBACK, Json.encodeToString(updated)).apply()
+    }
+
+    fun ensureFirstOpenTime() {
+        if (!prefs.contains(KEY_FIRST_OPEN_TIME)) {
+            prefs.edit().putLong(KEY_FIRST_OPEN_TIME, System.currentTimeMillis()).apply()
+        }
+    }
+
+    fun shouldShowWeeklyFeedbackPrompt(): Boolean {
+        ensureFirstOpenTime()
+        if (prefs.getBoolean(KEY_WEEKLY_FEEDBACK_PROMPT_DISMISSED, false)) return false
+        val firstOpen = prefs.getLong(KEY_FIRST_OPEN_TIME, System.currentTimeMillis())
+        return System.currentTimeMillis() - firstOpen >= WEEKLY_FEEDBACK_PROMPT_MS
+    }
+
+    fun setWeeklyFeedbackPromptDismissed(dismissed: Boolean) {
+        prefs.edit().putBoolean(KEY_WEEKLY_FEEDBACK_PROMPT_DISMISSED, dismissed).apply()
+    }
+
+    /** Debug only: backdate first open and clear dismiss so the weekly Home card shows. */
+    fun debugForceWeeklyFeedbackPrompt() {
+        prefs.edit()
+            .putLong(KEY_FIRST_OPEN_TIME, System.currentTimeMillis() - WEEKLY_FEEDBACK_PROMPT_MS - 1_000L)
+            .putBoolean(KEY_WEEKLY_FEEDBACK_PROMPT_DISMISSED, false)
+            .apply()
     }
 }

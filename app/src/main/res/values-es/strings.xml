@@ -11,8 +11,8 @@
     <string name="onboarding_welcome_title">Health Connect a Webhook</string>
     <string name="onboarding_welcome_subtitle">Reenvía tus datos de salud a cualquier webhook de forma automática.</string>
     <string name="onboarding_thank_you">¡Gracias por su apoyo!</string>
-    <string name="onboarding_thank_you_title">¡Gracias!</string>
-    <string name="onboarding_thank_you_desc">Su apoyo ayuda a mantener esta aplicación viva y en mejora. ¡Disfrute sincronizando sus datos de salud!</string>
+    <string name="onboarding_thank_you_title">¡Todo listo!</string>
+    <string name="onboarding_thank_you_desc">Configura tus webhooks y empieza a sincronizar. Si algo falla o quieres una función nueva, abre Configuración → Proporcionar comentarios.</string>
     
     <string name="onboarding_feature1_title">Tú eliges qué sincronizar</string>
     <string name="onboarding_feature1_desc">Selecciona solo los tipos de datos de salud que deseas reenviar.</string>
@@ -37,7 +37,7 @@
     <string name="onboarding_privacy_p3">Tus datos se envían directamente a tus propias URL de webhook, a ningún otro lugar</string>
     <string name="onboarding_privacy_p4">No se almacena nada en ningún servidor externo</string>
     <string name="onboarding_privacy_p5">Tus datos nunca se venden ni se comparten con nadie</string>
-    <string name="onboarding_privacy_footer">¿Tienes comentarios o sugerencias? Ve a la pestaña Configuración en cualquier momento: nos encantaría escucharte.</string>
+    <string name="onboarding_privacy_footer">¿Tienes comentarios o sugerencias? Abre la pestaña Configuración en cualquier momento y toca Proporcionar comentarios.</string>
     <string name="onboarding_privacy_warning_title">Usa solo la versión oficial</string>
     <string name="onboarding_privacy_warning_desc">Las versiones no oficiales o modificadas de esta aplicación pueden robar tus URL de webhook o enviar tus datos de salud a servidores desconocidos. Descarga siempre desde Google Play.</string>
     <string name="medical_disclaimer_title">Esta app no es un dispositivo médico</string>
@@ -254,6 +254,12 @@
     <string name="feedback_rate_limited">Demasiados envíos. Espera unos minutos.</string>
     <string name="feedback_history_title">Tus envíos</string>
     <string name="feedback_view_all">Ver todas las solicitudes de funciones</string>
+    <string name="feedback_weekly_title">Necesitamos tus comentarios</string>
+    <string name="feedback_weekly_desc">Llevas una semana usando HC Webhook. Cuéntanos qué falló, qué falta o qué mejoraría la sincronización. Solo tarda un minuto.</string>
+    <string name="feedback_weekly_cta">Enviar comentarios ahora</string>
+    <string name="feedback_weekly_dismiss">Descartar</string>
+    <string name="feedback_weekly_dismiss_hint">Puedes enviar comentarios en cualquier momento desde Configuración → Proporcionar comentarios.</string>
+    <string name="feedback_weekly_debug_forced">Tarjeta de comentarios semanal desbloqueada. Abre Inicio para verla.</string>
     <string name="about_link_intro">Ver introducción</string>
     <string name="about_link_changelog">Novedades</string>
     <string name="about_link_changelog_desc">Historial de versiones y actualizaciones</string>
