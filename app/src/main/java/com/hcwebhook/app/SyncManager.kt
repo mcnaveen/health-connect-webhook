@@ -703,6 +703,7 @@ class SyncManager(private val context: Context) {
                 putJsonArray("exercise") {
                     healthData.exercise.forEach { add(buildJsonObject {
                         put("type", it.type)
+                        it.title?.let { title -> put("title", title) }
                         put("start_time", it.startTime.toString())
                         put("end_time", it.endTime.toString())
                         put("duration_seconds", it.duration.seconds)

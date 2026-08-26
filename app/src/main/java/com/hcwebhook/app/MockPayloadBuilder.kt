@@ -172,6 +172,7 @@ object MockPayloadBuilder {
                 putJsonArray("exercise") {
                     add(buildJsonObject {
                         put("type", "running")
+                        put("title", "Morning Run")
                         put("start_time", t(8, 0).toString())
                         put("end_time", t(9, 0).toString())
                         put("duration_seconds", 3600L)
