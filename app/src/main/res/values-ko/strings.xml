@@ -86,6 +86,8 @@
     <string name="dt_bf_rationale">신체 구성을 측정 관리하고 운동 진행에 맞춘 장기 목표를 확인하는 체지방률 통계를 직접 전송할 수 있습니다.</string>
     <string name="dt_lbm_name">제지방 체중</string>
     <string name="dt_lbm_rationale">제지방량 데이터를 통해 장기적인 사용자의 신체 개조 과정에서 생기게되는 근육량 등의 추적 프로세스를 가동합니다.</string>
+    <string name="dt_bwm_name">체수분량</string>
+    <string name="dt_bwm_rationale">스마트 체중계의 체수분량 측정을 웹훅으로 보내 수분 상태와 체성분을 추적합니다.</string>
     <string name="dt_vo2_name">최대 산소 섭취량</string>
     <string name="dt_vo2_rationale">VO₂ max 값을 Webhook으로 보내 지구력 평가나 각 회차별 개선되는 심박 및 운동능력을 분석하고 수치를 체크합니다.</string>
     <string name="dt_bone_name">골량</string>

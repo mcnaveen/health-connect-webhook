@@ -289,6 +289,7 @@ private fun DataTypesPage() {
                 HealthDataType.HEIGHT,
                 HealthDataType.BODY_FAT,
                 HealthDataType.LEAN_BODY_MASS,
+                HealthDataType.BODY_WATER_MASS,
                 HealthDataType.BONE_MASS,
                 HealthDataType.BASAL_METABOLIC_RATE,
                 HealthDataType.VO2_MAX
@@ -510,6 +511,7 @@ fun iconForDataType(type: HealthDataType): ImageVector = when (type) {
     HealthDataType.HEIGHT              -> Icons.Filled.Height
     HealthDataType.BODY_FAT            -> Icons.Filled.MonitorWeight
     HealthDataType.LEAN_BODY_MASS      -> Icons.Filled.FitnessCenter
+    HealthDataType.BODY_WATER_MASS     -> Icons.Filled.WaterDrop
     HealthDataType.BONE_MASS           -> Icons.Filled.Accessibility
     HealthDataType.BASAL_METABOLIC_RATE -> Icons.Filled.LocalFireDepartment
     HealthDataType.VO2_MAX             -> Icons.Filled.Speed

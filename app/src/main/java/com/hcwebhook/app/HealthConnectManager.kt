@@ -88,6 +88,9 @@ enum class HealthDataType(val nameResId: Int, val recordClass: KClass<out Record
     LEAN_BODY_MASS(
         R.string.dt_lbm_name, LeanBodyMassRecord::class, R.string.dt_lbm_rationale
     ),
+    BODY_WATER_MASS(
+        R.string.dt_bwm_name, BodyWaterMassRecord::class, R.string.dt_bwm_rationale
+    ),
     VO2_MAX(
         R.string.dt_vo2_name, Vo2MaxRecord::class, R.string.dt_vo2_rationale
     ),
@@ -140,6 +143,7 @@ data class HealthData(
     val basalMetabolicRate: List<BasalMetabolicRateData>,
     val bodyFat: List<BodyFatData>,
     val leanBodyMass: List<LeanBodyMassData>,
+    val bodyWaterMass: List<BodyWaterMassData>,
     val vo2Max: List<Vo2MaxData>,
     val boneMass: List<BoneMassData>,
     val menstruationFlow: List<MenstruationFlowData>,
@@ -351,6 +355,12 @@ data class LeanBodyMassData(
     val metadata: RecordMetadata? = null
 )
 
+data class BodyWaterMassData(
+    val kilograms: Double,
+    val time: Instant,
+    val metadata: RecordMetadata? = null
+)
+
 data class Vo2MaxData(
     val mlPerKgPerMin: Double,
     val time: Instant,
@@ -488,6 +498,8 @@ class HealthConnectManager(private val context: Context) {
                 readBodyFatData(startTime, endTime, lastSyncTimestamps[HealthDataType.BODY_FAT]) else emptyList()
             val leanBodyMassData = if (HealthDataType.LEAN_BODY_MASS in enabledTypes)
                 readLeanBodyMassData(startTime, endTime, lastSyncTimestamps[HealthDataType.LEAN_BODY_MASS]) else emptyList()
+            val bodyWaterMassData = if (HealthDataType.BODY_WATER_MASS in enabledTypes)
+                readBodyWaterMassData(startTime, endTime, lastSyncTimestamps[HealthDataType.BODY_WATER_MASS]) else emptyList()
             val vo2MaxData = if (HealthDataType.VO2_MAX in enabledTypes)
                 readVo2MaxData(startTime, endTime, lastSyncTimestamps[HealthDataType.VO2_MAX]) else emptyList()
             val boneMassData = if (HealthDataType.BONE_MASS in enabledTypes)
@@ -530,6 +542,7 @@ class HealthConnectManager(private val context: Context) {
                 basalMetabolicRate = basalMetabolicRateData,
                 bodyFat = bodyFatData,
                 leanBodyMass = leanBodyMassData,
+                bodyWaterMass = bodyWaterMassData,
                 vo2Max = vo2MaxData,
                 boneMass = boneMassData,
                 menstruationFlow = menstruationFlowData,
@@ -733,6 +746,12 @@ class HealthConnectManager(private val context: Context) {
         HealthDataType.LEAN_BODY_MASS -> latestMetric(
             type,
             readLeanBodyMassData(dayStart, dayEnd, null).maxByOrNull { it.time }?.kilograms,
+            DashboardFormatter::formatWeightKg,
+            R.string.dashboard_sub_kg_latest,
+        )
+        HealthDataType.BODY_WATER_MASS -> latestMetric(
+            type,
+            readBodyWaterMassData(dayStart, dayEnd, null).maxByOrNull { it.time }?.kilograms,
             DashboardFormatter::formatWeightKg,
             R.string.dashboard_sub_kg_latest,
         )
@@ -1838,6 +1857,13 @@ class HealthConnectManager(private val context: Context) {
             .map { LeanBodyMassData(it.mass.inKilograms, it.time, it.metadata.toRecordMetadata()) }
     }
 
+    private suspend fun readBodyWaterMassData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BodyWaterMassData> {
+        val request = ReadRecordsRequest(recordType = BodyWaterMassRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
+        val response = readAllRecords(request)
+        return response.filter { lastSync == null || it.time >= lastSync }
+            .map { BodyWaterMassData(it.mass.inKilograms, it.time, it.metadata.toRecordMetadata()) }
+    }
+
     private suspend fun readVo2MaxData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<Vo2MaxData> {
         val request = ReadRecordsRequest(recordType = Vo2MaxRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
@@ -2055,6 +2081,7 @@ class HealthConnectManager(private val context: Context) {
             HealthPermission.getReadPermission(BasalMetabolicRateRecord::class),
             HealthPermission.getReadPermission(BodyFatRecord::class),
             HealthPermission.getReadPermission(LeanBodyMassRecord::class),
+            HealthPermission.getReadPermission(BodyWaterMassRecord::class),
             HealthPermission.getReadPermission(Vo2MaxRecord::class),
             HealthPermission.getReadPermission(BoneMassRecord::class),
             HealthPermission.getReadPermission(MenstruationFlowRecord::class),

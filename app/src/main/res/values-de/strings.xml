@@ -86,6 +86,8 @@
     <string name="dt_bf_rationale">Leiten Sie prozentuale Körperfettmesswerte weiter, um Verlaufe der Körperbestandteile auf Dauer abzulesen.</string>
     <string name="dt_lbm_name">Mageres Körpergewicht</string>
     <string name="dt_lbm_rationale">Senden Sie Masse an den Webhook für Muskelzu- oder abnahme und zur Unterstützung des Wachstumsmanagements.</string>
+    <string name="dt_bwm_name">Körperwassermasse</string>
+    <string name="dt_bwm_rationale">Leiten Sie Körperwassermasse-Messwerte an Ihren Webhook weiter, um Hydration und Körperzusammensetzung von Smart-Waagen zu verfolgen.</string>
     <string name="dt_vo2_name">VO₂ Max</string>
     <string name="dt_vo2_rationale">Tragen Sie VO₂ max-Daten zu Ihrem Webhook weiter zur Überwachung Ihrer eigenen körperlichen Ausdauer und Verbesserungen.</string>
     <string name="dt_bone_name">Knochenmasse</string>

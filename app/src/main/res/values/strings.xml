@@ -85,6 +85,8 @@
     <string name="dt_bf_rationale">Forward body fat percentage measurements to your webhook to track body composition changes and fitness progress over time.</string>
     <string name="dt_lbm_name">Lean Body Mass</string>
     <string name="dt_lbm_rationale">Send lean mass data to your webhook to monitor muscle gain or loss and support body recomposition tracking workflows.</string>
+    <string name="dt_bwm_name">Body Water Mass</string>
+    <string name="dt_bwm_rationale">Forward body water mass measurements to your webhook to track hydration and body composition from smart scales.</string>
     <string name="dt_vo2_name">VO₂ Max</string>
     <string name="dt_vo2_rationale">Forward VO₂ max readings to your webhook to track aerobic fitness improvements, training load, and endurance progress.</string>
     <string name="dt_bone_name">Bone Mass</string>

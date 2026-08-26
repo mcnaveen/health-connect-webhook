@@ -86,6 +86,8 @@
     <string name="dt_bf_rationale">Muestra las tendencias generales basándose en tu propia perspectiva física enviada directamente para fines útiles o proyecciones comparativas.</string>
     <string name="dt_lbm_name">Masa corporal magra</string>
     <string name="dt_lbm_rationale">Determine cuál es su porcentaje real exento de su volumen muscular usando directamente un registro contable y directo en tu Webhook.</string>
+    <string name="dt_bwm_name">Masa de agua corporal</string>
+    <string name="dt_bwm_rationale">Envía mediciones de masa de agua corporal a tu webhook para seguir la hidratación y la composición corporal de básculas inteligentes.</string>
     <string name="dt_vo2_name">VO₂ Máx</string>
     <string name="dt_vo2_rationale">Monitoreo en torno a tu aguante cardiorrespiratorio a partir de las cantidades ingresadas durante la ejercitación y puestas en tu base.</string>
     <string name="dt_bone_name">Masa ósea</string>

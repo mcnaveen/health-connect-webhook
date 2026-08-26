@@ -86,6 +86,8 @@
     <string name="dt_bf_rationale">将收集在体的人员各项脂质存量比重交由其专属服务器平台监管掌握自身长时间以内的健身表现的变化。</string>
     <string name="dt_lbm_name">瘦体重</string>
     <string name="dt_lbm_rationale">把自身的精瘦等去脂质量读写转进个人的分析口借以检测使用主体本身的增减肌成效或指导相关重构体质锻炼方法。</string>
+    <string name="dt_bwm_name">身体水分质量</string>
+    <string name="dt_bwm_rationale">将智能体重秤的身体水分质量测量发送到您的 webhook，以跟踪水分状态和身体成分。</string>
     <string name="dt_vo2_name">最大摄氧量</string>
     <string name="dt_vo2_rationale">借助向个人的处理接口发送最高带氧指标（VO₂ max）使之能够在监控下准确评估自己各项耐力或持久能力等核心方向的发展程度。</string>
     <string name="dt_bone_name">骨量</string>

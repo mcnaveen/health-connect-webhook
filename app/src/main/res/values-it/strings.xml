@@ -86,6 +86,8 @@
     <string name="dt_bf_rationale">Trasmetti ai Webhook i valori delle analisi che consentiranno di confrontare periodi dei vostri risultati in salute.</string>
     <string name="dt_lbm_name">Massa magra</string>
     <string name="dt_lbm_rationale">Trasmetti misure sulla muscolosità nei resoconti forniti tramite il personale Webhook inviato come report.</string>
+    <string name="dt_bwm_name">Massa d\'acqua corporea</string>
+    <string name="dt_bwm_rationale">Invia le misure di massa d\'acqua corporea al webhook per monitorare idratazione e composizione corporea dalle bilance smart.</string>
     <string name="dt_vo2_name">VO₂ Max</string>
     <string name="dt_vo2_rationale">Misura di tolleranza di sopportazione sportiva valutando massimi che passiamo sul tuo riferimento del Webhook.</string>
     <string name="dt_bone_name">Massa ossea</string>

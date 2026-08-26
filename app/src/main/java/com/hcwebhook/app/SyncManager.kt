@@ -250,6 +250,7 @@ class SyncManager(private val context: Context) {
             basalMetabolicRate = if ("BASAL_METABOLIC_RATE" in allowed) data.basalMetabolicRate else emptyList(),
             bodyFat = if ("BODY_FAT" in allowed) data.bodyFat else emptyList(),
             leanBodyMass = if ("LEAN_BODY_MASS" in allowed) data.leanBodyMass else emptyList(),
+            bodyWaterMass = if ("BODY_WATER_MASS" in allowed) data.bodyWaterMass else emptyList(),
             vo2Max = if ("VO2_MAX" in allowed) data.vo2Max else emptyList(),
             boneMass = if ("BONE_MASS" in allowed) data.boneMass else emptyList(),
             menstruationFlow = if ("MENSTRUATION_FLOW" in allowed) data.menstruationFlow else emptyList(),
@@ -270,7 +271,7 @@ class SyncManager(private val context: Context) {
                 data.bodyTemperature.size + data.skinTemperature.size + data.respiratoryRate.size +
                 data.restingHeartRate.size + data.exercise.size + data.hydration.size +
                 data.nutrition.size + data.basalMetabolicRate.size + data.bodyFat.size +
-                data.leanBodyMass.size + data.vo2Max.size + data.boneMass.size +
+                data.leanBodyMass.size + data.bodyWaterMass.size + data.vo2Max.size + data.boneMass.size +
                 data.menstruationFlow.size + data.menstruationPeriod.size +
                 data.intermenstrualBleeding.size + data.ovulationTest.size +
                 data.cervicalMucus.size + data.sexualActivity.size + data.basalBodyTemperature.size
@@ -286,6 +287,7 @@ class SyncManager(private val context: Context) {
                 data.respiratoryRate.isEmpty() && data.restingHeartRate.isEmpty() && data.exercise.isEmpty() &&
                 data.hydration.isEmpty() && data.nutrition.isEmpty() &&
                 data.basalMetabolicRate.isEmpty() && data.bodyFat.isEmpty() && data.leanBodyMass.isEmpty() &&
+                data.bodyWaterMass.isEmpty() &&
                 data.vo2Max.isEmpty() && data.boneMass.isEmpty() &&
                 data.menstruationFlow.isEmpty() && data.menstruationPeriod.isEmpty() &&
                 data.intermenstrualBleeding.isEmpty() && data.ovulationTest.isEmpty() &&
@@ -405,6 +407,10 @@ class SyncManager(private val context: Context) {
         if (data.leanBodyMass.isNotEmpty()) {
             preferencesManager.setLastSyncTimestamp(HealthDataType.LEAN_BODY_MASS, data.leanBodyMass.maxOf { it.time }.toEpochMilli())
             syncCounts[HealthDataType.LEAN_BODY_MASS] = data.leanBodyMass.size
+        }
+        if (data.bodyWaterMass.isNotEmpty()) {
+            preferencesManager.setLastSyncTimestamp(HealthDataType.BODY_WATER_MASS, data.bodyWaterMass.maxOf { it.time }.toEpochMilli())
+            syncCounts[HealthDataType.BODY_WATER_MASS] = data.bodyWaterMass.size
         }
         if (data.vo2Max.isNotEmpty()) {
             preferencesManager.setLastSyncTimestamp(HealthDataType.VO2_MAX, data.vo2Max.maxOf { it.time }.toEpochMilli())
@@ -786,6 +792,32 @@ class SyncManager(private val context: Context) {
                 }
             }
 
+            if (healthData.bodyWaterMass.isNotEmpty()) {
+                putJsonArray("body_water_mass") {
+                    healthData.bodyWaterMass.forEach { add(buildJsonObject {
+                        put("kilograms", it.kilograms)
+                        put("time", it.time.toString())
+                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                    }) }
+                }
+            }
+
+            // Health Connect has no BMI record type. Compute BMI = kg / m² when both
+            // weight and height lists are present (enabled + non-empty after filter).
+            // Pair each weight with the height closest in time.
+            if (healthData.weight.isNotEmpty() && healthData.height.isNotEmpty()) {
+                putJsonArray("bmi") {
+                    computeBmiEntries(healthData.weight, healthData.height).forEach { entry ->
+                        add(buildJsonObject {
+                            put("value", entry.value)
+                            put("time", entry.time.toString())
+                            put("weight_kg", entry.weightKg)
+                            put("height_meters", entry.heightMeters)
+                        })
+                    }
+                }
+            }
+
             if (healthData.vo2Max.isNotEmpty()) {
                 putJsonArray("vo2_max") {
                     healthData.vo2Max.forEach { add(buildJsonObject {
@@ -878,6 +910,34 @@ class SyncManager(private val context: Context) {
         } // End of buildJsonObject block
 
         return json.toString()
+    }
+
+    private data class BmiEntry(
+        val value: Double,
+        val time: Instant,
+        val weightKg: Double,
+        val heightMeters: Double
+    )
+
+    /** BMI = kg / m². Pair each weight with the height record closest in time. */
+    private fun computeBmiEntries(
+        weights: List<WeightData>,
+        heights: List<HeightData>
+    ): List<BmiEntry> {
+        if (weights.isEmpty() || heights.isEmpty()) return emptyList()
+        return weights.mapNotNull { weight ->
+            val height = heights.minByOrNull { h ->
+                kotlin.math.abs(h.time.toEpochMilli() - weight.time.toEpochMilli())
+            } ?: return@mapNotNull null
+            if (height.meters <= 0.0) return@mapNotNull null
+            val bmi = weight.kilograms / (height.meters * height.meters)
+            BmiEntry(
+                value = bmi,
+                time = weight.time,
+                weightKg = weight.kilograms,
+                heightMeters = height.meters
+            )
+        }
     }
 }
 
