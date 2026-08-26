@@ -86,6 +86,8 @@
     <string name="dt_bf_rationale">Registra e direciona volumes nos rastreios no corpo enviando dados ao webhook nas finalizações desportivas contábeis.</string>
     <string name="dt_lbm_name">Massa Corporal Magra</string>
     <string name="dt_lbm_rationale">Massa enxuta encaminhada a base contábil para recompor teu painéis enviando via webhook no progresso e acompanhamento estrito teu corpo.</string>
+    <string name="dt_bwm_name">Massa de água corporal</string>
+    <string name="dt_bwm_rationale">Envie medições de massa de água corporal ao webhook para acompanhar hidratação e composição corporal de balanças inteligentes.</string>
     <string name="dt_vo2_name">VO₂ Máx</string>
     <string name="dt_vo2_rationale">Sinalize seus limites respiratórios na rotina gerada enviando sua taxa de força cardiorrespiratória ao painel com seu webhook acompanhando sua base.</string>
     <string name="dt_bone_name">Massa Óssea</string>

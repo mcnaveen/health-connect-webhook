@@ -86,6 +86,8 @@
     <string name="dt_bf_rationale">உடல் கொழுப்பு சதவிகித அளவீடுகளை அனுப்பி உடல் அமைப்பில் உள்ள மாற்றங்கள் மற்றும் உடற்பயிற்சியின் வளர்ச்சியைக் கண்காணிக்கச் செய்கிறது.</string>
     <string name="dt_lbm_name">தசை நிறை</string>
     <string name="dt_lbm_rationale">உடல் தசை நிறையின் அளவீட்டினை Webhook-க்கு வழங்கி, தசை வளர்ச்சி மற்றும் இழப்புகளைத் தொடர்ந்து கண்காணிக்க அனுமதிக்கிறது.</string>
+    <string name="dt_bwm_name">உடல் நீர் நிறை</string>
+    <string name="dt_bwm_rationale">ஸ்மார்ட் எடை அளவீடுகளிலிருந்து உடல் நீர் நிறை அளவீடுகளை Webhook-க்கு அனுப்பி நீரேற்றம் மற்றும் உடல் அமைப்பைக் கண்காணிக்கவும்.</string>
     <string name="dt_vo2_name">VO₂ அதிகபட்சம்</string>
     <string name="dt_vo2_rationale">VO₂ max அளவுகளை அனுப்பி உங்களின் பயிற்சி முறை மூலம் ஏரோபிக் உடற்திறன் மேம்பாடுகளை அறிந்துகொள்ளக் கண்காணிக்கிறது.</string>
     <string name="dt_bone_name">எலும்பு நிறை</string>

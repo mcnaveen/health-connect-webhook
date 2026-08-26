@@ -223,6 +223,22 @@ object MockPayloadBuilder {
                     add(buildJsonObject { put("kilograms", 61.5); put("time", t(7, 30).toString()) })
                 }
             }
+            if (include(HealthDataType.BODY_WATER_MASS.name)) {
+                putJsonArray("body_water_mass") {
+                    add(buildJsonObject { put("kilograms", 42.0); put("time", t(7, 30).toString()) })
+                }
+            }
+            if (include(HealthDataType.WEIGHT.name) && include(HealthDataType.HEIGHT.name)) {
+                // BMI = 75.5 / (1.78²) ≈ 23.83; mirrors SyncManager compute path
+                putJsonArray("bmi") {
+                    add(buildJsonObject {
+                        put("value", 75.5 / (1.78 * 1.78))
+                        put("time", t(7, 30).toString())
+                        put("weight_kg", 75.5)
+                        put("height_meters", 1.78)
+                    })
+                }
+            }
             if (include(HealthDataType.VO2_MAX.name)) {
                 putJsonArray("vo2_max") {
                     add(buildJsonObject { put("ml_per_kg_per_min", 48.0); put("time", t(9, 0).toString()) })

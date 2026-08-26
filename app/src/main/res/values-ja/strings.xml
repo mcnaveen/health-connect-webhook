@@ -86,6 +86,8 @@
     <string name="dt_bf_rationale">体脂肪率の計測をWebhookに送信し、体組成の変化と個人のフィットネス進捗を長期間監視します。</string>
     <string name="dt_lbm_name">除脂肪体重</string>
     <string name="dt_lbm_rationale">筋肉の増減など体組成の再構成の過程を確認するために除脂肪体重データをWebhook経由で自動取得させます。</string>
+    <string name="dt_bwm_name">体水分量</string>
+    <string name="dt_bwm_rationale">スマート体重計の体水分量をWebhookに送信し、水分状態と体組成を追跡します。</string>
     <string name="dt_vo2_name">VO₂ Max</string>
     <string name="dt_vo2_rationale">最大酸素摂取量(VO₂ Max)の読み取りデータを送信して、有酸素運動能力の改善点や持久力の効果を測定します。</string>
     <string name="dt_bone_name">骨量</string>

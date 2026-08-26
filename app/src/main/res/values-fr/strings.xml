@@ -86,6 +86,8 @@
     <string name="dt_bf_rationale">Transmettez vos relevés sur le pourcentage de masse grasse pour surveiller les évolutions de composition physique et corpulence.</string>
     <string name="dt_lbm_name">Masse corporelle maigre</string>
     <string name="dt_lbm_rationale">Envoyez la teneur en masse maigre à votre webhook afin de surveiller la prise et la perte musculaires.</string>
+    <string name="dt_bwm_name">Masse d\'eau corporelle</string>
+    <string name="dt_bwm_rationale">Transmettez les mesures de masse d\'eau corporelle à votre webhook pour suivre l\'hydratation et la composition corporelle.</string>
     <string name="dt_vo2_name">VO₂ Max</string>
     <string name="dt_vo2_rationale">Transmetsez les données de VO₂ max à votre webhook pour suivre l\’endurance et surveiller les progrès et améliorations de condition.</string>
     <string name="dt_bone_name">Masse osseuse</string>
