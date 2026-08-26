@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch: # Manual trigger when a tag push did not start the release
 
 permissions:
   contents: write
