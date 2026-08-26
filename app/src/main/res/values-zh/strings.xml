@@ -11,8 +11,8 @@
     <string name="onboarding_welcome_title">Health Connect 到 Webhook</string>
     <string name="onboarding_welcome_subtitle">自动将您的健康数据转发到任何 webhook。</string>
     <string name="onboarding_thank_you">感谢您的支持！</string>
-    <string name="onboarding_thank_you_title">谢谢！</string>
-    <string name="onboarding_thank_you_desc">您的支持帮助这款应用持续改进。祝您健康数据同步愉快！</string>
+    <string name="onboarding_thank_you_title">一切就绪！</string>
+    <string name="onboarding_thank_you_desc">配置你的 webhook 并开始同步。如果出现问题或想要新功能，请打开设置 → 提供反馈。</string>
     
     <string name="onboarding_feature1_title">您选择要同步的内容</string>
     <string name="onboarding_feature1_desc">仅选择您想要转发的健康数据类型。</string>
@@ -37,7 +37,7 @@
     <string name="onboarding_privacy_p3">您的数据直接发送到您自己的 webhook URL — 不会发往其他地方</string>
     <string name="onboarding_privacy_p4">没有任何数据存储在任何外部服务器上</string>
     <string name="onboarding_privacy_p5">您的数据绝不会出售或与任何人共享</string>
-    <string name="onboarding_privacy_footer">有反馈或建议？欢迎随时前往“设置”标签页 — 我们很乐意收到您的意见。</string>
+    <string name="onboarding_privacy_footer">有反馈或建议？随时打开“设置”标签页，然后点按“提供反馈”。</string>
     <string name="onboarding_privacy_warning_title">仅使用官方版本</string>
     <string name="onboarding_privacy_warning_desc">此应用的破解版或修改版可能会窃取您的 webhook URL 或将您的健康数据发送到未知服务器。请始终从 Google Play 下载。</string>
     <string name="medical_disclaimer_title">本应用不是医疗设备</string>
@@ -254,6 +254,12 @@
     <string name="feedback_rate_limited">提交过于频繁。请稍等几分钟。</string>
     <string name="feedback_history_title">您的提交</string>
     <string name="feedback_view_all">查看所有功能请求</string>
+    <string name="feedback_weekly_title">我们需要你的反馈</string>
+    <string name="feedback_weekly_desc">你已使用 HC Webhook 一周。告诉我们哪里出了问题、还缺什么，或怎样能让同步更好。大约只需一分钟。</string>
+    <string name="feedback_weekly_cta">立即发送反馈</string>
+    <string name="feedback_weekly_dismiss">关闭</string>
+    <string name="feedback_weekly_dismiss_hint">你可以随时在设置 → 提供反馈中发送反馈。</string>
+    <string name="feedback_weekly_debug_forced">已解锁每周反馈卡片。打开主页即可查看。</string>
     <string name="about_link_intro">查看简介</string>
     <string name="about_link_changelog">新功能</string>
     <string name="about_link_changelog_desc">版本历史和更新</string>

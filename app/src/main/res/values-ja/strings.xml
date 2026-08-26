@@ -11,8 +11,8 @@
     <string name="onboarding_welcome_title">Health Connect から Webhook へ</string>
     <string name="onboarding_welcome_subtitle">健康データを任意の Webhook に自動的に転送します。</string>
     <string name="onboarding_thank_you">ご支援ありがとうございます！</string>
-    <string name="onboarding_thank_you_title">ありがとうございます！</string>
-    <string name="onboarding_thank_you_desc">あなたのサポートがこのアプリの継続と改善を支えています。健康データの同期をお楽しみください！</string>
+    <string name="onboarding_thank_you_title">準備完了です！</string>
+    <string name="onboarding_thank_you_desc">Webhook を設定して同期を開始してください。不具合や新機能の要望がある場合は、「設定」→「フィードバックを提供する」を開いてください。</string>
     
     <string name="onboarding_feature1_title">同期するデータを選択できます</string>
     <string name="onboarding_feature1_desc">転送したい健康データの種類だけを選択してください。</string>
@@ -37,7 +37,7 @@
     <string name="onboarding_privacy_p3">データは設定されたWebhook URLに直接送信され、他の場所には送信されません。</string>
     <string name="onboarding_privacy_p4">外部サーバーには一切保存されません。</string>
     <string name="onboarding_privacy_p5">あなたのデータが販売されたり他者と共有されることはありません。</string>
-    <string name="onboarding_privacy_footer">ご意見やご提案がありましたら、いつでも「設定」タブからお知らせください。</string>
+    <string name="onboarding_privacy_footer">ご意見やご提案がありましたら、いつでも「設定」タブを開き、「フィードバックを提供する」をタップしてください。</string>
     <string name="onboarding_privacy_warning_title">公式版のみを使用してください</string>
     <string name="onboarding_privacy_warning_desc">このアプリの不正改造版などは、Webhook URLを盗んだり、健康データを未知のサーバーに送信するおそれがあります。必ずGoogle Playからダウンロードしてください。</string>
     <string name="medical_disclaimer_title">このアプリは医療機器ではありません</string>
@@ -254,6 +254,12 @@
     <string name="feedback_rate_limited">送信回数が多すぎます。数分お待ちください。</string>
     <string name="feedback_history_title">送信履歴</string>
     <string name="feedback_view_all">すべての機能リクエストを見る</string>
+    <string name="feedback_weekly_title">フィードバックをお願いします</string>
+    <string name="feedback_weekly_desc">HC Webhook を1週間お使いです。不具合、不足している点、同期を良くする方法を教えてください。約1分で送れます。</string>
+    <string name="feedback_weekly_cta">今すぐフィードバックを送る</string>
+    <string name="feedback_weekly_dismiss">閉じる</string>
+    <string name="feedback_weekly_dismiss_hint">フィードバックはいつでも「設定」→「フィードバックを提供する」から送れます。</string>
+    <string name="feedback_weekly_debug_forced">週次フィードバックカードを解除しました。ホームを開いて確認してください。</string>
     <string name="about_link_intro">概要を見る</string>
     <string name="about_link_changelog">新機能</string>
     <string name="about_link_changelog_desc">リリース履歴とアップデート</string>

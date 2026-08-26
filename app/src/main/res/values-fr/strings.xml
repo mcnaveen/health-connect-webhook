@@ -11,8 +11,8 @@
     <string name="onboarding_welcome_title">Health Connect vers Webhook</string>
     <string name="onboarding_welcome_subtitle">Transférez automatiquement vos données de santé vers n’importe quel webhook.</string>
     <string name="onboarding_thank_you">Merci pour votre soutien !</string>
-    <string name="onboarding_thank_you_title">Merci !</string>
-    <string name="onboarding_thank_you_desc">Votre soutien aide à maintenir cette application vivante et en amélioration. Profitez de la synchronisation de vos données de santé !</string>
+    <string name="onboarding_thank_you_title">Vous êtes prêt !</string>
+    <string name="onboarding_thank_you_desc">Configurez vos webhooks et lancez la synchronisation. Si quelque chose ne marche pas ou si vous voulez une nouvelle fonction, ouvrez Paramètres → Fournir des commentaires.</string>
     
     <string name="onboarding_feature1_title">Vous choisissez quoi synchroniser</string>
     <string name="onboarding_feature1_desc">Sélectionnez uniquement les types de données de santé que vous souhaitez transférer.</string>
@@ -37,7 +37,7 @@
     <string name="onboarding_privacy_p3">Vos données sont envoyées directement à vos propres URL webhook - nulle part ailleurs</string>
     <string name="onboarding_privacy_p4">Rien n’est stocké sur un serveur externe</string>
     <string name="onboarding_privacy_p5">Vos données ne sont jamais vendues ou partagées avec quiconque</string>
-   <string name="onboarding_privacy_footer">Vous avez des commentaires ou des suggestions ? Allez dans l\'onglet Paramètres à tout moment — nous serions ravis de vous entendre.</string>
+   <string name="onboarding_privacy_footer">Vous avez des commentaires ou des suggestions ? Ouvrez l\'onglet Paramètres à tout moment et appuyez sur Fournir des commentaires.</string>
     <string name="onboarding_privacy_warning_title">N\'utilisez que la version officielle</string>
     <string name="onboarding_privacy_warning_desc">Les versions piratées ou modifiées de cette application peuvent voler vos URL webhook ou envoyer vos données de santé à des serveurs inconnus. Téléchargez toujours depuis Google Play.</string>
     <string name="medical_disclaimer_title">Cette app n\'est pas un dispositif médical</string>
@@ -254,6 +254,12 @@
     <string name="feedback_rate_limited">Trop de soumissions. Veuillez patienter quelques minutes.</string>
     <string name="feedback_history_title">Vos soumissions</string>
     <string name="feedback_view_all">Voir toutes les demandes de fonctionnalités</string>
+    <string name="feedback_weekly_title">Nous avons besoin de vos commentaires</string>
+    <string name="feedback_weekly_desc">Vous utilisez HC Webhook depuis une semaine. Dites-nous ce qui ne fonctionne pas, ce qui manque ou ce qui améliorerait la synchronisation. Cela prend environ une minute.</string>
+    <string name="feedback_weekly_cta">Envoyer un commentaire maintenant</string>
+    <string name="feedback_weekly_dismiss">Ignorer</string>
+    <string name="feedback_weekly_dismiss_hint">Vous pouvez envoyer un commentaire à tout moment depuis Paramètres → Fournir des commentaires.</string>
+    <string name="feedback_weekly_debug_forced">Carte de commentaires hebdomadaire débloquée. Ouvrez Accueil pour la voir.</string>
     <string name="about_link_intro">Voir l\'introduction</string>
     <string name="about_link_changelog">Nouveautés</string>
     <string name="about_link_changelog_desc">Historique des versions et mises à jour</string>

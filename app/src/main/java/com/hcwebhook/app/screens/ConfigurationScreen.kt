@@ -22,10 +22,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Android
@@ -91,6 +93,16 @@ fun ConfigurationScreen(
     var batteryBannerDismissed by remember { mutableStateOf(preferencesManager.isBatteryBannerDismissed()) }
     val showBatteryBanner = isBatteryOptimized && !batteryBannerDismissed
 
+    var showDataTypesSheet by remember { mutableStateOf(false) }
+    var showPermissionsSheet by remember { mutableStateOf(false) }
+    var showFeedbackSheet by remember { mutableStateOf(false) }
+    var showWeeklyFeedbackPrompt by remember {
+        mutableStateOf(preferencesManager.shouldShowWeeklyFeedbackPrompt())
+    }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val feedbackSuccessMessage = stringResource(R.string.feedback_success)
+    val scope = rememberCoroutineScope()
+
     // Re-check battery optimization status every time the user returns to the app
     // (e.g. after granting the exemption in the system dialog).
     DisposableEffect(activity) {
@@ -98,6 +110,7 @@ fun ConfigurationScreen(
             if (event == Lifecycle.Event.ON_RESUME) {
                 val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
                 isBatteryOptimized = !pm.isIgnoringBatteryOptimizations(context.packageName)
+                showWeeklyFeedbackPrompt = preferencesManager.shouldShowWeeklyFeedbackPrompt()
             }
         }
         activity.lifecycle.addObserver(observer)
@@ -107,8 +120,10 @@ fun ConfigurationScreen(
     val oemDeepLinkIntent = remember { BatteryOptimizationHelper.buildOemDeepLinkIntent() }
     val oemLabel = remember { BatteryOptimizationHelper.oemDeepLinkLabel() }
 
-    var showDataTypesSheet by remember { mutableStateOf(false) }
-    var showPermissionsSheet by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        preferencesManager.ensureFirstOpenTime()
+        showWeeklyFeedbackPrompt = preferencesManager.shouldShowWeeklyFeedbackPrompt()
+    }
 
     var lastSyncTime by remember { mutableStateOf(preferencesManager.getLastSyncTime()) }
     var lastSyncSummary by remember { mutableStateOf(preferencesManager.getLastSyncSummary()) }
@@ -176,6 +191,7 @@ fun ConfigurationScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
             if (missingPermissionsForEnabled.isNotEmpty()) {
                 ExtendedFloatingActionButton(
@@ -250,6 +266,73 @@ fun ConfigurationScreen(
                             tint = Color(0xFF4CAF50),
                             modifier = Modifier.size(20.dp),
                         )
+                    }
+                }
+            }
+
+            // ── Weekly feedback prompt (after 7 days, until dismissed) ────────
+            if (showWeeklyFeedbackPrompt) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .background(IconBackgroundPurple),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Chat,
+                                    contentDescription = null,
+                                    tint = IconTintPurple,
+                                    modifier = Modifier.size(22.dp),
+                                )
+                            }
+                            Text(
+                                text = stringResource(R.string.feedback_weekly_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = stringResource(R.string.feedback_weekly_desc),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Button(
+                            onClick = { showFeedbackSheet = true },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.feedback_weekly_cta))
+                        }
+                        TextButton(
+                            onClick = {
+                                showWeeklyFeedbackPrompt = false
+                                preferencesManager.setWeeklyFeedbackPromptDismissed(true)
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.feedback_weekly_dismiss_hint),
+                                    Toast.LENGTH_LONG,
+                                ).show()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.feedback_weekly_dismiss))
+                        }
                     }
                 }
             }
@@ -735,6 +818,21 @@ fun ConfigurationScreen(
                 }
             )
         }
+
+        FeedbackSheet(
+            visible = showFeedbackSheet,
+            onDismiss = { showFeedbackSheet = false },
+            onSubmitted = {
+                showFeedbackSheet = false
+                if (showWeeklyFeedbackPrompt) {
+                    showWeeklyFeedbackPrompt = false
+                    preferencesManager.setWeeklyFeedbackPromptDismissed(true)
+                }
+                scope.launch {
+                    snackbarHostState.showSnackbar(feedbackSuccessMessage)
+                }
+            },
+        )
     }
 }
 
