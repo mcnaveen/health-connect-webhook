@@ -171,12 +171,18 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                                 }
 
                                 val result = if (timeRangeSelection == -1) {
-                                    // custom date range
-                                    val startInstant = startDate?.atStartOfDay(ZoneOffset.UTC)?.toInstant()
-                                    // normalize both boundaries to midnight UTC
-                                    val endInstant = endDate?.plusDays(1)?.atStartOfDay(ZoneOffset.UTC)?.toInstant()
+                                    // Custom range: inclusive local calendar days
+                                    // [startDate 00:00, endDate+1 00:00) in the device zone.
+                                    val zone = ZoneId.systemDefault()
+                                    val startInstant = startDate?.atStartOfDay(zone)?.toInstant()
+                                    val endInstant = endDate?.plusDays(1)?.atStartOfDay(zone)?.toInstant()
                                     if (startInstant == null || endInstant == null) {
                                         syncMessage = context.getString(R.string.err_select_both_dates)
+                                        isSyncing = false
+                                        return@launch
+                                    }
+                                    if (!startInstant.isBefore(endInstant)) {
+                                        syncMessage = context.getString(R.string.err_end_date_before_start)
                                         isSyncing = false
                                         return@launch
                                     }
@@ -418,9 +424,22 @@ fun ManualSyncCard(onSyncCompleted: () -> Unit = {}) {
                 }
             }
 
+            val isCustomRange = selectedOptionIndex == timeRangeOptions.indexOfFirst { it.second == -1 }
+            val selectedStart = startDate
+            val selectedEnd = endDate
+            val today = LocalDate.now()
+            val customRangeValid = !isCustomRange || (
+                selectedStart != null &&
+                    selectedEnd != null &&
+                    !selectedEnd.isBefore(selectedStart) &&
+                    !selectedEnd.isAfter(today)
+                )
+
             Button(
                 onClick = { showConfirmSheet = true },
-                enabled = !isSyncing && (webhookConfigs.isNotEmpty() || localTcpEnabled),
+                enabled = !isSyncing &&
+                    (webhookConfigs.isNotEmpty() || localTcpEnabled) &&
+                    customRangeValid,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 if (isSyncing) {

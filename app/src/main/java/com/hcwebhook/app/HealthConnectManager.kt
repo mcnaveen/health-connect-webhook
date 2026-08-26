@@ -856,6 +856,32 @@ class HealthConnectManager(private val context: Context) {
         return readRawTotalCaloriesData(startTime, endTime, null).sumOf { it.calories }
     }
 
+    /**
+     * Local calendar days that overlap the half-open window [startTime, endTime).
+     *
+     * Custom sync ends at midnight of the day after the selected end date.
+     * Mapping that exclusive end with [Instant.atZone] + [LocalDate] alone
+     * includes an empty day where queryStart == queryEnd. Health Connect then
+     * rejects [TimeRangeFilter.between] with "Start time must be before end time".
+     */
+    private fun localDatesOverlappingExclusiveEnd(
+        startTime: Instant,
+        endTime: Instant,
+        zone: ZoneId,
+    ): List<LocalDate> {
+        if (!startTime.isBefore(endTime)) return emptyList()
+        val startLocalDate = startTime.atZone(zone).toLocalDate()
+        val endLocalDate = endTime.minusNanos(1).atZone(zone).toLocalDate()
+        if (endLocalDate.isBefore(startLocalDate)) return emptyList()
+        val dates = mutableListOf<LocalDate>()
+        var current = startLocalDate
+        while (!current.isAfter(endLocalDate)) {
+            dates.add(current)
+            current = current.plusDays(1)
+        }
+        return dates
+    }
+
     private suspend fun readStepsData(
         startTime: Instant,
         endTime: Instant,
@@ -921,14 +947,10 @@ class HealthConnectManager(private val context: Context) {
         // Aggregate steps per calendar day (using device timezone) instead of
         // a single multi-day total. This produces clean per-day records that
         // the server can use directly without delta-tracking hacks.
-        val zone = java.time.ZoneId.systemDefault()
+        val zone = ZoneId.systemDefault()
         val result = mutableListOf<StepsData>()
 
-        val startLocalDate = startTime.atZone(zone).toLocalDate()
-        val endLocalDate = endTime.atZone(zone).toLocalDate()
-
-        var currentDate = startLocalDate
-        while (!currentDate.isAfter(endLocalDate)) {
+        for (currentDate in localDatesOverlappingExclusiveEnd(startTime, endTime, zone)) {
             val dayStart = currentDate.atStartOfDay(zone).toInstant()
             val dayEnd = currentDate.plusDays(1).atStartOfDay(zone).toInstant()
 
@@ -936,11 +958,9 @@ class HealthConnectManager(private val context: Context) {
             val queryStart = if (dayStart.isBefore(startTime)) startTime else dayStart
             val queryEnd = if (dayEnd.isAfter(endTime)) endTime else dayEnd
 
-            // Skip days entirely before lastSync
-            if (lastSync != null && queryEnd.isBefore(lastSync)) {
-                currentDate = currentDate.plusDays(1)
-                continue
-            }
+            // Skip empty clamps (exclusive end on midnight) and days before lastSync
+            if (!queryStart.isBefore(queryEnd)) continue
+            if (lastSync != null && queryEnd.isBefore(lastSync)) continue
 
             val aggregateRequest = AggregateRequest(
                 metrics = setOf(StepsRecord.COUNT_TOTAL),
@@ -967,8 +987,6 @@ class HealthConnectManager(private val context: Context) {
                     endTime = queryEnd
                 ))
             }
-
-            currentDate = currentDate.plusDays(1)
         }
 
         return result
@@ -1144,24 +1162,18 @@ class HealthConnectManager(private val context: Context) {
         // Aggregate distance per calendar day (same pattern as steps).
         // If the aggregate returns null (e.g., Google Health/Fit data after the Fitbit rebrand),
         // fall back to summing raw DistanceRecord entries so distance is never silently omitted.
-        val zone = java.time.ZoneId.systemDefault()
+        val zone = ZoneId.systemDefault()
         val result = mutableListOf<DistanceData>()
 
-        val startLocalDate = startTime.atZone(zone).toLocalDate()
-        val endLocalDate = endTime.atZone(zone).toLocalDate()
-
-        var currentDate = startLocalDate
-        while (!currentDate.isAfter(endLocalDate)) {
+        for (currentDate in localDatesOverlappingExclusiveEnd(startTime, endTime, zone)) {
             val dayStart = currentDate.atStartOfDay(zone).toInstant()
             val dayEnd = currentDate.plusDays(1).atStartOfDay(zone).toInstant()
 
             val queryStart = if (dayStart.isBefore(startTime)) startTime else dayStart
             val queryEnd = if (dayEnd.isAfter(endTime)) endTime else dayEnd
 
-            if (lastSync != null && queryEnd.isBefore(lastSync)) {
-                currentDate = currentDate.plusDays(1)
-                continue
-            }
+            if (!queryStart.isBefore(queryEnd)) continue
+            if (lastSync != null && queryEnd.isBefore(lastSync)) continue
 
             val aggregateRequest = AggregateRequest(
                 metrics = setOf(DistanceRecord.DISTANCE_TOTAL),
@@ -1188,8 +1200,6 @@ class HealthConnectManager(private val context: Context) {
                     endTime = queryEnd
                 ))
             }
-
-            currentDate = currentDate.plusDays(1)
         }
 
         return result
@@ -1249,24 +1259,18 @@ class HealthConnectManager(private val context: Context) {
         lastSync: Instant?,
     ): List<ActiveCaloriesData> {
         // Aggregate active calories per calendar day (same pattern as steps/distance)
-        val zone = java.time.ZoneId.systemDefault()
+        val zone = ZoneId.systemDefault()
         val result = mutableListOf<ActiveCaloriesData>()
 
-        val startLocalDate = startTime.atZone(zone).toLocalDate()
-        val endLocalDate = endTime.atZone(zone).toLocalDate()
-
-        var currentDate = startLocalDate
-        while (!currentDate.isAfter(endLocalDate)) {
+        for (currentDate in localDatesOverlappingExclusiveEnd(startTime, endTime, zone)) {
             val dayStart = currentDate.atStartOfDay(zone).toInstant()
             val dayEnd = currentDate.plusDays(1).atStartOfDay(zone).toInstant()
 
             val queryStart = if (dayStart.isBefore(startTime)) startTime else dayStart
             val queryEnd = if (dayEnd.isAfter(endTime)) endTime else dayEnd
 
-            if (lastSync != null && queryEnd.isBefore(lastSync)) {
-                currentDate = currentDate.plusDays(1)
-                continue
-            }
+            if (!queryStart.isBefore(queryEnd)) continue
+            if (lastSync != null && queryEnd.isBefore(lastSync)) continue
 
             val aggregateRequest = AggregateRequest(
                 metrics = setOf(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL),
@@ -1293,8 +1297,6 @@ class HealthConnectManager(private val context: Context) {
                     endTime = queryEnd
                 ))
             }
-
-            currentDate = currentDate.plusDays(1)
         }
 
         return result
@@ -1352,22 +1354,17 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?,
     ): List<TotalCaloriesData> {
-        val zone = java.time.ZoneId.systemDefault()
+        val zone = ZoneId.systemDefault()
         val result = mutableListOf<TotalCaloriesData>()
-        val startLocalDate = startTime.atZone(zone).toLocalDate()
-        val endLocalDate = endTime.atZone(zone).toLocalDate()
 
-        var currentDate = startLocalDate
-        while (!currentDate.isAfter(endLocalDate)) {
+        for (currentDate in localDatesOverlappingExclusiveEnd(startTime, endTime, zone)) {
             val dayStart = currentDate.atStartOfDay(zone).toInstant()
             val dayEnd = currentDate.plusDays(1).atStartOfDay(zone).toInstant()
             val queryStart = if (dayStart.isBefore(startTime)) startTime else dayStart
             val queryEnd = if (dayEnd.isAfter(endTime)) endTime else dayEnd
 
-            if (lastSync != null && queryEnd.isBefore(lastSync)) {
-                currentDate = currentDate.plusDays(1)
-                continue
-            }
+            if (!queryStart.isBefore(queryEnd)) continue
+            if (lastSync != null && queryEnd.isBefore(lastSync)) continue
 
             val dayCalories = readRawTotalCaloriesData(queryStart, queryEnd, null)
                 .sumOf { it.calories }
@@ -1381,7 +1378,6 @@ class HealthConnectManager(private val context: Context) {
                     ),
                 )
             }
-            currentDate = currentDate.plusDays(1)
         }
         return result
     }
@@ -1703,26 +1699,20 @@ class HealthConnectManager(private val context: Context) {
     ): List<HydrationData> {
         val zone = ZoneId.systemDefault()
         val result = mutableListOf<HydrationData>()
-        val startLocalDate = startTime.atZone(zone).toLocalDate()
-        val endLocalDate = endTime.atZone(zone).toLocalDate()
 
-        var currentDate = startLocalDate
-        while (!currentDate.isAfter(endLocalDate)) {
+        for (currentDate in localDatesOverlappingExclusiveEnd(startTime, endTime, zone)) {
             val dayStart = currentDate.atStartOfDay(zone).toInstant()
             val dayEnd = currentDate.plusDays(1).atStartOfDay(zone).toInstant()
             val queryStart = if (dayStart.isBefore(startTime)) startTime else dayStart
             val queryEnd = if (dayEnd.isAfter(endTime)) endTime else dayEnd
 
-            if (lastSync != null && queryEnd.isBefore(lastSync)) {
-                currentDate = currentDate.plusDays(1)
-                continue
-            }
+            if (!queryStart.isBefore(queryEnd)) continue
+            if (lastSync != null && queryEnd.isBefore(lastSync)) continue
 
             val dayLiters = readRawHydrationData(queryStart, queryEnd, null).sumOf { it.liters }
             if (dayLiters > 0.0) {
                 result.add(HydrationData(dayLiters, dayStart, queryEnd))
             }
-            currentDate = currentDate.plusDays(1)
         }
         return result
     }
@@ -1807,26 +1797,20 @@ class HealthConnectManager(private val context: Context) {
     ): List<NutritionData> {
         val zone = ZoneId.systemDefault()
         val result = mutableListOf<NutritionData>()
-        val startLocalDate = startTime.atZone(zone).toLocalDate()
-        val endLocalDate = endTime.atZone(zone).toLocalDate()
 
-        var currentDate = startLocalDate
-        while (!currentDate.isAfter(endLocalDate)) {
+        for (currentDate in localDatesOverlappingExclusiveEnd(startTime, endTime, zone)) {
             val dayStart = currentDate.atStartOfDay(zone).toInstant()
             val dayEnd = currentDate.plusDays(1).atStartOfDay(zone).toInstant()
             val queryStart = if (dayStart.isBefore(startTime)) startTime else dayStart
             val queryEnd = if (dayEnd.isAfter(endTime)) endTime else dayEnd
 
-            if (lastSync != null && queryEnd.isBefore(lastSync)) {
-                currentDate = currentDate.plusDays(1)
-                continue
-            }
+            if (!queryStart.isBefore(queryEnd)) continue
+            if (lastSync != null && queryEnd.isBefore(lastSync)) continue
 
             val dayRecords = readRawNutritionData(queryStart, queryEnd, null)
             if (dayRecords.isNotEmpty()) {
                 result.add(mergeNutritionRecords(dayRecords, dayStart, queryEnd))
             }
-            currentDate = currentDate.plusDays(1)
         }
         return result
     }
