@@ -69,13 +69,26 @@ class SyncManager(private val context: Context) {
                 )
             }
 
-            val jsonPayload = buildJsonPayload(healthDataResult.getOrThrow())
+            val jsonPayload = try {
+                buildJsonPayload(healthDataResult.getOrThrow())
+            } catch (oom: OutOfMemoryError) {
+                return@withContext Result.failure(
+                    Exception(
+                        "Out of memory while building JSON. Raise sample resolution or use a shorter range.",
+                        oom
+                    )
+                )
+            }
             LocalHttpServerManager.publishPayload(jsonPayload)
             Result.success(jsonPayload)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             Result.failure(e)
+        } catch (e: OutOfMemoryError) {
+            Result.failure(
+                Exception("Out of memory while reading health data. Raise sample resolution or use a shorter range.", e)
+            )
         }
     }
 
@@ -134,8 +147,28 @@ class SyncManager(private val context: Context) {
                 return@withContext Result.success(SyncResult.NoData)
             }
 
+            val recordCount = countHealthData(healthData)
+            if (recordCount > MAX_RECORDS_PER_PAYLOAD) {
+                return@withContext Result.failure(
+                    Exception(
+                        "Payload too large ($recordCount records). " +
+                            "Raise sample resolution (e.g. heart rate 1 min) or sync a shorter range."
+                    )
+                )
+            }
+
             // Build full payload (also used by local TCP server)
-            val fullPayload = buildJsonPayload(healthData)
+            val fullPayload = try {
+                buildJsonPayload(healthData)
+            } catch (oom: OutOfMemoryError) {
+                return@withContext Result.failure(
+                    Exception(
+                        "Out of memory while building JSON ($recordCount records). " +
+                            "Raise sample resolution or sync a shorter range.",
+                        oom
+                    )
+                )
+            }
             LocalHttpServerManager.publishPayload(fullPayload)
 
             // Post to each enabled webhook with optional per-webhook data type filtering
@@ -156,7 +189,15 @@ class SyncManager(private val context: Context) {
                     }
                     if (isHealthDataEmpty(filteredData)) continue
                     atLeastOneAttempted = true
-                    val payload = if (config.dataTypeFilter != null) buildJsonPayload(filteredData) else fullPayload
+                    val payload = try {
+                        if (config.dataTypeFilter != null) buildJsonPayload(filteredData) else fullPayload
+                    } catch (oom: OutOfMemoryError) {
+                        lastFailure = Exception(
+                            "Out of memory while building JSON for ${config.url}. Raise sample resolution.",
+                            oom
+                        )
+                        continue
+                    }
                     val totalRecords = countHealthData(filteredData)
 
                     val manager = WebhookManager(
@@ -222,6 +263,13 @@ class SyncManager(private val context: Context) {
             throw e
         } catch (e: Exception) {
             Result.failure(e)
+        } catch (e: OutOfMemoryError) {
+            Result.failure(
+                Exception(
+                    "Out of memory during sync. Raise sample resolution (e.g. heart rate 1 min) or sync a shorter range.",
+                    e
+                )
+            )
         }
     }
 
@@ -910,6 +958,14 @@ class SyncManager(private val context: Context) {
         } // End of buildJsonObject block
 
         return json.toString()
+    }
+
+    companion object {
+        /**
+         * Soft cap before JSON encode. Full-resolution heart rate over 48h can
+         * exceed this and OOMs mid-tier devices while building JsonObject trees.
+         */
+        private const val MAX_RECORDS_PER_PAYLOAD = 25_000
     }
 
     private data class BmiEntry(

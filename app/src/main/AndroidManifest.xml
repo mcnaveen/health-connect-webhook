@@ -44,6 +44,7 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <!-- Notification Permission (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -98,11 +99,16 @@
                 android:value="true" />
         </service>
 
+        <!-- specialUse: long-lived local HTTP server must not share the dataSync 6h/24h quota -->
         <service
             android:name=".LocalHttpServerService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Local HTTP server for Health Connect webhook payloads" />
+        </service>
 
 
         <!-- One-shot foreground service for scheduled sync -->

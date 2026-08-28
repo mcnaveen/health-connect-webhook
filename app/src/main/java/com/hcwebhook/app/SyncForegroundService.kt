@@ -77,6 +77,10 @@ class SyncForegroundService : Service() {
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Sync failed in foreground service: ${e.message}", e)
+            } catch (e: OutOfMemoryError) {
+                // Error, not Exception — still must stop the FGS or Android 15 throws
+                // ForegroundServiceDidNotStopInTimeException after the dataSync quota.
+                Log.e(TAG, "Sync OOM in foreground service: ${e.message}", e)
             } finally {
                 isSyncRunning.set(false)
                 stopSelf(startId)
@@ -84,6 +88,18 @@ class SyncForegroundService : Service() {
         }
 
         return START_NOT_STICKY
+    }
+
+    /**
+     * Android 15+ dataSync FGS: total 6 hours per 24 hours. Stop within a few
+     * seconds when the system calls this, or the process crashes with
+     * ForegroundServiceDidNotStopInTimeException.
+     */
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        Log.w(TAG, "dataSync FGS timeout (fgsType=$fgsType); cancelling sync")
+        job.cancel()
+        isSyncRunning.set(false)
+        stopSelf(startId)
     }
 
     private fun rescheduleAlarmIfNeeded(scheduleId: String?) {

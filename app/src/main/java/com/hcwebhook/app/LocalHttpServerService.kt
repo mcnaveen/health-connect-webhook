@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,11 +37,7 @@ class LocalHttpServerService : Service() {
             else -> {
                 try {
                     val notification = buildNotification()
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
-                    } else {
-                        startForeground(NOTIFICATION_ID, notification)
-                    }
+                    promoteToForeground(notification)
                 } catch (_: Exception) {
                     stopSelf()
                     return START_NOT_STICKY
@@ -51,6 +48,17 @@ class LocalHttpServerService : Service() {
             }
         }
         return START_STICKY
+    }
+
+    /**
+     * Android 15+ can still stop a specialUse FGS under policy. Stop cleanly
+     * within a few seconds so the system does not throw
+     * ForegroundServiceDidNotStopInTimeException.
+     */
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        Log.w(TAG, "Foreground service timeout (fgsType=$fgsType); stopping local HTTP server")
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf(startId)
     }
 
     override fun onDestroy() {
@@ -64,6 +72,27 @@ class LocalHttpServerService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun promoteToForeground(notification: Notification) {
+        when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                )
+            }
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
+                // specialUse requires API 34+; older releases use dataSync for the same role.
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                )
+            }
+            else -> startForeground(NOTIFICATION_ID, notification)
+        }
+    }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -98,6 +127,7 @@ class LocalHttpServerService : Service() {
     }
 
     companion object {
+        private const val TAG = "LocalHttpServerService"
         private const val CHANNEL_ID = "local_http_server_channel"
         private const val NOTIFICATION_ID = 1742
         private const val ACTION_START = "com.hcwebhook.app.action.LOCAL_HTTP_SERVER_START"

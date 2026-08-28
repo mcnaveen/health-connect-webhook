@@ -5,16 +5,16 @@ package com.hcwebhook.app
  *
  * Stored as minutes in preferences:
  * - [RESOLUTION_DAILY] (-1): one total per calendar day (interval types only)
- * - [RESOLUTION_FULL] (0): every raw record / sample (existing default for most types)
+ * - [RESOLUTION_FULL] (0): every raw record / sample
  * - [SLEEP_SUMMARY] (1): sleep sessions without stage breakdown
- * - positive N: bucket raw data into N-minute windows
+ * - positive N: bucket raw data into N-minute windows (default for sample series is 1)
  */
 enum class DataResolutionFamily {
     /** Default daily aggregate; also supports full raw and N-minute buckets. */
     INTERVAL_WITH_DAILY,
     /** Default raw intervals; optional daily and N-minute buckets. */
     INTERVAL_RAW_DEFAULT,
-    /** Default every sample; optional N-minute avg/min/max buckets. */
+    /** Default 1-minute buckets; optional full samples or wider N-minute buckets. */
     SAMPLE_SERIES,
     /** Default full session with stages; optional summary without stages. */
     SLEEP_SESSION,
@@ -41,13 +41,13 @@ val HealthDataType.resolutionFamily: DataResolutionFamily?
         else -> null
     }
 
-/** Preserves pre-resolution behavior for each type when the user has not changed settings. */
+/** Preserves pre-resolution behavior for interval/sleep; sample series default to 1-minute buckets to avoid OutOfMemoryError on full raw samples. */
 val HealthDataType.defaultResolutionMinutes: Int
     get() = when (resolutionFamily) {
         DataResolutionFamily.INTERVAL_WITH_DAILY -> RESOLUTION_DAILY
         DataResolutionFamily.INTERVAL_RAW_DEFAULT,
-        DataResolutionFamily.SAMPLE_SERIES,
         DataResolutionFamily.SLEEP_SESSION -> RESOLUTION_FULL
+        DataResolutionFamily.SAMPLE_SERIES -> 1
         null -> RESOLUTION_FULL
     }
 
