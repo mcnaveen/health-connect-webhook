@@ -73,6 +73,7 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
             mutableStateOf(config.dataTypeFilter ?: globalEnabledTypes)
         }
         var selectedNotificationIds by remember(capturedIndex) { mutableStateOf(config.notificationConfigIds) }
+        var editPayloadPreset by remember(capturedIndex) { mutableStateOf(config.payloadPreset) }
         var showDeleteConfirm by remember(capturedIndex) { mutableStateOf(false) }
         var testLoading by remember(capturedIndex) { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
@@ -91,14 +92,15 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
             if (orphanedIds.isNotEmpty()) showUnlinkConfirm = true
         }
 
-        val hasUnsavedChanges by remember(editName, editUrl, currentHeaders, filterAll, selectedTypes, selectedNotificationIds) {
+        val hasUnsavedChanges by remember(editName, editUrl, currentHeaders, filterAll, selectedTypes, selectedNotificationIds, editPayloadPreset) {
             derivedStateOf {
                 editName.trim() != config.name ||
                 editUrl.trim() != config.url ||
                 currentHeaders != config.headers ||
                 filterAll != (config.dataTypeFilter == null) ||
                 (!filterAll && selectedTypes != (config.dataTypeFilter ?: globalEnabledTypes)) ||
-                selectedNotificationIds != config.notificationConfigIds
+                selectedNotificationIds != config.notificationConfigIds ||
+                editPayloadPreset != config.payloadPreset
             }
         }
 
@@ -243,6 +245,41 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                                         )
                                     }
                                 }
+                            }
+                        }
+                    }
+                }
+
+                // ── Payload format ───────────────────────────────────────────
+                SheetSection {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            stringResource(R.string.webhooks_payload_format_section),
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        Text(
+                            stringResource(R.string.webhooks_payload_format_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            WebhookPayloadPreset.entries.forEach { preset ->
+                                val label = when (preset) {
+                                    WebhookPayloadPreset.DEFAULT -> stringResource(R.string.webhooks_payload_preset_default)
+                                    WebhookPayloadPreset.CAMEL_CASE -> stringResource(R.string.webhooks_payload_preset_camel_case)
+                                    WebhookPayloadPreset.OPEN_WEARABLES -> stringResource(R.string.webhooks_payload_preset_open_wearables)
+                                }
+                                FilterChip(
+                                    selected = editPayloadPreset == preset,
+                                    onClick = { editPayloadPreset = preset },
+                                    label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                                    leadingIcon = if (editPayloadPreset == preset) {
+                                        { Icon(Icons.Filled.Check, null, Modifier.size(14.dp)) }
+                                    } else null
+                                )
                             }
                         }
                     }
@@ -507,10 +544,14 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                             val testConfig = WebhookConfig(
                                 url = editUrl.trim(),
                                 headers = currentHeaders,
-                                isEnabled = true
+                                isEnabled = true,
+                                payloadPreset = editPayloadPreset
                             )
                             val typesForMock = if (filterAll) globalEnabledTypes else selectedTypes
-                            val mockPayload = MockPayloadBuilder.build(typesForMock.ifEmpty { null }, appVersion)
+                            val mockPayload = WebhookPayloadTransformer.transform(
+                                MockPayloadBuilder.build(typesForMock.ifEmpty { null }, appVersion),
+                                editPayloadPreset
+                            )
                             scope.launch {
                                 val result = withContext(Dispatchers.IO) {
                                     WebhookManager(
@@ -563,7 +604,8 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                                 url = trimmedUrl,
                                 headers = currentHeaders,
                                 dataTypeFilter = newFilter,
-                                notificationConfigIds = selectedNotificationIds
+                                notificationConfigIds = selectedNotificationIds,
+                                payloadPreset = editPayloadPreset
                             )
                             webhookConfigs = list
                             sheetIndex = -1
@@ -701,6 +743,14 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                                         val f = config.dataTypeFilter?.size
                                         if (h > 0) add(stringResource(R.string.webhooks_headers_count, h))
                                         if (f != null) add(stringResource(R.string.webhooks_data_types_filter_count, f))
+                                        if (config.payloadPreset != WebhookPayloadPreset.DEFAULT) {
+                                            val presetLabel = when (config.payloadPreset) {
+                                                WebhookPayloadPreset.CAMEL_CASE -> stringResource(R.string.webhooks_payload_preset_camel_case)
+                                                WebhookPayloadPreset.OPEN_WEARABLES -> stringResource(R.string.webhooks_payload_preset_open_wearables)
+                                                WebhookPayloadPreset.DEFAULT -> stringResource(R.string.webhooks_payload_preset_default)
+                                            }
+                                            add(stringResource(R.string.webhooks_payload_format_label, presetLabel))
+                                        }
                                     }.joinToString(" · ")
                                     if (meta.isNotEmpty()) {
                                         Text(

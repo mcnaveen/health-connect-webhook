@@ -10,6 +10,7 @@ data class WebhookConfig(
     val isEnabled: Boolean = true,
     // null = send all globally-enabled data types; non-null = send only these types
     val dataTypeFilter: Set<String>? = null,
+    val payloadPreset: WebhookPayloadPreset = WebhookPayloadPreset.DEFAULT,
     // Optional: IDs referencing global NotificationConfigs from PreferencesManager
     val notificationConfigIds: Set<String> = emptySet()
 ) {

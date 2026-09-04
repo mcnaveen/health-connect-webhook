@@ -1,8 +1,8 @@
 # Webhook payload reference
 
-HC Webhook delivers health data as a **single JSON object** in the HTTP request body. The same structure is used for **remote webhooks** (POST) and for responses from the **optional local HTTP server** (GET), so one schema covers both.
+HC Webhook delivers health data as a **single JSON object** in the HTTP request body. **Remote webhooks** (POST) use the default schema below unless you pick a **payload format preset** for that URL. The **optional local HTTP server** (GET) always returns the default schema.
 
-Implementation: `buildJsonPayload` in `app/src/main/java/com/hcwebhook/app/SyncManager.kt`.
+Implementation: `buildJsonPayload` in `app/src/main/java/com/hcwebhook/app/SyncManager.kt`. Preset transforms run in `WebhookPayloadTransformer` after the payload is built.
 
 ## HTTP request (remote webhooks)
 
@@ -13,6 +13,68 @@ Implementation: `buildJsonPayload` in `app/src/main/java/com/hcwebhook/app/SyncM
 | Body | UTF-8 JSON object (see below) |
 
 The app may attach **custom headers** per webhook URL as configured in the app. There is no built-in signature or auth header unless you add it there.
+
+## Payload format presets
+
+Each webhook URL can use a different **payload format preset** (Webhooks → edit webhook → **Payload format**). Presets reshape the JSON body before POST. Settings export/import includes the preset per webhook.
+
+| Preset | Description |
+|--------|-------------|
+| **Default (HC Webhook)** | Canonical schema on this page: snake_case keys, one top-level array per data type. |
+| **camelCase keys** | Same structure as default; all JSON keys are camelCase (e.g. `heart_rate` → `heartRate`, `app_version` → `appVersion`). |
+| **Open Wearables** | Envelope with `type: "health_data.synced"`, top-level `timestamp`, and a `data` object with `appVersion`, `source.provider: "hc_webhook"`, and a unified `records` array. Each record has a `type` field (snake_case data type name) plus camelCase fields from the original record. |
+
+This is a **batch sync** shape for platforms that expect nested `data` and a type-tagged records array. It is not identical to every [Open Wearables](https://openwearables.io/docs/api-reference/guides/webhooks) per-event webhook (`workout.created`, `timeseries.batch_saved`, etc.), but it avoids a separate translation service for common ingestion patterns.
+
+**Open Wearables preset example** (abbreviated):
+
+```json
+{
+  "type": "health_data.synced",
+  "timestamp": "2026-05-09T12:34:56.789Z",
+  "data": {
+    "appVersion": "1.9.17",
+    "source": { "provider": "hc_webhook" },
+    "records": [
+      {
+        "type": "steps",
+        "count": 8432,
+        "startTime": "2026-05-08T00:00:00Z",
+        "endTime": "2026-05-08T10:30:00Z"
+      },
+      {
+        "type": "heart_rate",
+        "bpm": 72,
+        "time": "2026-05-08T09:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+**camelCase preset example** (same data as default, different key names):
+
+```json
+{
+  "timestamp": "2026-05-09T12:34:56.789Z",
+  "appVersion": "1.9.17",
+  "steps": [
+    {
+      "count": 8432,
+      "startTime": "2026-05-08T00:00:00Z",
+      "endTime": "2026-05-08T10:30:00Z"
+    }
+  ],
+  "heartRate": [
+    {
+      "bpm": 72,
+      "time": "2026-05-08T09:00:00Z"
+    }
+  ]
+}
+```
+
+The sections below document the **default** schema. When a preset is active, map these field names to the preset rules above.
 
 Successful delivery is any HTTP **2xx** response. Failed requests are retried briefly (a few attempts with backoff); if all attempts fail, the next manual, interval, or scheduled sync can try again with the same incremental rules.
 

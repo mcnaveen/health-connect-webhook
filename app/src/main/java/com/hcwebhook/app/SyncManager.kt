@@ -190,7 +190,12 @@ class SyncManager(private val context: Context) {
                     if (isHealthDataEmpty(filteredData)) continue
                     atLeastOneAttempted = true
                     val payload = try {
-                        if (config.dataTypeFilter != null) buildJsonPayload(filteredData) else fullPayload
+                        val rawPayload = if (config.dataTypeFilter != null) {
+                            buildJsonPayload(filteredData)
+                        } else {
+                            fullPayload
+                        }
+                        WebhookPayloadTransformer.transform(rawPayload, config.payloadPreset)
                     } catch (oom: OutOfMemoryError) {
                         lastFailure = Exception(
                             "Out of memory while building JSON for ${config.url}. Raise sample resolution.",
