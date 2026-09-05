@@ -65,6 +65,50 @@ class ProtobufPayloadBuilderTest {
     }
 
     @Test
+    fun build_zoneOffsetIsInstantOrIntervalOneof() {
+        val t = Instant.parse("2026-05-09T12:00:00Z")
+        val data = emptyHealthData().copy(
+            steps = listOf(
+                StepsData(
+                    count = 10,
+                    startTime = t.minusSeconds(60),
+                    endTime = t,
+                    metadata = RecordMetadata(
+                        dataOrigin = "com.example",
+                        recordingMethod = "automatically_recorded",
+                        startZoneOffsetSeconds = -18000,
+                        endZoneOffsetSeconds = -14400,
+                    ),
+                )
+            ),
+            weight = listOf(
+                WeightData(
+                    kilograms = 70.0,
+                    time = t,
+                    metadata = RecordMetadata(
+                        dataOrigin = "com.example",
+                        recordingMethod = "manual_entry",
+                        zoneOffsetSeconds = 3600,
+                    ),
+                )
+            ),
+        )
+
+        val payload = ProtobufPayloadBuilder.build(data, "1.0.0", t)
+
+        val stepsMeta = payload.getSteps(0).metadata
+        assertTrue(stepsMeta.hasIntervalZoneOffset())
+        assertFalse(stepsMeta.hasInstantZoneOffsetSeconds())
+        assertEquals(-18000, stepsMeta.intervalZoneOffset.startZoneOffsetSeconds)
+        assertEquals(-14400, stepsMeta.intervalZoneOffset.endZoneOffsetSeconds)
+
+        val weightMeta = payload.getWeight(0).metadata
+        assertTrue(weightMeta.hasInstantZoneOffsetSeconds())
+        assertFalse(weightMeta.hasIntervalZoneOffset())
+        assertEquals(3600, weightMeta.instantZoneOffsetSeconds)
+    }
+
+    @Test
     fun build_computesBmiWhenWeightAndHeightPresent() {
         val t = Instant.parse("2026-05-09T08:00:00Z")
         val data = emptyHealthData().copy(

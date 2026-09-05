@@ -105,8 +105,9 @@ form differs where protobuf can be stricter than JSON:
   form is ever set.
 - `RecordMetadata` also carries `id`, `client_record_id`, `client_record_version`,
   `last_modified_time` (record identity for deduplication / update detection) and
-  `zone_offset_seconds` / `start_zone_offset_seconds` / `end_zone_offset_seconds`
-  (the UTC offsets Health Connect stores, for local-day aggregation).
+  a `zone_offset` oneof — `instant_zone_offset_seconds` for instant records or
+  `interval_zone_offset` (start/end) for interval records — the UTC offsets Health
+  Connect stores, for local-day aggregation.
 
 ### Schema distribution
 

@@ -88,11 +88,19 @@ message RecordMetadata {
   // When Health Connect last modified this record.
   google.protobuf.Timestamp last_modified_time = 9;
 
-  // UTC offset in effect at the record's instant, for instant records.
-  optional sint32 zone_offset_seconds = 10;
-  // UTC offsets in effect at the interval bounds, for interval records.
-  optional sint32 start_zone_offset_seconds = 11;
-  optional sint32 end_zone_offset_seconds = 12;
+  // UTC offset(s) Health Connect stores for this record. A record is either an
+  // instant record or an interval record, never both, so this is a oneof.
+  oneof zone_offset {
+    // In effect at the record's instant, for instant records.
+    sint32 instant_zone_offset_seconds = 10;
+    // In effect at the interval bounds, for interval records.
+    IntervalZoneOffset interval_zone_offset = 11;
+  }
+}
+
+message IntervalZoneOffset {
+  optional sint32 start_zone_offset_seconds = 1;
+  optional sint32 end_zone_offset_seconds = 2;
 }
 
 message StepsRecord {

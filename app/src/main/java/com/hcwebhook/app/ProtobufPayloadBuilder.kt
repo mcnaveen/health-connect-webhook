@@ -22,6 +22,7 @@ import com.hcwebhook.app.proto.v1.HeartRateVariabilitySample
 import com.hcwebhook.app.proto.v1.HeightRecord
 import com.hcwebhook.app.proto.v1.HydrationRecord
 import com.hcwebhook.app.proto.v1.IntermenstrualBleedingRecord
+import com.hcwebhook.app.proto.v1.IntervalZoneOffset
 import com.hcwebhook.app.proto.v1.MassRecord
 import com.hcwebhook.app.proto.v1.MenstruationFlowRecord
 import com.hcwebhook.app.proto.v1.MenstruationPeriodRecord
@@ -472,9 +473,14 @@ object ProtobufPayloadBuilder {
         deviceType?.let { b.setDeviceType(it) }
         clientRecordId?.let { b.setClientRecordId(it) }
         lastModifiedTime?.let { b.setLastModifiedTime(it.toTimestamp()) }
-        zoneOffsetSeconds?.let { b.setZoneOffsetSeconds(it) }
-        startZoneOffsetSeconds?.let { b.setStartZoneOffsetSeconds(it) }
-        endZoneOffsetSeconds?.let { b.setEndZoneOffsetSeconds(it) }
+        if (zoneOffsetSeconds != null) {
+            b.setInstantZoneOffsetSeconds(zoneOffsetSeconds)
+        } else if (startZoneOffsetSeconds != null || endZoneOffsetSeconds != null) {
+            val interval = IntervalZoneOffset.newBuilder()
+            startZoneOffsetSeconds?.let { interval.setStartZoneOffsetSeconds(it) }
+            endZoneOffsetSeconds?.let { interval.setEndZoneOffsetSeconds(it) }
+            b.setIntervalZoneOffset(interval.build())
+        }
         return b.build()
     }
 
