@@ -159,6 +159,17 @@
     <string name="webhooks_new_url_label">New Webhook URL</string>
     <string name="webhooks_action_add">Add Webhook</string>
     <string name="webhooks_toast_invalid_url">Please enter a valid HTTP/HTTPS URL</string>
+    <string name="webhooks_toast_invalid_target">Enter a valid HTTP URL or gRPC target (host:port)</string>
+    <string name="webhooks_delivery_section">Delivery format</string>
+    <string name="webhooks_delivery_json">JSON (HTTP POST)</string>
+    <string name="webhooks_delivery_grpc">Protobuf / gRPC</string>
+    <string name="webhooks_delivery_grpc_hint">Target: host:port, https://host, or http://host:port. Server must implement HealthWebhook.Deliver and return ok=true.</string>
+    <string name="webhooks_delivery_share_proto">Share schema (.proto)</string>
+    <string name="webhooks_delivery_share_proto_title">Share protobuf schema</string>
+    <string name="webhooks_delivery_share_proto_failed">Could not share schema: %1$s</string>
+    <string name="webhooks_delivery_format_label">%1$s</string>
+    <string name="webhooks_url_label_json">Webhook URL</string>
+    <string name="webhooks_url_label_grpc">gRPC target</string>
     <string name="webhooks_headers_manage_title">Manage Headers</string>
     <string name="webhooks_headers_for_url">Headers for %1$s</string>
     <string name="webhooks_headers_empty">No headers added</string>

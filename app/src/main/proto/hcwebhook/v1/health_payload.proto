@@ -1,0 +1,295 @@
+syntax = "proto3";
+
+package hcwebhook.v1;
+
+option java_multiple_files = true;
+option java_package = "com.hcwebhook.app.proto.v1";
+option java_outer_classname = "HealthPayloadProto";
+
+// Mirrors the JSON webhook schema in docs/webhook.md.
+// Generate server stubs from this file in any gRPC language.
+
+service HealthWebhook {
+  // Unary deliver of one sync batch. Server should return ok=true on accept.
+  rpc Deliver (HealthPayload) returns (DeliverResponse);
+}
+
+message DeliverResponse {
+  bool ok = 1;
+  string message = 2;
+}
+
+message HealthPayload {
+  string timestamp = 1;
+  string app_version = 2;
+  repeated StepsRecord steps = 3;
+  repeated SleepRecord sleep = 4;
+  repeated HeartRateRecord heart_rate = 5;
+  repeated HeartRateVariabilityRecord heart_rate_variability = 6;
+  repeated DistanceRecord distance = 7;
+  repeated CaloriesRecord active_calories = 8;
+  repeated CaloriesRecord total_calories = 9;
+  repeated WeightRecord weight = 10;
+  repeated HeightRecord height = 11;
+  repeated BloodPressureRecord blood_pressure = 12;
+  repeated BloodGlucoseRecord blood_glucose = 13;
+  repeated OxygenSaturationRecord oxygen_saturation = 14;
+  repeated TemperatureRecord body_temperature = 15;
+  repeated SkinTemperatureRecord skin_temperature = 16;
+  repeated RespiratoryRateRecord respiratory_rate = 17;
+  repeated RestingHeartRateRecord resting_heart_rate = 18;
+  repeated ExerciseRecord exercise = 19;
+  repeated HydrationRecord hydration = 20;
+  repeated NutritionRecord nutrition = 21;
+  repeated BasalMetabolicRateRecord basal_metabolic_rate = 22;
+  repeated BodyFatRecord body_fat = 23;
+  repeated MassRecord lean_body_mass = 24;
+  repeated MassRecord body_water_mass = 25;
+  repeated BmiRecord bmi = 26;
+  repeated Vo2MaxRecord vo2_max = 27;
+  repeated MassRecord bone_mass = 28;
+  repeated MenstruationFlowRecord menstruation_flow = 29;
+  repeated MenstruationPeriodRecord menstruation_period = 30;
+  repeated IntermenstrualBleedingRecord intermenstrual_bleeding = 31;
+  repeated OvulationTestRecord ovulation_test = 32;
+  repeated CervicalMucusRecord cervical_mucus = 33;
+  repeated SexualActivityRecord sexual_activity = 34;
+  repeated BasalBodyTemperatureRecord basal_body_temperature = 35;
+}
+
+message RecordMetadata {
+  string data_origin = 1;
+  string recording_method = 2;
+  optional string device_manufacturer = 3;
+  optional string device_model = 4;
+  optional int32 device_type = 5;
+}
+
+message StepsRecord {
+  int64 count = 1;
+  string start_time = 2;
+  string end_time = 3;
+  optional RecordMetadata metadata = 4;
+}
+
+message SleepStage {
+  string stage = 1;
+  string start_time = 2;
+  string end_time = 3;
+  int64 duration_seconds = 4;
+}
+
+message SleepRecord {
+  string session_end_time = 1;
+  int64 duration_seconds = 2;
+  repeated SleepStage stages = 3;
+  optional RecordMetadata metadata = 4;
+}
+
+message HeartRateRecord {
+  string time = 1;
+  // Sample form
+  optional int64 bpm = 2;
+  // Aggregated form
+  optional int64 avg = 3;
+  optional int64 min = 4;
+  optional int64 max = 5;
+  optional RecordMetadata metadata = 6;
+}
+
+message HeartRateVariabilityRecord {
+  string time = 1;
+  optional double rmssd_millis = 2;
+  optional double avg = 3;
+  optional double min = 4;
+  optional double max = 5;
+  optional RecordMetadata metadata = 6;
+}
+
+message DistanceRecord {
+  double meters = 1;
+  string start_time = 2;
+  string end_time = 3;
+  optional RecordMetadata metadata = 4;
+}
+
+message CaloriesRecord {
+  double calories = 1;
+  string start_time = 2;
+  string end_time = 3;
+  optional RecordMetadata metadata = 4;
+}
+
+message WeightRecord {
+  double kilograms = 1;
+  string time = 2;
+  optional RecordMetadata metadata = 3;
+}
+
+message HeightRecord {
+  double meters = 1;
+  string time = 2;
+  optional RecordMetadata metadata = 3;
+}
+
+message BloodPressureRecord {
+  double systolic = 1;
+  double diastolic = 2;
+  string time = 3;
+  optional RecordMetadata metadata = 4;
+}
+
+message BloodGlucoseRecord {
+  double mmol_per_liter = 1;
+  string time = 2;
+  optional RecordMetadata metadata = 3;
+}
+
+message OxygenSaturationRecord {
+  string time = 1;
+  optional double percentage = 2;
+  optional double avg = 3;
+  optional double min = 4;
+  optional double max = 5;
+  optional RecordMetadata metadata = 6;
+}
+
+message TemperatureRecord {
+  double celsius = 1;
+  string time = 2;
+  optional RecordMetadata metadata = 3;
+}
+
+message SkinTemperatureRecord {
+  string time = 1;
+  optional double delta_celsius = 2;
+  optional double avg_delta_celsius = 3;
+  optional double min_delta_celsius = 4;
+  optional double max_delta_celsius = 5;
+  optional double baseline_celsius = 6;
+  int32 measurement_location = 7;
+  optional RecordMetadata metadata = 8;
+}
+
+message RespiratoryRateRecord {
+  string time = 1;
+  optional double rate = 2;
+  optional double avg = 3;
+  optional double min = 4;
+  optional double max = 5;
+  optional RecordMetadata metadata = 6;
+}
+
+message RestingHeartRateRecord {
+  int64 bpm = 1;
+  string time = 2;
+  optional RecordMetadata metadata = 3;
+}
+
+message ExerciseRecord {
+  string type = 1;
+  optional string title = 2;
+  string start_time = 3;
+  string end_time = 4;
+  int64 duration_seconds = 5;
+  optional double distance_meters = 6;
+  optional int64 steps = 7;
+  optional double avg_cadence_spm = 8;
+  optional double max_cadence_spm = 9;
+  optional double stride_length_m = 10;
+  optional RecordMetadata metadata = 11;
+}
+
+message HydrationRecord {
+  double liters = 1;
+  string start_time = 2;
+  string end_time = 3;
+  optional RecordMetadata metadata = 4;
+}
+
+message NutritionRecord {
+  string start_time = 1;
+  string end_time = 2;
+  optional double calories = 3;
+  optional double protein_grams = 4;
+  optional double carbs_grams = 5;
+  optional double fat_grams = 6;
+  optional double sugar_grams = 7;
+  optional double sodium_grams = 8;
+  optional double dietary_fiber_grams = 9;
+  optional string name = 10;
+  optional RecordMetadata metadata = 11;
+}
+
+message BasalMetabolicRateRecord {
+  double watts = 1;
+  string time = 2;
+  optional RecordMetadata metadata = 3;
+}
+
+message BodyFatRecord {
+  double percentage = 1;
+  string time = 2;
+  optional RecordMetadata metadata = 3;
+}
+
+message MassRecord {
+  double kilograms = 1;
+  string time = 2;
+  optional RecordMetadata metadata = 3;
+}
+
+message BmiRecord {
+  double value = 1;
+  string time = 2;
+  double weight_kg = 3;
+  double height_meters = 4;
+}
+
+message Vo2MaxRecord {
+  double ml_per_kg_per_min = 1;
+  string time = 2;
+  optional RecordMetadata metadata = 3;
+}
+
+message MenstruationFlowRecord {
+  int32 flow = 1;
+  string time = 2;
+  optional RecordMetadata metadata = 3;
+}
+
+message MenstruationPeriodRecord {
+  string start_time = 1;
+  string end_time = 2;
+  optional RecordMetadata metadata = 3;
+}
+
+message IntermenstrualBleedingRecord {
+  string time = 1;
+  optional RecordMetadata metadata = 2;
+}
+
+message OvulationTestRecord {
+  int32 result = 1;
+  string time = 2;
+  optional RecordMetadata metadata = 3;
+}
+
+message CervicalMucusRecord {
+  int32 appearance = 1;
+  string time = 2;
+  optional RecordMetadata metadata = 3;
+}
+
+message SexualActivityRecord {
+  int32 protection_used = 1;
+  string time = 2;
+  optional RecordMetadata metadata = 3;
+}
+
+message BasalBodyTemperatureRecord {
+  double celsius = 1;
+  int32 measurement_location = 2;
+  string time = 3;
+  optional RecordMetadata metadata = 4;
+}

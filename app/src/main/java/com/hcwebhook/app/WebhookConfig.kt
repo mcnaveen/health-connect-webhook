@@ -11,7 +11,8 @@ data class WebhookConfig(
     // null = send all globally-enabled data types; non-null = send only these types
     val dataTypeFilter: Set<String>? = null,
     // Optional: IDs referencing global NotificationConfigs from PreferencesManager
-    val notificationConfigIds: Set<String> = emptySet()
+    val notificationConfigIds: Set<String> = emptySet(),
+    val deliveryFormat: WebhookDeliveryFormat = WebhookDeliveryFormat.JSON
 ) {
     fun getHeaderCount(): Int = headers.size
 

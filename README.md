@@ -67,7 +67,7 @@ Health Connect aggregates data from these popular health and fitness apps:
 
 Integrations and automations can rely on these specs (kept in sync with the app code):
 
-- **[Webhook payload](docs/webhook.md)** — `POST` JSON body: root fields, every data-type array, incremental sync vs explicit ranges, units, and examples.
+- **[Webhook payload](docs/webhook.md)** — JSON `POST` body and optional **Protobuf/gRPC** delivery (`HealthWebhook.Deliver`). Schema: [`proto/hcwebhook/v1/health_payload.proto`](proto/hcwebhook/v1/health_payload.proto).
 - **[Local HTTP server](docs/local-http.md)** — `GET` endpoints (`/`, `/latest`, `/ping`), query parameters, listen binding, default port **8787**, and how pull-based reads differ from webhook sync.
 
 ## Supported Languages
@@ -245,7 +245,7 @@ Default port is **8787** (configurable **1024–65535**). Example: `http://192.1
 
 ### Webhook format
 
-Delivery is **`POST`** with **`Content-Type: application/json; charset=utf-8`**. The body is one JSON object: always **`timestamp`** (when the payload was built) and **`app_version`**, plus optional **snake_case** arrays per data type (each key omitted if there are no records in that batch). Background sync reads a rolling **48-hour** window and, by default, only records **new since the last successful sync** per type (first run has no prior watermark).
+Delivery is **`POST`** with **`Content-Type: application/json; charset=utf-8`** by default. Per webhook you can switch to **Protobuf / gRPC** (`HealthWebhook.Deliver`). The JSON body is one object: always **`timestamp`** (when the payload was built) and **`app_version`**, plus optional **snake_case** arrays per data type (each key omitted if there are no records in that batch). Background sync reads a rolling **48-hour** window and, by default, only records **new since the last successful sync** per type (first run has no prior watermark).
 
 Full field tables, units, nutrition/skin-temperature notes, and examples: **[docs/webhook.md](docs/webhook.md)**.
 

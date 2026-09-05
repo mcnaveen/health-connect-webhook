@@ -1,10 +1,16 @@
 # Webhook payload reference
 
-HC Webhook delivers health data as a **single JSON object** in the HTTP request body. The same structure is used for **remote webhooks** (POST) and for responses from the **optional local HTTP server** (GET), so one schema covers both.
+HC Webhook can deliver health data in two formats, chosen per webhook:
 
-Implementation: `buildJsonPayload` in `app/src/main/java/com/hcwebhook/app/SyncManager.kt`.
+1. **JSON** (default) — HTTP `POST` with a JSON body (this document’s schema).
+2. **Protobuf / gRPC** — unary gRPC `HealthWebhook.Deliver` using the published schema in [`proto/hcwebhook/v1/health_payload.proto`](../proto/hcwebhook/v1/health_payload.proto).
 
-## HTTP request (remote webhooks)
+The optional local HTTP server still uses **JSON only**.
+
+JSON implementation: `buildJsonPayload` in `app/src/main/java/com/hcwebhook/app/SyncManager.kt`.  
+Protobuf implementation: `ProtobufPayloadBuilder` + `GrpcWebhookClient`.
+
+## HTTP request (JSON webhooks)
 
 | Property | Value |
 |----------|--------|
@@ -15,6 +21,45 @@ Implementation: `buildJsonPayload` in `app/src/main/java/com/hcwebhook/app/SyncM
 The app may attach **custom headers** per webhook URL as configured in the app. There is no built-in signature or auth header unless you add it there.
 
 Successful delivery is any HTTP **2xx** response. Failed requests are retried briefly (a few attempts with backoff); if all attempts fail, the next manual, interval, or scheduled sync can try again with the same incremental rules.
+
+## gRPC delivery (Protobuf)
+
+| Property | Value |
+|----------|--------|
+| Protocol | gRPC over HTTP/2 |
+| Service | `hcwebhook.v1.HealthWebhook` |
+| RPC | `Deliver(HealthPayload) returns (DeliverResponse)` |
+| Success | `DeliverResponse.ok == true` |
+
+### Target URL forms
+
+Set **Delivery format** to **Protobuf / gRPC** on the webhook, then use one of:
+
+| Example | Meaning |
+|---------|---------|
+| `host.example.com:443` | TLS to port 443 |
+| `https://host.example.com` | TLS, port 443 |
+| `http://192.168.1.10:50051` | Plaintext (local / LAN) |
+| `192.168.1.10:50051` | Plaintext when port is not 443 |
+
+Custom webhook headers become gRPC metadata (ASCII keys, lowercased).
+
+### Generate a server
+
+Use the published `.proto` file with your language’s gRPC tooling, for example:
+
+```bash
+# Go
+protoc --go_out=. --go-grpc_out=. proto/hcwebhook/v1/health_payload.proto
+
+# Python
+python -m grpc_tools.protoc -I proto --python_out=. --grpc_python_out=. \
+  proto/hcwebhook/v1/health_payload.proto
+```
+
+Implement `Deliver`, accept `HealthPayload`, return `{ ok: true }`. Field names and units match the JSON tables below.
+
+In the app, **Share schema (.proto)** exports the bundled schema file (same content as [`proto/hcwebhook/v1/health_payload.proto`](../proto/hcwebhook/v1/health_payload.proto)) via the system share sheet. No website visit is required.
 
 ## Root JSON object
 
