@@ -578,12 +578,21 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                                             ).postData(mockPayload)
                                         }
                                         WebhookDeliveryFormat.GRPC -> {
+                                            val mockData = MockPayloadBuilder.buildHealthData(
+                                                typesForMock.ifEmpty { null }
+                                            )
+                                            val payload = ProtobufPayloadBuilder.build(mockData, appVersion)
+                                            val logJson = MockPayloadBuilder.build(
+                                                typesForMock.ifEmpty { null },
+                                                appVersion
+                                            )
                                             GrpcWebhookClient.deliver(
                                                 config = testConfig,
-                                                payload = ProtobufPayloadBuilder.buildTestPayload(appVersion),
+                                                payload = payload,
                                                 context = context,
                                                 syncType = "test",
-                                                recordCount = 1
+                                                recordCount = mockData.totalRecordCount(),
+                                                logPayload = logJson
                                             )
                                         }
                                     }

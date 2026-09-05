@@ -181,7 +181,8 @@ class WebhookManager(
                 recordCount = recordCount,
                 responseTimeMs = responseTimeMs,
                 syncType = syncType,
-                payload = payload?.take(MAX_PAYLOAD_CHARS)
+                payload = payload?.take(MAX_PAYLOAD_CHARS),
+                deliveryFormat = WebhookLog.FORMAT_JSON
             )
             preferencesManager.addWebhookLog(log)
         }

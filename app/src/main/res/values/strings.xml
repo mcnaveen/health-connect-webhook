@@ -342,6 +342,11 @@
     <string name="logs_filter_all">All</string>
     <string name="logs_filter_success">Success</string>
     <string name="logs_filter_error">Error</string>
+    <string name="logs_filter_delivery">Delivery</string>
+    <string name="logs_filter_json">JSON</string>
+    <string name="logs_filter_grpc">gRPC</string>
+    <string name="logs_delivery_json">JSON</string>
+    <string name="logs_delivery_grpc">gRPC</string>
     <string name="logs_limit_label">Show %1$d</string>
     <string name="logs_response_time">%1$d ms</string>
     <string name="logs_sync_manual">Manual</string>

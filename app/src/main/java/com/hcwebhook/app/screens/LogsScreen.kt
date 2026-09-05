@@ -76,11 +76,12 @@ fun LogsScreen() {
     var selectedUrl by remember { mutableStateOf<String?>(null) }
     var statusFilter by remember { mutableIntStateOf(0) } // 0=All 1=Success 2=Error
     var syncTypeFilter by remember { mutableIntStateOf(0) } // 0=All 1=Manual 2=Auto 3=Test 4=Notification
+    var deliveryFilter by remember { mutableIntStateOf(0) } // 0=All 1=JSON 2=gRPC
     var displayLimit by remember { mutableIntStateOf(50) }
 
     val uniqueUrls = remember(allLogs) { allLogs.map { it.url }.distinct().sorted() }
 
-    val isFiltered = selectedUrl != null || statusFilter != 0 || syncTypeFilter != 0
+    val isFiltered = selectedUrl != null || statusFilter != 0 || syncTypeFilter != 0 || deliveryFilter != 0
 
     fun matchesFilter(log: WebhookLog): Boolean {
         val q = searchQuery.trim().lowercase()
@@ -93,10 +94,15 @@ fun LogsScreen() {
         }
         return (selectedUrl == null || log.url == selectedUrl) &&
             when (statusFilter) { 1 -> log.success; 2 -> !log.success; else -> true } &&
-            when (syncTypeFilter) { 1 -> log.syncType == "manual"; 2 -> log.syncType == "auto"; 3 -> log.syncType == "test"; 4 -> log.syncType == "notification"; else -> true }
+            when (syncTypeFilter) { 1 -> log.syncType == "manual"; 2 -> log.syncType == "auto"; 3 -> log.syncType == "test"; 4 -> log.syncType == "notification"; else -> true } &&
+            when (deliveryFilter) {
+                1 -> log.resolvedDeliveryFormat() == WebhookLog.FORMAT_JSON
+                2 -> log.resolvedDeliveryFormat() == WebhookLog.FORMAT_GRPC
+                else -> true
+            }
     }
 
-    val filtered = remember(allLogs, searchQuery, selectedUrl, statusFilter, syncTypeFilter, displayLimit) {
+    val filtered = remember(allLogs, searchQuery, selectedUrl, statusFilter, syncTypeFilter, deliveryFilter, displayLimit) {
         allLogs.filter { matchesFilter(it) }.take(displayLimit)
     }
 
@@ -106,13 +112,19 @@ fun LogsScreen() {
         val snapUrl = remember { selectedUrl }
         val snapStatus = remember { statusFilter }
         val snapSyncType = remember { syncTypeFilter }
-        val snapIsFiltered = remember { snapUrl != null || snapStatus != 0 || snapSyncType != 0 }
+        val snapDelivery = remember { deliveryFilter }
+        val snapIsFiltered = remember { snapUrl != null || snapStatus != 0 || snapSyncType != 0 || snapDelivery != 0 }
         val snapLogsToRemove = remember {
             if (snapIsFiltered) {
                 allLogs.filter { log ->
                     (snapUrl == null || log.url == snapUrl) &&
                     when (snapStatus) { 1 -> log.success; 2 -> !log.success; else -> true } &&
-                    when (snapSyncType) { 1 -> log.syncType == "manual"; 2 -> log.syncType == "auto"; 3 -> log.syncType == "test"; 4 -> log.syncType == "notification"; else -> true }
+                    when (snapSyncType) { 1 -> log.syncType == "manual"; 2 -> log.syncType == "auto"; 3 -> log.syncType == "test"; 4 -> log.syncType == "notification"; else -> true } &&
+                    when (snapDelivery) {
+                        1 -> log.resolvedDeliveryFormat() == WebhookLog.FORMAT_JSON
+                        2 -> log.resolvedDeliveryFormat() == WebhookLog.FORMAT_GRPC
+                        else -> true
+                    }
                 }
             } else allLogs
         }
@@ -125,6 +137,7 @@ fun LogsScreen() {
                 append(if (snapLogsToRemove.size == 1) "log" else "logs")
                 snapUrl?.let { append(" from ${it.removePrefix("https://").removePrefix("http://").substringBefore("/")}") }
                 when (snapSyncType) { 1 -> append(" (manual)"); 2 -> append(" (auto)"); 3 -> append(" (test)"); 4 -> append(" (notification)") }
+                when (snapDelivery) { 1 -> append(" (JSON)"); 2 -> append(" (gRPC)") }
                 append(" will be permanently deleted.")
             }
         }
@@ -264,6 +277,28 @@ fun LogsScreen() {
                             FilterChip(
                                 selected = syncTypeFilter == idx,
                                 onClick = { syncTypeFilter = idx },
+                                label = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                            )
+                        }
+                    }
+                }
+
+                // Delivery format
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        stringResource(R.string.logs_filter_delivery),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(
+                            0 to stringResource(R.string.logs_filter_all),
+                            1 to stringResource(R.string.logs_filter_json),
+                            2 to stringResource(R.string.logs_filter_grpc)
+                        ).forEach { (idx, label) ->
+                            FilterChip(
+                                selected = deliveryFilter == idx,
+                                onClick = { deliveryFilter = idx },
                                 label = { Text(label, style = MaterialTheme.typography.labelSmall) }
                             )
                         }
@@ -976,7 +1011,9 @@ private fun LogDetailSheet(
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (!log.success && log.payload != null) {
+                if (!log.success && log.payload != null &&
+                    log.resolvedDeliveryFormat() != WebhookLog.FORMAT_GRPC
+                ) {
                     IconButton(
                         onClick = {
                             retryLoading = true
@@ -1097,11 +1134,15 @@ private fun LogDetailSheet(
             DetailField("Error", log.errorMessage, valueColor = MaterialTheme.colorScheme.error)
         }
 
-        // Payload
+        // Payload (gRPC stores a JSON view of the same data for readability)
         if (prettyPayload != null) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    "Payload",
+                    if (log.resolvedDeliveryFormat() == WebhookLog.FORMAT_GRPC) {
+                        "Payload (JSON view)"
+                    } else {
+                        "Payload"
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

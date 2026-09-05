@@ -35,17 +35,24 @@ object GrpcWebhookClient {
     private const val INITIAL_RETRY_DELAY_MS = 1000L
     private const val MAX_PAYLOAD_CHARS = 8000
 
+    /**
+     * @param logPayload optional human-readable JSON of the same health data for the
+     * webhook log UI. Wire delivery still uses [payload] (protobuf). When null, the log
+     * stores a short count summary only.
+     */
     suspend fun deliver(
         config: WebhookConfig,
         payload: HealthPayload,
         context: Context,
         dataType: String? = null,
         recordCount: Int? = null,
-        syncType: String? = null
+        syncType: String? = null,
+        logPayload: String? = null
     ): Result<Unit> {
         val timestamp = System.currentTimeMillis()
         var lastException: Exception? = null
         var errorMessage: String? = null
+        val loggedPayload = logPayload ?: payloadSummary(payload)
 
         return try {
             val target = parseTarget(config.url)
@@ -62,7 +69,7 @@ object GrpcWebhookClient {
                         logCall(
                             context, config.url, timestamp, 200, true, null,
                             System.currentTimeMillis() - timestamp, dataType, recordCount, syncType,
-                            payloadSummary(payload)
+                            loggedPayload
                         )
                         return Result.success(Unit)
                     }
@@ -90,14 +97,14 @@ object GrpcWebhookClient {
             logCall(
                 context, config.url, timestamp, null, false, errorMessage,
                 System.currentTimeMillis() - timestamp, dataType, recordCount, syncType,
-                payloadSummary(payload)
+                loggedPayload
             )
             Result.failure(lastException ?: IOException("gRPC deliver failed"))
         } catch (e: Exception) {
             logCall(
                 context, config.url, timestamp, null, false, e.message,
                 System.currentTimeMillis() - timestamp, dataType, recordCount, syncType,
-                payloadSummary(payload)
+                loggedPayload
             )
             Result.failure(e)
         }
@@ -220,7 +227,8 @@ object GrpcWebhookClient {
                 recordCount = recordCount,
                 responseTimeMs = responseTimeMs,
                 syncType = syncType,
-                payload = payload.take(MAX_PAYLOAD_CHARS)
+                payload = payload.take(MAX_PAYLOAD_CHARS),
+                deliveryFormat = WebhookLog.FORMAT_GRPC
             )
         )
     }

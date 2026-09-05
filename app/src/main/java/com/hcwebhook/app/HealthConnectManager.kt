@@ -153,7 +153,18 @@ data class HealthData(
     val cervicalMucus: List<CervicalMucusData>,
     val sexualActivity: List<SexualActivityData>,
     val basalBodyTemperature: List<BasalBodyTemperatureData>
-)
+) {
+    fun totalRecordCount(): Int =
+        steps.size + sleep.size + heartRate.size + heartRateVariability.size +
+            distance.size + activeCalories.size + totalCalories.size + weight.size +
+            height.size + bloodPressure.size + bloodGlucose.size + oxygenSaturation.size +
+            bodyTemperature.size + skinTemperature.size + respiratoryRate.size +
+            restingHeartRate.size + exercise.size + hydration.size + nutrition.size +
+            basalMetabolicRate.size + bodyFat.size + leanBodyMass.size + bodyWaterMass.size +
+            vo2Max.size + boneMass.size + menstruationFlow.size + menstruationPeriod.size +
+            intermenstrualBleeding.size + ovulationTest.size + cervicalMucus.size +
+            sexualActivity.size + basalBodyTemperature.size
+}
 
 /**
  * Provenance of a Health Connect record: which app wrote it, how it was recorded, and on what

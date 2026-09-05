@@ -222,13 +222,19 @@ class SyncManager(private val context: Context) {
                                 )
                                 continue
                             }
+                            val logJson = try {
+                                if (config.dataTypeFilter != null) buildJsonPayload(filteredData) else fullPayload
+                            } catch (_: OutOfMemoryError) {
+                                null
+                            }
                             GrpcWebhookClient.deliver(
                                 config = config,
                                 payload = grpcPayload,
                                 context = context,
                                 dataType = "all",
                                 recordCount = totalRecords,
-                                syncType = syncType
+                                syncType = syncType,
+                                logPayload = logJson
                             )
                         }
                     }

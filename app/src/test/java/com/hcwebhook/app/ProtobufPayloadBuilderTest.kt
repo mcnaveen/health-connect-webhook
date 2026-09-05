@@ -52,6 +52,34 @@ class ProtobufPayloadBuilderTest {
     }
 
     @Test
+    fun buildTestPayload_isRichLikeJsonMock() {
+        val payload = ProtobufPayloadBuilder.buildTestPayload("1.2.3")
+
+        assertEquals("1.2.3", payload.appVersion)
+        assertTrue(payload.stepsCount >= 5)
+        assertTrue(payload.heartRateCount >= 20)
+        assertEquals(1, payload.sleepCount)
+        assertEquals(3, payload.getSleep(0).stagesCount)
+        assertEquals(2, payload.exerciseCount)
+        assertEquals(2, payload.nutritionCount)
+        assertTrue(payload.bmiCount >= 1)
+        assertTrue(payload.getSteps(0).hasMetadata())
+        assertTrue(payload.serializedSize > 500)
+    }
+
+    @Test
+    fun buildTestPayload_respectsEnabledTypesFilter() {
+        val payload = ProtobufPayloadBuilder.buildTestPayload(
+            appVersion = "1.0.0",
+            enabledTypes = setOf("STEPS", "HEART_RATE")
+        )
+        assertTrue(payload.stepsCount > 0)
+        assertTrue(payload.heartRateCount > 0)
+        assertEquals(0, payload.sleepCount)
+        assertEquals(0, payload.exerciseCount)
+    }
+
+    @Test
     fun parseTarget_httpsAndHostPort() {
         val https = GrpcWebhookClient.parseTarget("https://example.com")
         assertEquals("example.com", https.host)

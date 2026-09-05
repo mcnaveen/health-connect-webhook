@@ -1,0 +1,19 @@
+{
+  "name": "hc-webhook-grpc-example",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Minimal HC Webhook gRPC server example",
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.12.5",
+    "@grpc/proto-loader": "^0.7.13"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

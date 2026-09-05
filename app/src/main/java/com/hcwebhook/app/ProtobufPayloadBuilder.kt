@@ -411,20 +411,12 @@ object ProtobufPayloadBuilder {
         return builder.build()
     }
 
-    /** Minimal payload for webhook "Test" when delivery format is gRPC. */
-    fun buildTestPayload(appVersion: String): HealthPayload {
-        val now = Instant.now()
-        return HealthPayload.newBuilder()
-            .setTimestamp(now.toString())
-            .setAppVersion(appVersion)
-            .addSteps(
-                StepsRecord.newBuilder()
-                    .setCount(1)
-                    .setStartTime(now.toString())
-                    .setEndTime(now.toString())
-                    .build()
-            )
-            .build()
+    /**
+     * Rich mock payload for webhook **Test** when delivery format is gRPC.
+     * Uses the same [MockPayloadBuilder.buildHealthData] source as JSON Test.
+     */
+    fun buildTestPayload(appVersion: String, enabledTypes: Set<String>? = null): HealthPayload {
+        return build(MockPayloadBuilder.buildHealthData(enabledTypes), appVersion)
     }
 
     private fun ActiveCaloriesData.toCaloriesRecord(): CaloriesRecord {

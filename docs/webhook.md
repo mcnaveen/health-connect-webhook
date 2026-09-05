@@ -27,39 +27,82 @@ Successful delivery is any HTTP **2xx** response. Failed requests are retried br
 | Property | Value |
 |----------|--------|
 | Protocol | gRPC over HTTP/2 |
-| Service | `hcwebhook.v1.HealthWebhook` |
+| Package / service | `hcwebhook.v1.HealthWebhook` |
 | RPC | `Deliver(HealthPayload) returns (DeliverResponse)` |
 | Success | `DeliverResponse.ok == true` |
+| Schema file | [`proto/hcwebhook/v1/health_payload.proto`](../proto/hcwebhook/v1/health_payload.proto) |
+| App encoder | `ProtobufPayloadBuilder` |
+| App client | `GrpcWebhookClient` |
+| Example servers | [`server/example/`](../server/example/) |
+
+### Configure in the app
+
+1. Open **Webhooks** → edit a webhook.
+2. Set **Delivery format** to **Protobuf / gRPC**.
+3. Enter a **gRPC target** (see table below).
+4. Optional: add custom headers (become gRPC metadata; keys are lowercased).
+5. Optional: tap **Share schema (.proto)** to export the bundled schema via the system share sheet.
+6. Tap **Test**.
 
 ### Target URL forms
 
-Set **Delivery format** to **Protobuf / gRPC** on the webhook, then use one of:
+| Example | Transport | Notes |
+|---------|-----------|--------|
+| `http://192.168.1.10:50051` | Plaintext | Best for LAN demos |
+| `192.168.1.10:50051` | Plaintext | Port ≠ 443 ⇒ plaintext |
+| `https://hooks.example.com` | TLS | Default port 443 |
+| `hooks.example.com:443` | TLS | Explicit TLS port |
+| `hooks.example.com` | TLS | Bare host defaults to port 443 + TLS |
 
-| Example | Meaning |
-|---------|---------|
-| `host.example.com:443` | TLS to port 443 |
-| `https://host.example.com` | TLS, port 443 |
-| `http://192.168.1.10:50051` | Plaintext (local / LAN) |
-| `192.168.1.10:50051` | Plaintext when port is not 443 |
+### Authentication
 
-Custom webhook headers become gRPC metadata (ASCII keys, lowercased).
+There is no built-in signature scheme. Use custom webhook headers.
 
-### Generate a server
+Example: set header `x-api-key: supersecret`. The gRPC client attaches it as metadata. Example servers accept the same value via env `API_KEY`.
 
-Use the published `.proto` file with your language’s gRPC tooling, for example:
+### TLS
+
+- **LAN:** use plaintext (`http://IP:50051`).
+- **Production:** terminate TLS with a trusted certificate (reverse proxy recommended).
+- Self-signed certs usually fail on Android until the device trusts the CA. Prefer Let’s Encrypt (or similar).
+
+See [`server/example/README.md`](../server/example/README.md) for Docker, auth, and TLS recipes.
+
+### Example servers (runnable)
+
+| Stack | Command (from `server/example`) |
+|-------|----------------------------------|
+| Python (Docker) | `docker compose --profile python up --build` |
+| TypeScript (Docker) | `docker compose --profile typescript up --build` |
+| Python (local) | see [`server/example/python/README.md`](../server/example/python/README.md) |
+| TypeScript (local) | see [`server/example/typescript/README.md`](../server/example/typescript/README.md) |
+| Go | see [`server/example/go/README.md`](../server/example/go/README.md) |
+| PHP | see [`server/example/php/README.md`](../server/example/php/README.md) |
+
+### Generate your own server
+
+Use the published `.proto` with your language’s gRPC tooling:
 
 ```bash
 # Go
-protoc --go_out=. --go-grpc_out=. proto/hcwebhook/v1/health_payload.proto
+protoc -I proto --go_out=. --go-grpc_out=. proto/hcwebhook/v1/health_payload.proto
 
 # Python
 python -m grpc_tools.protoc -I proto --python_out=. --grpc_python_out=. \
   proto/hcwebhook/v1/health_payload.proto
 ```
 
-Implement `Deliver`, accept `HealthPayload`, return `{ ok: true }`. Field names and units match the JSON tables below.
+Implement `Deliver`, accept `HealthPayload`, return `{ ok: true }`.
 
-In the app, **Share schema (.proto)** exports the bundled schema file (same content as [`proto/hcwebhook/v1/health_payload.proto`](../proto/hcwebhook/v1/health_payload.proto)) via the system share sheet. No website visit is required.
+Field names and units match the JSON tables below (same logical schema).
+
+### Schema distribution
+
+| Audience | How to get the `.proto` |
+|----------|-------------------------|
+| App user | **Share schema (.proto)** in the webhook editor |
+| Developer / CI | Repo path `proto/hcwebhook/v1/health_payload.proto` |
+| Example Docker builds | Copied into the image at build time |
 
 ## Root JSON object
 

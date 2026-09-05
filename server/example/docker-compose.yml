@@ -1,0 +1,30 @@
+services:
+  python:
+    profiles: ["python"]
+    build:
+      context: ../..
+      dockerfile: server/example/python/Dockerfile
+    ports:
+      - "${PORT:-50051}:50051"
+    environment:
+      PORT: "50051"
+      API_KEY: "${API_KEY:-}"
+      TLS_CERT_FILE: "${TLS_CERT_FILE:-}"
+      TLS_KEY_FILE: "${TLS_KEY_FILE:-}"
+    volumes:
+      - ./tls:/tls:ro
+
+  typescript:
+    profiles: ["typescript"]
+    build:
+      context: ../..
+      dockerfile: server/example/typescript/Dockerfile
+    ports:
+      - "${PORT:-50051}:50051"
+    environment:
+      PORT: "50051"
+      API_KEY: "${API_KEY:-}"
+      TLS_CERT_FILE: "${TLS_CERT_FILE:-}"
+      TLS_KEY_FILE: "${TLS_KEY_FILE:-}"
+    volumes:
+      - ./tls:/tls:ro
