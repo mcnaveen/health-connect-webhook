@@ -34,8 +34,34 @@ class ProtobufPayloadBuilderTest {
         assertEquals("9.9.9", payload.appVersion)
         assertEquals(1, payload.stepsCount)
         assertEquals(100L, payload.getSteps(0).count)
+        assertEquals(now.epochSecond, payload.getSteps(0).endTime.seconds)
         assertEquals("com.example", payload.getSteps(0).metadata.dataOrigin)
         assertTrue(payload.serializedSize > 0)
+    }
+
+    @Test
+    fun build_heartRateUsesSampleOrAggregateOneof() {
+        val t = Instant.parse("2026-05-09T12:00:00Z")
+        val data = emptyHealthData().copy(
+            heartRate = listOf(
+                HeartRateData(bpm = 72, time = t),
+                HeartRateData(bpm = 80, time = t.plusSeconds(60), min = 60, max = 110),
+            )
+        )
+
+        val payload = ProtobufPayloadBuilder.build(data, "1.0.0", t)
+
+        val sample = payload.getHeartRate(0)
+        assertTrue(sample.hasSample())
+        assertFalse(sample.hasAggregate())
+        assertEquals(72L, sample.sample.bpm)
+
+        val aggregate = payload.getHeartRate(1)
+        assertTrue(aggregate.hasAggregate())
+        assertFalse(aggregate.hasSample())
+        assertEquals(80L, aggregate.aggregate.avg)
+        assertEquals(60L, aggregate.aggregate.min)
+        assertEquals(110L, aggregate.aggregate.max)
     }
 
     @Test

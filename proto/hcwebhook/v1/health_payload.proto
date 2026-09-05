@@ -2,11 +2,22 @@ syntax = "proto3";
 
 package hcwebhook.v1;
 
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
 option java_multiple_files = true;
 option java_package = "com.hcwebhook.app.proto.v1";
 option java_outer_classname = "HealthPayloadProto";
 
-// Mirrors the JSON webhook schema in docs/webhook.md.
+// Mirrors the JSON webhook schema in docs/webhook.md, with protobuf-native
+// refinements that the JSON format cannot express:
+//   - record instants use google.protobuf.Timestamp, durations use
+//     google.protobuf.Duration
+//   - sample vs aggregate records use a oneof so both forms can never be set
+//     on the same record
+//   - RecordMetadata carries record identity (id, client_record_id,
+//     client_record_version, last_modified_time) and the UTC offsets Health
+//     Connect stores for server-side local-day aggregation
 // Generate server stubs from this file in any gRPC language.
 
 service HealthWebhook {
@@ -20,6 +31,8 @@ message DeliverResponse {
 }
 
 message HealthPayload {
+  // ISO-8601 instant when the payload was built (envelope metadata, mirrors the
+  // JSON envelope). Not the time range of the records below.
   string timestamp = 1;
   string app_version = 2;
   repeated StepsRecord steps = 3;
@@ -63,135 +76,200 @@ message RecordMetadata {
   optional string device_manufacturer = 3;
   optional string device_model = 4;
   optional int32 device_type = 5;
+
+  // Stable Health Connect record id. Use for deduplication.
+  string id = 6;
+  // Writer-assigned id, for correlating this record with the source app's own
+  // records (e.g. native Google Health / Fitbit entries).
+  optional string client_record_id = 7;
+  // Writer-assigned version. When the same client_record_id is re-sent, the
+  // higher version is the newer state.
+  int64 client_record_version = 8;
+  // When Health Connect last modified this record.
+  google.protobuf.Timestamp last_modified_time = 9;
+
+  // UTC offset in effect at the record's instant, for instant records.
+  optional sint32 zone_offset_seconds = 10;
+  // UTC offsets in effect at the interval bounds, for interval records.
+  optional sint32 start_zone_offset_seconds = 11;
+  optional sint32 end_zone_offset_seconds = 12;
 }
 
 message StepsRecord {
   int64 count = 1;
-  string start_time = 2;
-  string end_time = 3;
+  google.protobuf.Timestamp start_time = 2;
+  google.protobuf.Timestamp end_time = 3;
   optional RecordMetadata metadata = 4;
 }
 
 message SleepStage {
   string stage = 1;
-  string start_time = 2;
-  string end_time = 3;
-  int64 duration_seconds = 4;
+  google.protobuf.Timestamp start_time = 2;
+  google.protobuf.Timestamp end_time = 3;
+  google.protobuf.Duration duration = 4;
 }
 
 message SleepRecord {
-  string session_end_time = 1;
-  int64 duration_seconds = 2;
+  google.protobuf.Timestamp session_end_time = 1;
+  google.protobuf.Duration duration = 2;
   repeated SleepStage stages = 3;
   optional RecordMetadata metadata = 4;
 }
 
+message HeartRateSample {
+  int64 bpm = 1;
+}
+
+message HeartRateAggregate {
+  int64 avg = 1;
+  int64 min = 2;
+  int64 max = 3;
+}
+
 message HeartRateRecord {
-  string time = 1;
-  // Sample form
-  optional int64 bpm = 2;
-  // Aggregated form
-  optional int64 avg = 3;
-  optional int64 min = 4;
-  optional int64 max = 5;
-  optional RecordMetadata metadata = 6;
+  google.protobuf.Timestamp time = 1;
+  oneof value {
+    HeartRateSample sample = 2;
+    HeartRateAggregate aggregate = 3;
+  }
+  optional RecordMetadata metadata = 4;
+}
+
+message HeartRateVariabilitySample {
+  double rmssd_millis = 1;
+}
+
+message HeartRateVariabilityAggregate {
+  double avg = 1;
+  double min = 2;
+  double max = 3;
 }
 
 message HeartRateVariabilityRecord {
-  string time = 1;
-  optional double rmssd_millis = 2;
-  optional double avg = 3;
-  optional double min = 4;
-  optional double max = 5;
-  optional RecordMetadata metadata = 6;
+  google.protobuf.Timestamp time = 1;
+  oneof value {
+    HeartRateVariabilitySample sample = 2;
+    HeartRateVariabilityAggregate aggregate = 3;
+  }
+  optional RecordMetadata metadata = 4;
 }
 
 message DistanceRecord {
   double meters = 1;
-  string start_time = 2;
-  string end_time = 3;
+  google.protobuf.Timestamp start_time = 2;
+  google.protobuf.Timestamp end_time = 3;
   optional RecordMetadata metadata = 4;
 }
 
 message CaloriesRecord {
   double calories = 1;
-  string start_time = 2;
-  string end_time = 3;
+  google.protobuf.Timestamp start_time = 2;
+  google.protobuf.Timestamp end_time = 3;
   optional RecordMetadata metadata = 4;
 }
 
 message WeightRecord {
   double kilograms = 1;
-  string time = 2;
+  google.protobuf.Timestamp time = 2;
   optional RecordMetadata metadata = 3;
 }
 
 message HeightRecord {
   double meters = 1;
-  string time = 2;
+  google.protobuf.Timestamp time = 2;
   optional RecordMetadata metadata = 3;
 }
 
 message BloodPressureRecord {
   double systolic = 1;
   double diastolic = 2;
-  string time = 3;
+  google.protobuf.Timestamp time = 3;
   optional RecordMetadata metadata = 4;
 }
 
 message BloodGlucoseRecord {
   double mmol_per_liter = 1;
-  string time = 2;
+  google.protobuf.Timestamp time = 2;
   optional RecordMetadata metadata = 3;
 }
 
+message OxygenSaturationSample {
+  double percentage = 1;
+}
+
+message OxygenSaturationAggregate {
+  double avg = 1;
+  double min = 2;
+  double max = 3;
+}
+
 message OxygenSaturationRecord {
-  string time = 1;
-  optional double percentage = 2;
-  optional double avg = 3;
-  optional double min = 4;
-  optional double max = 5;
-  optional RecordMetadata metadata = 6;
+  google.protobuf.Timestamp time = 1;
+  oneof value {
+    OxygenSaturationSample sample = 2;
+    OxygenSaturationAggregate aggregate = 3;
+  }
+  optional RecordMetadata metadata = 4;
 }
 
 message TemperatureRecord {
   double celsius = 1;
-  string time = 2;
+  google.protobuf.Timestamp time = 2;
   optional RecordMetadata metadata = 3;
 }
 
+message SkinTemperatureSample {
+  double delta_celsius = 1;
+}
+
+message SkinTemperatureAggregate {
+  double avg_delta_celsius = 1;
+  double min_delta_celsius = 2;
+  double max_delta_celsius = 3;
+}
+
 message SkinTemperatureRecord {
-  string time = 1;
-  optional double delta_celsius = 2;
-  optional double avg_delta_celsius = 3;
-  optional double min_delta_celsius = 4;
-  optional double max_delta_celsius = 5;
-  optional double baseline_celsius = 6;
-  int32 measurement_location = 7;
-  optional RecordMetadata metadata = 8;
+  google.protobuf.Timestamp time = 1;
+  oneof value {
+    SkinTemperatureSample sample = 2;
+    SkinTemperatureAggregate aggregate = 3;
+  }
+  optional double baseline_celsius = 4;
+  int32 measurement_location = 5;
+  optional RecordMetadata metadata = 6;
+}
+
+message RespiratoryRateSample {
+  double rate = 1;
+}
+
+message RespiratoryRateAggregate {
+  double avg = 1;
+  double min = 2;
+  double max = 3;
 }
 
 message RespiratoryRateRecord {
-  string time = 1;
-  optional double rate = 2;
-  optional double avg = 3;
-  optional double min = 4;
-  optional double max = 5;
-  optional RecordMetadata metadata = 6;
+  google.protobuf.Timestamp time = 1;
+  oneof value {
+    RespiratoryRateSample sample = 2;
+    RespiratoryRateAggregate aggregate = 3;
+  }
+  optional RecordMetadata metadata = 4;
 }
 
 message RestingHeartRateRecord {
   int64 bpm = 1;
-  string time = 2;
+  google.protobuf.Timestamp time = 2;
   optional RecordMetadata metadata = 3;
 }
 
 message ExerciseRecord {
   string type = 1;
   optional string title = 2;
-  string start_time = 3;
-  string end_time = 4;
-  int64 duration_seconds = 5;
+  google.protobuf.Timestamp start_time = 3;
+  google.protobuf.Timestamp end_time = 4;
+  google.protobuf.Duration duration = 5;
   optional double distance_meters = 6;
   optional int64 steps = 7;
   optional double avg_cadence_spm = 8;
@@ -202,14 +280,14 @@ message ExerciseRecord {
 
 message HydrationRecord {
   double liters = 1;
-  string start_time = 2;
-  string end_time = 3;
+  google.protobuf.Timestamp start_time = 2;
+  google.protobuf.Timestamp end_time = 3;
   optional RecordMetadata metadata = 4;
 }
 
 message NutritionRecord {
-  string start_time = 1;
-  string end_time = 2;
+  google.protobuf.Timestamp start_time = 1;
+  google.protobuf.Timestamp end_time = 2;
   optional double calories = 3;
   optional double protein_grams = 4;
   optional double carbs_grams = 5;
@@ -223,73 +301,73 @@ message NutritionRecord {
 
 message BasalMetabolicRateRecord {
   double watts = 1;
-  string time = 2;
+  google.protobuf.Timestamp time = 2;
   optional RecordMetadata metadata = 3;
 }
 
 message BodyFatRecord {
   double percentage = 1;
-  string time = 2;
+  google.protobuf.Timestamp time = 2;
   optional RecordMetadata metadata = 3;
 }
 
 message MassRecord {
   double kilograms = 1;
-  string time = 2;
+  google.protobuf.Timestamp time = 2;
   optional RecordMetadata metadata = 3;
 }
 
 message BmiRecord {
   double value = 1;
-  string time = 2;
+  google.protobuf.Timestamp time = 2;
   double weight_kg = 3;
   double height_meters = 4;
 }
 
 message Vo2MaxRecord {
   double ml_per_kg_per_min = 1;
-  string time = 2;
+  google.protobuf.Timestamp time = 2;
   optional RecordMetadata metadata = 3;
 }
 
 message MenstruationFlowRecord {
   int32 flow = 1;
-  string time = 2;
+  google.protobuf.Timestamp time = 2;
   optional RecordMetadata metadata = 3;
 }
 
 message MenstruationPeriodRecord {
-  string start_time = 1;
-  string end_time = 2;
+  google.protobuf.Timestamp start_time = 1;
+  google.protobuf.Timestamp end_time = 2;
   optional RecordMetadata metadata = 3;
 }
 
 message IntermenstrualBleedingRecord {
-  string time = 1;
+  google.protobuf.Timestamp time = 1;
   optional RecordMetadata metadata = 2;
 }
 
 message OvulationTestRecord {
   int32 result = 1;
-  string time = 2;
+  google.protobuf.Timestamp time = 2;
   optional RecordMetadata metadata = 3;
 }
 
 message CervicalMucusRecord {
   int32 appearance = 1;
-  string time = 2;
+  google.protobuf.Timestamp time = 2;
   optional RecordMetadata metadata = 3;
 }
 
 message SexualActivityRecord {
   int32 protection_used = 1;
-  string time = 2;
+  google.protobuf.Timestamp time = 2;
   optional RecordMetadata metadata = 3;
 }
 
 message BasalBodyTemperatureRecord {
   double celsius = 1;
   int32 measurement_location = 2;
-  string time = 3;
+  google.protobuf.Timestamp time = 3;
   optional RecordMetadata metadata = 4;
 }

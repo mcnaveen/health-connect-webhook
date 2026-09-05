@@ -56,42 +56,45 @@ object GrpcWebhookClient {
 
         return try {
             val target = parseTarget(config.url)
-            for (attempt in 1..MAX_RETRIES) {
-                var channel: ManagedChannel? = null
-                try {
-                    channel = buildChannel(target, context)
-                    val stub = HealthWebhookGrpc.newBlockingStub(channel)
-                        .withDeadlineAfter(TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                        .withInterceptors(MetadataUtils.newAttachHeadersInterceptor(metadataFrom(config)))
+            // gRPC channels are meant to be long-lived: build one and reuse it across
+            // retries so each attempt does not re-establish an HTTP/2 + TLS connection.
+            val channel = buildChannel(target, context)
+            try {
+                for (attempt in 1..MAX_RETRIES) {
+                    try {
+                        val stub = HealthWebhookGrpc.newBlockingStub(channel)
+                            .withDeadlineAfter(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                            .withInterceptors(MetadataUtils.newAttachHeadersInterceptor(metadataFrom(config)))
 
-                    val response = stub.deliver(payload)
-                    if (response.ok) {
-                        logCall(
-                            context, config.url, timestamp, 200, true, null,
-                            System.currentTimeMillis() - timestamp, dataType, recordCount, syncType,
-                            loggedPayload
-                        )
-                        return Result.success(Unit)
+                        val response = stub.deliver(payload)
+                        if (response.ok) {
+                            logCall(
+                                context, config.url, timestamp, 200, true, null,
+                                System.currentTimeMillis() - timestamp, dataType, recordCount, syncType,
+                                loggedPayload
+                            )
+                            return Result.success(Unit)
+                        }
+                        val msg = response.message.ifBlank { "gRPC Deliver returned ok=false" }
+                        lastException = IOException(msg)
+                        errorMessage = msg
+                    } catch (e: StatusRuntimeException) {
+                        lastException = e
+                        errorMessage = "gRPC ${e.status.code}: ${e.status.description ?: e.message}"
+                        if (!isRetryableGrpc(e.status)) break
+                    } catch (e: IOException) {
+                        lastException = e
+                        errorMessage = e.message
+                        if (!isRetryableIo(e)) break
                     }
-                    val msg = response.message.ifBlank { "gRPC Deliver returned ok=false" }
-                    lastException = IOException(msg)
-                    errorMessage = msg
-                } catch (e: StatusRuntimeException) {
-                    lastException = e
-                    errorMessage = "gRPC ${e.status.code}: ${e.status.description ?: e.message}"
-                    if (!isRetryableGrpc(e.status)) break
-                } catch (e: IOException) {
-                    lastException = e
-                    errorMessage = e.message
-                    if (!isRetryableIo(e)) break
-                } finally {
-                    channel?.shutdownNow()
-                }
 
-                if (attempt < MAX_RETRIES) {
-                    val delayMs = INITIAL_RETRY_DELAY_MS * (2.0.pow(attempt - 1).toLong())
-                    kotlinx.coroutines.delay(delayMs)
+                    if (attempt < MAX_RETRIES) {
+                        val delayMs = INITIAL_RETRY_DELAY_MS * (2.0.pow(attempt - 1).toLong())
+                        kotlinx.coroutines.delay(delayMs)
+                    }
                 }
+            } finally {
+                channel.shutdownNow()
             }
 
             logCall(

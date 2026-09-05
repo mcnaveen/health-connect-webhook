@@ -94,7 +94,19 @@ python -m grpc_tools.protoc -I proto --python_out=. --grpc_python_out=. \
 
 Implement `Deliver`, accept `HealthPayload`, return `{ ok: true }`.
 
-Field names and units match the JSON tables below (same logical schema).
+Field names and units match the JSON tables below (same logical schema). The proto
+form differs where protobuf can be stricter than JSON:
+
+- Record instants are `google.protobuf.Timestamp` and durations are
+  `google.protobuf.Duration` (the envelope `timestamp` stays an ISO-8601 string).
+- Records that can be a single sample **or** an aggregate — `heart_rate`,
+  `heart_rate_variability`, `oxygen_saturation`, `respiratory_rate`,
+  `skin_temperature` — carry a `oneof value { sample; aggregate; }` so only one
+  form is ever set.
+- `RecordMetadata` also carries `id`, `client_record_id`, `client_record_version`,
+  `last_modified_time` (record identity for deduplication / update detection) and
+  `zone_offset_seconds` / `start_zone_offset_seconds` / `end_zone_offset_seconds`
+  (the UTC offsets Health Connect stores, for local-day aggregation).
 
 ### Schema distribution
 

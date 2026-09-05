@@ -1,5 +1,7 @@
 package com.hcwebhook.app
 
+import com.google.protobuf.Duration as ProtoDuration
+import com.google.protobuf.Timestamp
 import com.hcwebhook.app.proto.v1.BasalBodyTemperatureRecord
 import com.hcwebhook.app.proto.v1.BasalMetabolicRateRecord
 import com.hcwebhook.app.proto.v1.BloodGlucoseRecord
@@ -11,8 +13,12 @@ import com.hcwebhook.app.proto.v1.CervicalMucusRecord
 import com.hcwebhook.app.proto.v1.DistanceRecord
 import com.hcwebhook.app.proto.v1.ExerciseRecord
 import com.hcwebhook.app.proto.v1.HealthPayload
+import com.hcwebhook.app.proto.v1.HeartRateAggregate
 import com.hcwebhook.app.proto.v1.HeartRateRecord
+import com.hcwebhook.app.proto.v1.HeartRateSample
+import com.hcwebhook.app.proto.v1.HeartRateVariabilityAggregate
 import com.hcwebhook.app.proto.v1.HeartRateVariabilityRecord
+import com.hcwebhook.app.proto.v1.HeartRateVariabilitySample
 import com.hcwebhook.app.proto.v1.HeightRecord
 import com.hcwebhook.app.proto.v1.HydrationRecord
 import com.hcwebhook.app.proto.v1.IntermenstrualBleedingRecord
@@ -21,23 +27,32 @@ import com.hcwebhook.app.proto.v1.MenstruationFlowRecord
 import com.hcwebhook.app.proto.v1.MenstruationPeriodRecord
 import com.hcwebhook.app.proto.v1.NutritionRecord
 import com.hcwebhook.app.proto.v1.OvulationTestRecord
+import com.hcwebhook.app.proto.v1.OxygenSaturationAggregate
 import com.hcwebhook.app.proto.v1.OxygenSaturationRecord
+import com.hcwebhook.app.proto.v1.OxygenSaturationSample
 import com.hcwebhook.app.proto.v1.RecordMetadata as ProtoRecordMetadata
+import com.hcwebhook.app.proto.v1.RespiratoryRateAggregate
 import com.hcwebhook.app.proto.v1.RespiratoryRateRecord
+import com.hcwebhook.app.proto.v1.RespiratoryRateSample
 import com.hcwebhook.app.proto.v1.RestingHeartRateRecord
 import com.hcwebhook.app.proto.v1.SexualActivityRecord
+import com.hcwebhook.app.proto.v1.SkinTemperatureAggregate
 import com.hcwebhook.app.proto.v1.SkinTemperatureRecord
+import com.hcwebhook.app.proto.v1.SkinTemperatureSample
 import com.hcwebhook.app.proto.v1.SleepRecord
 import com.hcwebhook.app.proto.v1.SleepStage as ProtoSleepStage
 import com.hcwebhook.app.proto.v1.StepsRecord
 import com.hcwebhook.app.proto.v1.TemperatureRecord
 import com.hcwebhook.app.proto.v1.Vo2MaxRecord
 import com.hcwebhook.app.proto.v1.WeightRecord
+import java.time.Duration
 import java.time.Instant
 
 /**
  * Builds the published protobuf HealthPayload from in-memory HealthData.
- * Field shapes match docs/webhook.md / buildJsonPayload.
+ * Field shapes match docs/webhook.md / buildJsonPayload, except where the proto
+ * schema is deliberately richer: record instants are [Timestamp], durations are
+ * [ProtoDuration], and sample-vs-aggregate records use a oneof.
  */
 object ProtobufPayloadBuilder {
 
@@ -50,8 +65,8 @@ object ProtobufPayloadBuilder {
             builder.addSteps(
                 StepsRecord.newBuilder()
                     .setCount(step.count)
-                    .setStartTime(step.startTime.toString())
-                    .setEndTime(step.endTime.toString())
+                    .setStartTime(step.startTime.toTimestamp())
+                    .setEndTime(step.endTime.toTimestamp())
                     .apply { step.metadata?.let { metadata = it.toProto() } }
                     .build()
             )
@@ -59,15 +74,15 @@ object ProtobufPayloadBuilder {
 
         healthData.sleep.forEach { sleep ->
             val sleepBuilder = SleepRecord.newBuilder()
-                .setSessionEndTime(sleep.sessionEndTime.toString())
-                .setDurationSeconds(sleep.duration.seconds)
+                .setSessionEndTime(sleep.sessionEndTime.toTimestamp())
+                .setDuration(sleep.duration.toProtoDuration())
             sleep.stages.forEach { stage ->
                 sleepBuilder.addStages(
                     ProtoSleepStage.newBuilder()
                         .setStage(stage.stage)
-                        .setStartTime(stage.startTime.toString())
-                        .setEndTime(stage.endTime.toString())
-                        .setDurationSeconds(stage.duration.seconds)
+                        .setStartTime(stage.startTime.toTimestamp())
+                        .setEndTime(stage.endTime.toTimestamp())
+                        .setDuration(stage.duration.toProtoDuration())
                         .build()
                 )
             }
@@ -76,26 +91,26 @@ object ProtobufPayloadBuilder {
         }
 
         healthData.heartRate.forEach { hr ->
-            val hrBuilder = HeartRateRecord.newBuilder().setTime(hr.time.toString())
+            val hrBuilder = HeartRateRecord.newBuilder().setTime(hr.time.toTimestamp())
             if (hr.min != null) {
-                hrBuilder.setAvg(hr.bpm)
-                hr.min?.let { hrBuilder.setMin(it) }
-                hr.max?.let { hrBuilder.setMax(it) }
+                val agg = HeartRateAggregate.newBuilder().setAvg(hr.bpm).setMin(hr.min)
+                hr.max?.let { agg.setMax(it) }
+                hrBuilder.setAggregate(agg.build())
             } else {
-                hrBuilder.setBpm(hr.bpm)
+                hrBuilder.setSample(HeartRateSample.newBuilder().setBpm(hr.bpm).build())
             }
             hr.metadata?.let { hrBuilder.metadata = it.toProto() }
             builder.addHeartRate(hrBuilder.build())
         }
 
         healthData.heartRateVariability.forEach { hrv ->
-            val hrvBuilder = HeartRateVariabilityRecord.newBuilder().setTime(hrv.time.toString())
+            val hrvBuilder = HeartRateVariabilityRecord.newBuilder().setTime(hrv.time.toTimestamp())
             if (hrv.min != null) {
-                hrvBuilder.setAvg(hrv.rmssdMillis)
-                hrv.min?.let { hrvBuilder.setMin(it) }
-                hrv.max?.let { hrvBuilder.setMax(it) }
+                val agg = HeartRateVariabilityAggregate.newBuilder().setAvg(hrv.rmssdMillis).setMin(hrv.min)
+                hrv.max?.let { agg.setMax(it) }
+                hrvBuilder.setAggregate(agg.build())
             } else {
-                hrvBuilder.setRmssdMillis(hrv.rmssdMillis)
+                hrvBuilder.setSample(HeartRateVariabilitySample.newBuilder().setRmssdMillis(hrv.rmssdMillis).build())
             }
             hrv.metadata?.let { hrvBuilder.metadata = it.toProto() }
             builder.addHeartRateVariability(hrvBuilder.build())
@@ -105,8 +120,8 @@ object ProtobufPayloadBuilder {
             builder.addDistance(
                 DistanceRecord.newBuilder()
                     .setMeters(it.meters)
-                    .setStartTime(it.startTime.toString())
-                    .setEndTime(it.endTime.toString())
+                    .setStartTime(it.startTime.toTimestamp())
+                    .setEndTime(it.endTime.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -119,8 +134,8 @@ object ProtobufPayloadBuilder {
             builder.addTotalCalories(
                 CaloriesRecord.newBuilder()
                     .setCalories(it.calories)
-                    .setStartTime(it.startTime.toString())
-                    .setEndTime(it.endTime.toString())
+                    .setStartTime(it.startTime.toTimestamp())
+                    .setEndTime(it.endTime.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -130,7 +145,7 @@ object ProtobufPayloadBuilder {
             builder.addWeight(
                 WeightRecord.newBuilder()
                     .setKilograms(it.kilograms)
-                    .setTime(it.time.toString())
+                    .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -140,7 +155,7 @@ object ProtobufPayloadBuilder {
             builder.addHeight(
                 HeightRecord.newBuilder()
                     .setMeters(it.meters)
-                    .setTime(it.time.toString())
+                    .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -151,7 +166,7 @@ object ProtobufPayloadBuilder {
                 BloodPressureRecord.newBuilder()
                     .setSystolic(it.systolic)
                     .setDiastolic(it.diastolic)
-                    .setTime(it.time.toString())
+                    .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -161,20 +176,20 @@ object ProtobufPayloadBuilder {
             builder.addBloodGlucose(
                 BloodGlucoseRecord.newBuilder()
                     .setMmolPerLiter(it.mmolPerLiter)
-                    .setTime(it.time.toString())
+                    .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
         }
 
         healthData.oxygenSaturation.forEach { o2 ->
-            val o2Builder = OxygenSaturationRecord.newBuilder().setTime(o2.time.toString())
+            val o2Builder = OxygenSaturationRecord.newBuilder().setTime(o2.time.toTimestamp())
             if (o2.min != null) {
-                o2Builder.setAvg(o2.percentage)
-                o2.min?.let { o2Builder.setMin(it) }
-                o2.max?.let { o2Builder.setMax(it) }
+                val agg = OxygenSaturationAggregate.newBuilder().setAvg(o2.percentage).setMin(o2.min)
+                o2.max?.let { agg.setMax(it) }
+                o2Builder.setAggregate(agg.build())
             } else {
-                o2Builder.setPercentage(o2.percentage)
+                o2Builder.setSample(OxygenSaturationSample.newBuilder().setPercentage(o2.percentage).build())
             }
             o2.metadata?.let { o2Builder.metadata = it.toProto() }
             builder.addOxygenSaturation(o2Builder.build())
@@ -184,7 +199,7 @@ object ProtobufPayloadBuilder {
             builder.addBodyTemperature(
                 TemperatureRecord.newBuilder()
                     .setCelsius(it.celsius)
-                    .setTime(it.time.toString())
+                    .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -192,14 +207,16 @@ object ProtobufPayloadBuilder {
 
         healthData.skinTemperature.forEach { skin ->
             val skinBuilder = SkinTemperatureRecord.newBuilder()
-                .setTime(skin.time.toString())
+                .setTime(skin.time.toTimestamp())
                 .setMeasurementLocation(skin.measurementLocation)
             if (skin.minDeltaCelsius != null) {
-                skinBuilder.setAvgDeltaCelsius(skin.deltaCelsius)
-                skin.minDeltaCelsius?.let { skinBuilder.setMinDeltaCelsius(it) }
-                skin.maxDeltaCelsius?.let { skinBuilder.setMaxDeltaCelsius(it) }
+                val agg = SkinTemperatureAggregate.newBuilder()
+                    .setAvgDeltaCelsius(skin.deltaCelsius)
+                    .setMinDeltaCelsius(skin.minDeltaCelsius)
+                skin.maxDeltaCelsius?.let { agg.setMaxDeltaCelsius(it) }
+                skinBuilder.setAggregate(agg.build())
             } else {
-                skinBuilder.setDeltaCelsius(skin.deltaCelsius)
+                skinBuilder.setSample(SkinTemperatureSample.newBuilder().setDeltaCelsius(skin.deltaCelsius).build())
             }
             skin.baselineCelsius?.let { skinBuilder.setBaselineCelsius(it) }
             skin.metadata?.let { skinBuilder.metadata = it.toProto() }
@@ -207,13 +224,13 @@ object ProtobufPayloadBuilder {
         }
 
         healthData.respiratoryRate.forEach { resp ->
-            val respBuilder = RespiratoryRateRecord.newBuilder().setTime(resp.time.toString())
+            val respBuilder = RespiratoryRateRecord.newBuilder().setTime(resp.time.toTimestamp())
             if (resp.min != null) {
-                respBuilder.setAvg(resp.rate)
-                resp.min?.let { respBuilder.setMin(it) }
-                resp.max?.let { respBuilder.setMax(it) }
+                val agg = RespiratoryRateAggregate.newBuilder().setAvg(resp.rate).setMin(resp.min)
+                resp.max?.let { agg.setMax(it) }
+                respBuilder.setAggregate(agg.build())
             } else {
-                respBuilder.setRate(resp.rate)
+                respBuilder.setSample(RespiratoryRateSample.newBuilder().setRate(resp.rate).build())
             }
             resp.metadata?.let { respBuilder.metadata = it.toProto() }
             builder.addRespiratoryRate(respBuilder.build())
@@ -223,7 +240,7 @@ object ProtobufPayloadBuilder {
             builder.addRestingHeartRate(
                 RestingHeartRateRecord.newBuilder()
                     .setBpm(it.bpm)
-                    .setTime(it.time.toString())
+                    .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -232,9 +249,9 @@ object ProtobufPayloadBuilder {
         healthData.exercise.forEach {
             val ex = ExerciseRecord.newBuilder()
                 .setType(it.type)
-                .setStartTime(it.startTime.toString())
-                .setEndTime(it.endTime.toString())
-                .setDurationSeconds(it.duration.seconds)
+                .setStartTime(it.startTime.toTimestamp())
+                .setEndTime(it.endTime.toTimestamp())
+                .setDuration(it.duration.toProtoDuration())
             it.title?.let { title -> ex.setTitle(title) }
             it.distanceMeters?.let { d -> ex.setDistanceMeters(d) }
             it.steps?.let { s -> ex.setSteps(s) }
@@ -249,8 +266,8 @@ object ProtobufPayloadBuilder {
             builder.addHydration(
                 HydrationRecord.newBuilder()
                     .setLiters(it.liters)
-                    .setStartTime(it.startTime.toString())
-                    .setEndTime(it.endTime.toString())
+                    .setStartTime(it.startTime.toTimestamp())
+                    .setEndTime(it.endTime.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -258,8 +275,8 @@ object ProtobufPayloadBuilder {
 
         healthData.nutrition.forEach {
             val n = NutritionRecord.newBuilder()
-                .setStartTime(it.startTime.toString())
-                .setEndTime(it.endTime.toString())
+                .setStartTime(it.startTime.toTimestamp())
+                .setEndTime(it.endTime.toTimestamp())
             it.calories?.let { c -> n.setCalories(c) }
             it.protein?.let { p -> n.setProteinGrams(p) }
             it.carbs?.let { c -> n.setCarbsGrams(c) }
@@ -276,7 +293,7 @@ object ProtobufPayloadBuilder {
             builder.addBasalMetabolicRate(
                 BasalMetabolicRateRecord.newBuilder()
                     .setWatts(it.watts)
-                    .setTime(it.time.toString())
+                    .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -286,7 +303,7 @@ object ProtobufPayloadBuilder {
             builder.addBodyFat(
                 BodyFatRecord.newBuilder()
                     .setPercentage(it.percentage)
-                    .setTime(it.time.toString())
+                    .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -299,7 +316,7 @@ object ProtobufPayloadBuilder {
             builder.addBodyWaterMass(
                 MassRecord.newBuilder()
                     .setKilograms(it.kilograms)
-                    .setTime(it.time.toString())
+                    .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -310,7 +327,7 @@ object ProtobufPayloadBuilder {
                 builder.addBmi(
                     BmiRecord.newBuilder()
                         .setValue(entry.value)
-                        .setTime(entry.time.toString())
+                        .setTime(entry.time.toTimestamp())
                         .setWeightKg(entry.weightKg)
                         .setHeightMeters(entry.heightMeters)
                         .build()
@@ -322,7 +339,7 @@ object ProtobufPayloadBuilder {
             builder.addVo2Max(
                 Vo2MaxRecord.newBuilder()
                     .setMlPerKgPerMin(it.mlPerKgPerMin)
-                    .setTime(it.time.toString())
+                    .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -332,7 +349,7 @@ object ProtobufPayloadBuilder {
             builder.addBoneMass(
                 MassRecord.newBuilder()
                     .setKilograms(it.kilograms)
-                    .setTime(it.time.toString())
+                    .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -342,7 +359,7 @@ object ProtobufPayloadBuilder {
             builder.addMenstruationFlow(
                 MenstruationFlowRecord.newBuilder()
                     .setFlow(it.flow)
-                    .setTime(it.time.toString())
+                    .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -351,8 +368,8 @@ object ProtobufPayloadBuilder {
         healthData.menstruationPeriod.forEach {
             builder.addMenstruationPeriod(
                 MenstruationPeriodRecord.newBuilder()
-                    .setStartTime(it.startTime.toString())
-                    .setEndTime(it.endTime.toString())
+                    .setStartTime(it.startTime.toTimestamp())
+                    .setEndTime(it.endTime.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -361,7 +378,7 @@ object ProtobufPayloadBuilder {
         healthData.intermenstrualBleeding.forEach {
             builder.addIntermenstrualBleeding(
                 IntermenstrualBleedingRecord.newBuilder()
-                    .setTime(it.time.toString())
+                    .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -371,7 +388,7 @@ object ProtobufPayloadBuilder {
             builder.addOvulationTest(
                 OvulationTestRecord.newBuilder()
                     .setResult(it.result)
-                    .setTime(it.time.toString())
+                    .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -381,7 +398,7 @@ object ProtobufPayloadBuilder {
             builder.addCervicalMucus(
                 CervicalMucusRecord.newBuilder()
                     .setAppearance(it.appearance)
-                    .setTime(it.time.toString())
+                    .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -391,7 +408,7 @@ object ProtobufPayloadBuilder {
             builder.addSexualActivity(
                 SexualActivityRecord.newBuilder()
                     .setProtectionUsed(it.protectionUsed)
-                    .setTime(it.time.toString())
+                    .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -402,7 +419,7 @@ object ProtobufPayloadBuilder {
                 BasalBodyTemperatureRecord.newBuilder()
                     .setCelsius(it.celsius)
                     .setMeasurementLocation(it.measurementLocation)
-                    .setTime(it.time.toString())
+                    .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
@@ -423,8 +440,8 @@ object ProtobufPayloadBuilder {
         val sourceMeta = metadata
         return CaloriesRecord.newBuilder()
             .setCalories(calories)
-            .setStartTime(startTime.toString())
-            .setEndTime(endTime.toString())
+            .setStartTime(startTime.toTimestamp())
+            .setEndTime(endTime.toTimestamp())
             .apply { sourceMeta?.let { this.metadata = it.toProto() } }
             .build()
     }
@@ -433,17 +450,31 @@ object ProtobufPayloadBuilder {
         val sourceMeta = metadata
         return MassRecord.newBuilder()
             .setKilograms(kilograms)
-            .setTime(time.toString())
+            .setTime(time.toTimestamp())
             .apply { sourceMeta?.let { this.metadata = it.toProto() } }
             .build()
     }
+
+    private fun Instant.toTimestamp(): Timestamp =
+        Timestamp.newBuilder().setSeconds(epochSecond).setNanos(nano).build()
+
+    private fun Duration.toProtoDuration(): ProtoDuration =
+        ProtoDuration.newBuilder().setSeconds(seconds).setNanos(nano).build()
+
     private fun RecordMetadata.toProto(): ProtoRecordMetadata {
         val b = ProtoRecordMetadata.newBuilder()
             .setDataOrigin(dataOrigin)
             .setRecordingMethod(recordingMethod)
+            .setId(id)
+            .setClientRecordVersion(clientRecordVersion)
         deviceManufacturer?.let { b.setDeviceManufacturer(it) }
         deviceModel?.let { b.setDeviceModel(it) }
         deviceType?.let { b.setDeviceType(it) }
+        clientRecordId?.let { b.setClientRecordId(it) }
+        lastModifiedTime?.let { b.setLastModifiedTime(it.toTimestamp()) }
+        zoneOffsetSeconds?.let { b.setZoneOffsetSeconds(it) }
+        startZoneOffsetSeconds?.let { b.setStartZoneOffsetSeconds(it) }
+        endZoneOffsetSeconds?.let { b.setEndZoneOffsetSeconds(it) }
         return b.build()
     }
 
