@@ -161,6 +161,7 @@ Keys use **snake_case**. Numeric types follow Kotlin serialization to JSON (e.g.
 |-------|------|-------------|
 | `session_end_time` | string | End of the sleep session. |
 | `duration_seconds` | number (integer) | Total session duration in seconds. |
+| `sleep_updated_at` | string (ISO 8601) | Last time the health platform updated this sleep record (`SleepSessionRecord.metadata.lastModifiedTime`). Omits when unavailable. Useful to tell interim vs finalized values. |
 | `stages` | array | Ordered sleep stages (see below). |
 
 Each **stage** object:

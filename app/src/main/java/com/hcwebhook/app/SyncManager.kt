@@ -70,7 +70,7 @@ class SyncManager(private val context: Context) {
             }
 
             val jsonPayload = try {
-                buildJsonPayload(healthDataResult.getOrThrow())
+                buildJsonPayload(healthDataResult.getOrThrow(), appVersionName)
             } catch (oom: OutOfMemoryError) {
                 return@withContext Result.failure(
                     Exception(
@@ -159,7 +159,7 @@ class SyncManager(private val context: Context) {
 
             // Build full payload (also used by local TCP server)
             val fullPayload = try {
-                buildJsonPayload(healthData)
+                buildJsonPayload(healthData, appVersionName)
             } catch (oom: OutOfMemoryError) {
                 return@withContext Result.failure(
                     Exception(
@@ -194,7 +194,7 @@ class SyncManager(private val context: Context) {
                     val result = when (config.deliveryFormat) {
                         WebhookDeliveryFormat.JSON -> {
                             val payload = try {
-                                if (config.dataTypeFilter != null) buildJsonPayload(filteredData) else fullPayload
+                                if (config.dataTypeFilter != null) buildJsonPayload(filteredData, appVersionName) else fullPayload
                             } catch (oom: OutOfMemoryError) {
                                 lastFailure = Exception(
                                     "Out of memory while building JSON for ${config.url}. Raise sample resolution.",
@@ -223,7 +223,7 @@ class SyncManager(private val context: Context) {
                                 continue
                             }
                             val logJson = try {
-                                if (config.dataTypeFilter != null) buildJsonPayload(filteredData) else fullPayload
+                                if (config.dataTypeFilter != null) buildJsonPayload(filteredData, appVersionName) else fullPayload
                             } catch (_: OutOfMemoryError) {
                                 null
                             }
@@ -562,7 +562,14 @@ class SyncManager(private val context: Context) {
         return if (parts.isEmpty()) "No new data" else parts.joinToString(" · ")
     }
 
-    private fun buildJsonPayload(healthData: HealthData): String {
+    companion object {
+        /**
+         * Soft cap before JSON encode. Full-resolution heart rate over 48h can
+         * exceed this and OOMs mid-tier devices while building JsonObject trees.
+         */
+        private const val MAX_RECORDS_PER_PAYLOAD = 25_000
+
+        internal fun buildJsonPayload(healthData: HealthData, appVersionName: String): String {
         val json = buildJsonObject {
             put("timestamp", Instant.now().toString())
             put("app_version", appVersionName)
@@ -586,6 +593,7 @@ class SyncManager(private val context: Context) {
                         add(buildJsonObject {
                             put("session_end_time", sleep.sessionEndTime.toString())
                             put("duration_seconds", sleep.duration.seconds)
+                            sleep.sessionUpdatedAt?.let { put("sleep_updated_at", it.toString()) }
                             putJsonArray("stages") {
                                 sleep.stages.forEach { stage ->
                                     add(buildJsonObject {
@@ -989,39 +997,32 @@ class SyncManager(private val context: Context) {
         return json.toString()
     }
 
-    companion object {
-        /**
-         * Soft cap before JSON encode. Full-resolution heart rate over 48h can
-         * exceed this and OOMs mid-tier devices while building JsonObject trees.
-         */
-        private const val MAX_RECORDS_PER_PAYLOAD = 25_000
-    }
+        private data class BmiEntry(
+            val value: Double,
+            val time: Instant,
+            val weightKg: Double,
+            val heightMeters: Double
+        )
 
-    private data class BmiEntry(
-        val value: Double,
-        val time: Instant,
-        val weightKg: Double,
-        val heightMeters: Double
-    )
-
-    /** BMI = kg / m². Pair each weight with the height record closest in time. */
-    private fun computeBmiEntries(
-        weights: List<WeightData>,
-        heights: List<HeightData>
-    ): List<BmiEntry> {
-        if (weights.isEmpty() || heights.isEmpty()) return emptyList()
-        return weights.mapNotNull { weight ->
-            val height = heights.minByOrNull { h ->
-                kotlin.math.abs(h.time.toEpochMilli() - weight.time.toEpochMilli())
-            } ?: return@mapNotNull null
-            if (height.meters <= 0.0) return@mapNotNull null
-            val bmi = weight.kilograms / (height.meters * height.meters)
-            BmiEntry(
-                value = bmi,
-                time = weight.time,
-                weightKg = weight.kilograms,
-                heightMeters = height.meters
-            )
+        /** BMI = kg / m². Pair each weight with the height record closest in time. */
+        private fun computeBmiEntries(
+            weights: List<WeightData>,
+            heights: List<HeightData>
+        ): List<BmiEntry> {
+            if (weights.isEmpty() || heights.isEmpty()) return emptyList()
+            return weights.mapNotNull { weight ->
+                val height = heights.minByOrNull { h ->
+                    kotlin.math.abs(h.time.toEpochMilli() - weight.time.toEpochMilli())
+                } ?: return@mapNotNull null
+                if (height.meters <= 0.0) return@mapNotNull null
+                val bmi = weight.kilograms / (height.meters * height.meters)
+                BmiEntry(
+                    value = bmi,
+                    time = weight.time,
+                    weightKg = weight.kilograms,
+                    heightMeters = height.meters
+                )
+            }
         }
     }
 }
