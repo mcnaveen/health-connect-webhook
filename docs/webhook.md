@@ -1,10 +1,16 @@
 # Webhook payload reference
 
-HC Webhook delivers health data as a **single JSON object** in the HTTP request body. The same structure is used for **remote webhooks** (POST) and for responses from the **optional local HTTP server** (GET), so one schema covers both.
+HC Webhook can deliver health data in two formats, chosen per webhook:
 
-Implementation: `buildJsonPayload` in `app/src/main/java/com/hcwebhook/app/SyncManager.kt`.
+1. **JSON** (default) — HTTP `POST` with a JSON body (this document’s schema).
+2. **Protobuf / gRPC** — unary gRPC `HealthWebhook.Deliver` using the published schema in [`proto/hcwebhook/v1/health_payload.proto`](../proto/hcwebhook/v1/health_payload.proto).
 
-## HTTP request (remote webhooks)
+The optional local HTTP server still uses **JSON only**.
+
+JSON implementation: `buildJsonPayload` in `app/src/main/java/com/hcwebhook/app/SyncManager.kt`.  
+Protobuf implementation: `ProtobufPayloadBuilder` + `GrpcWebhookClient`.
+
+## HTTP request (JSON webhooks)
 
 | Property | Value |
 |----------|--------|
@@ -15,6 +21,101 @@ Implementation: `buildJsonPayload` in `app/src/main/java/com/hcwebhook/app/SyncM
 The app may attach **custom headers** per webhook URL as configured in the app. There is no built-in signature or auth header unless you add it there.
 
 Successful delivery is any HTTP **2xx** response. Failed requests are retried briefly (a few attempts with backoff); if all attempts fail, the next manual, interval, or scheduled sync can try again with the same incremental rules.
+
+## gRPC delivery (Protobuf)
+
+| Property | Value |
+|----------|--------|
+| Protocol | gRPC over HTTP/2 |
+| Package / service | `hcwebhook.v1.HealthWebhook` |
+| RPC | `Deliver(HealthPayload) returns (DeliverResponse)` |
+| Success | `DeliverResponse.ok == true` |
+| Schema file | [`proto/hcwebhook/v1/health_payload.proto`](../proto/hcwebhook/v1/health_payload.proto) |
+| App encoder | `ProtobufPayloadBuilder` |
+| App client | `GrpcWebhookClient` |
+| Example servers | [`server/example/`](../server/example/) |
+
+### Configure in the app
+
+1. Open **Webhooks** → edit a webhook.
+2. Set **Delivery format** to **Protobuf / gRPC**.
+3. Enter a **gRPC target** (see table below).
+4. Optional: add custom headers (become gRPC metadata; keys are lowercased).
+5. Optional: tap **Share schema (.proto)** to export the bundled schema via the system share sheet.
+6. Tap **Test**.
+
+### Target URL forms
+
+| Example | Transport | Notes |
+|---------|-----------|--------|
+| `http://192.168.1.10:50051` | Plaintext | Best for LAN demos |
+| `192.168.1.10:50051` | Plaintext | Port ≠ 443 ⇒ plaintext |
+| `https://hooks.example.com` | TLS | Default port 443 |
+| `hooks.example.com:443` | TLS | Explicit TLS port |
+| `hooks.example.com` | TLS | Bare host defaults to port 443 + TLS |
+
+### Authentication
+
+There is no built-in signature scheme. Use custom webhook headers.
+
+Example: set header `x-api-key: supersecret`. The gRPC client attaches it as metadata. Example servers accept the same value via env `API_KEY`.
+
+### TLS
+
+- **LAN:** use plaintext (`http://IP:50051`).
+- **Production:** terminate TLS with a trusted certificate (reverse proxy recommended).
+- Self-signed certs usually fail on Android until the device trusts the CA. Prefer Let’s Encrypt (or similar).
+
+See [`server/example/README.md`](../server/example/README.md) for Docker, auth, and TLS recipes.
+
+### Example servers (runnable)
+
+| Stack | Command (from `server/example`) |
+|-------|----------------------------------|
+| Python (Docker) | `docker compose --profile python up --build` |
+| TypeScript (Docker) | `docker compose --profile typescript up --build` |
+| Python (local) | see [`server/example/python/README.md`](../server/example/python/README.md) |
+| TypeScript (local) | see [`server/example/typescript/README.md`](../server/example/typescript/README.md) |
+| Go | see [`server/example/go/README.md`](../server/example/go/README.md) |
+| PHP | see [`server/example/php/README.md`](../server/example/php/README.md) |
+
+### Generate your own server
+
+Use the published `.proto` with your language’s gRPC tooling:
+
+```bash
+# Go
+protoc -I proto --go_out=. --go-grpc_out=. proto/hcwebhook/v1/health_payload.proto
+
+# Python
+python -m grpc_tools.protoc -I proto --python_out=. --grpc_python_out=. \
+  proto/hcwebhook/v1/health_payload.proto
+```
+
+Implement `Deliver`, accept `HealthPayload`, return `{ ok: true }`.
+
+Field names and units match the JSON tables below (same logical schema). The proto
+form differs where protobuf can be stricter than JSON:
+
+- Record instants are `google.protobuf.Timestamp` and durations are
+  `google.protobuf.Duration` (the envelope `timestamp` stays an ISO-8601 string).
+- Records that can be a single sample **or** an aggregate — `heart_rate`,
+  `heart_rate_variability`, `oxygen_saturation`, `respiratory_rate`,
+  `skin_temperature` — carry a `oneof value { sample; aggregate; }` so only one
+  form is ever set.
+- `RecordMetadata` also carries `id`, `client_record_id`, `client_record_version`,
+  `last_modified_time` (record identity for deduplication / update detection) and
+  a `zone_offset` oneof — `instant_zone_offset_seconds` for instant records or
+  `interval_zone_offset` (start/end) for interval records — the UTC offsets Health
+  Connect stores, for local-day aggregation.
+
+### Schema distribution
+
+| Audience | How to get the `.proto` |
+|----------|-------------------------|
+| App user | **Share schema (.proto)** in the webhook editor |
+| Developer / CI | Repo path `proto/hcwebhook/v1/health_payload.proto` |
+| Example Docker builds | Copied into the image at build time |
 
 ## Root JSON object
 

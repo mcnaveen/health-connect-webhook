@@ -33,7 +33,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
@@ -62,6 +61,7 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
 
         var editName by remember(capturedIndex) { mutableStateOf(config.name) }
         var editUrl by remember(capturedIndex) { mutableStateOf(config.url) }
+        var editDeliveryFormat by remember(capturedIndex) { mutableStateOf(config.deliveryFormat) }
         var currentHeaders by remember(capturedIndex) { mutableStateOf(config.headers) }
         var manageHeaders by remember(capturedIndex) { mutableStateOf(config.headers.isNotEmpty()) }
         var newKey by remember(capturedIndex) { mutableStateOf("") }
@@ -91,10 +91,11 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
             if (orphanedIds.isNotEmpty()) showUnlinkConfirm = true
         }
 
-        val hasUnsavedChanges by remember(editName, editUrl, currentHeaders, filterAll, selectedTypes, selectedNotificationIds) {
+        val hasUnsavedChanges by remember(editName, editUrl, editDeliveryFormat, currentHeaders, filterAll, selectedTypes, selectedNotificationIds) {
             derivedStateOf {
                 editName.trim() != config.name ||
                 editUrl.trim() != config.url ||
+                editDeliveryFormat != config.deliveryFormat ||
                 currentHeaders != config.headers ||
                 filterAll != (config.dataTypeFilter == null) ||
                 (!filterAll && selectedTypes != (config.dataTypeFilter ?: globalEnabledTypes)) ||
@@ -168,13 +169,66 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                 OutlinedTextField(
                     value = editUrl,
                     onValueChange = { editUrl = it },
-                    label = { Text(stringResource(R.string.webhooks_new_url_label)) },
+                    label = {
+                        Text(
+                            if (editDeliveryFormat == WebhookDeliveryFormat.GRPC)
+                                stringResource(R.string.webhooks_url_label_grpc)
+                            else
+                                stringResource(R.string.webhooks_url_label_json)
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     textStyle = MaterialTheme.typography.bodyMedium,
-                    isError = editUrl.isNotBlank() && !editUrl.startsWith("http://") && !editUrl.startsWith("https://")
+                    isError = editUrl.isNotBlank() && !isWebhookTargetValid(editUrl, editDeliveryFormat),
+                    supportingText = if (editDeliveryFormat == WebhookDeliveryFormat.GRPC) {
+                        { Text(stringResource(R.string.webhooks_delivery_grpc_hint)) }
+                    } else null
                 )
+
+                // ── Delivery format ───────────────────────────────────────────
+                SheetSection {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            stringResource(R.string.webhooks_delivery_section),
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(
+                                selected = editDeliveryFormat == WebhookDeliveryFormat.JSON,
+                                onClick = { editDeliveryFormat = WebhookDeliveryFormat.JSON },
+                                label = { Text(stringResource(R.string.webhooks_delivery_json)) }
+                            )
+                            FilterChip(
+                                selected = editDeliveryFormat == WebhookDeliveryFormat.GRPC,
+                                onClick = { editDeliveryFormat = WebhookDeliveryFormat.GRPC },
+                                label = { Text(stringResource(R.string.webhooks_delivery_grpc)) }
+                            )
+                        }
+                        if (editDeliveryFormat == WebhookDeliveryFormat.GRPC) {
+                            TextButton(
+                                onClick = {
+                                    try {
+                                        ProtoSchemaExporter.share(context)
+                                    } catch (e: Exception) {
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(
+                                                R.string.webhooks_delivery_share_proto_failed,
+                                                e.message ?: context.getString(R.string.about_error_unknown)
+                                            ),
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.webhooks_delivery_share_proto))
+                            }
+                        }
+                    }
+                }
 
                 // ── Data Types ───────────────────────────────────────────────
                 SheetSection {
@@ -496,7 +550,7 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                 Spacer(modifier = Modifier.height(4.dp))
 
                 // ── Actions ──────────────────────────────────────────────────
-                val urlValid = editUrl.trim().let { it.startsWith("http://") || it.startsWith("https://") }
+                val urlValid = isWebhookTargetValid(editUrl, editDeliveryFormat)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -507,18 +561,41 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                             val testConfig = WebhookConfig(
                                 url = editUrl.trim(),
                                 headers = currentHeaders,
-                                isEnabled = true
+                                isEnabled = true,
+                                deliveryFormat = editDeliveryFormat
                             )
                             val typesForMock = if (filterAll) globalEnabledTypes else selectedTypes
-                            val mockPayload = MockPayloadBuilder.build(typesForMock.ifEmpty { null }, appVersion)
                             scope.launch {
                                 val result = withContext(Dispatchers.IO) {
-                                    WebhookManager(
-                                        webhookConfigs = listOf(testConfig),
-                                        context = context,
-                                        syncType = "test",
-                                        payload = mockPayload
-                                    ).postData(mockPayload)
+                                    when (editDeliveryFormat) {
+                                        WebhookDeliveryFormat.JSON -> {
+                                            val mockPayload = MockPayloadBuilder.build(typesForMock.ifEmpty { null }, appVersion)
+                                            WebhookManager(
+                                                webhookConfigs = listOf(testConfig),
+                                                context = context,
+                                                syncType = "test",
+                                                payload = mockPayload
+                                            ).postData(mockPayload)
+                                        }
+                                        WebhookDeliveryFormat.GRPC -> {
+                                            val mockData = MockPayloadBuilder.buildHealthData(
+                                                typesForMock.ifEmpty { null }
+                                            )
+                                            val payload = ProtobufPayloadBuilder.build(mockData, appVersion)
+                                            val logJson = MockPayloadBuilder.build(
+                                                typesForMock.ifEmpty { null },
+                                                appVersion
+                                            )
+                                            GrpcWebhookClient.deliver(
+                                                config = testConfig,
+                                                payload = payload,
+                                                context = context,
+                                                syncType = "test",
+                                                recordCount = mockData.totalRecordCount(),
+                                                logPayload = logJson
+                                            )
+                                        }
+                                    }
                                 }
                                 val log = withContext(Dispatchers.IO) {
                                     preferencesManager.getWebhookLogs()
@@ -552,8 +629,17 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                     Button(
                         onClick = {
                             val trimmedUrl = editUrl.trim()
-                            if (trimmedUrl.isEmpty() || (!trimmedUrl.startsWith("http://") && !trimmedUrl.startsWith("https://"))) {
-                                Toast.makeText(context, context.getString(R.string.webhooks_toast_invalid_url), Toast.LENGTH_SHORT).show()
+                            if (!isWebhookTargetValid(trimmedUrl, editDeliveryFormat)) {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(
+                                        if (editDeliveryFormat == WebhookDeliveryFormat.GRPC)
+                                            R.string.webhooks_toast_invalid_target
+                                        else
+                                            R.string.webhooks_toast_invalid_url
+                                    ),
+                                    Toast.LENGTH_SHORT
+                                ).show()
                                 return@Button
                             }
                             val newFilter = if (filterAll) null else selectedTypes.ifEmpty { null }
@@ -563,7 +649,8 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                                 url = trimmedUrl,
                                 headers = currentHeaders,
                                 dataTypeFilter = newFilter,
-                                notificationConfigIds = selectedNotificationIds
+                                notificationConfigIds = selectedNotificationIds,
+                                deliveryFormat = editDeliveryFormat
                             )
                             webhookConfigs = list
                             sheetIndex = -1
@@ -699,6 +786,9 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                                     val meta = buildList {
                                         val h = config.getHeaderCount()
                                         val f = config.dataTypeFilter?.size
+                                        if (config.deliveryFormat == WebhookDeliveryFormat.GRPC) {
+                                            add(stringResource(R.string.webhooks_delivery_grpc))
+                                        }
                                         if (h > 0) add(stringResource(R.string.webhooks_headers_count, h))
                                         if (f != null) add(stringResource(R.string.webhooks_data_types_filter_count, f))
                                     }.joinToString(" · ")
@@ -778,5 +868,16 @@ private fun SheetSection(content: @Composable () -> Unit) {
         Box(modifier = Modifier.padding(16.dp)) {
             content()
         }
+    }
+}
+
+private fun isWebhookTargetValid(raw: String, format: WebhookDeliveryFormat): Boolean {
+    val trimmed = raw.trim()
+    if (trimmed.isEmpty()) return false
+    return when (format) {
+        WebhookDeliveryFormat.JSON ->
+            trimmed.startsWith("http://") || trimmed.startsWith("https://")
+        WebhookDeliveryFormat.GRPC ->
+            GrpcWebhookClient.isValidTarget(trimmed)
     }
 }

@@ -189,26 +189,55 @@ class SyncManager(private val context: Context) {
                     }
                     if (isHealthDataEmpty(filteredData)) continue
                     atLeastOneAttempted = true
-                    val payload = try {
-                        if (config.dataTypeFilter != null) buildJsonPayload(filteredData) else fullPayload
-                    } catch (oom: OutOfMemoryError) {
-                        lastFailure = Exception(
-                            "Out of memory while building JSON for ${config.url}. Raise sample resolution.",
-                            oom
-                        )
-                        continue
-                    }
                     val totalRecords = countHealthData(filteredData)
 
-                    val manager = WebhookManager(
-                        webhookConfigs = listOf(config),
-                        context = context,
-                        dataType = "all",
-                        recordCount = totalRecords,
-                        syncType = syncType,
-                        payload = payload
-                    )
-                    val result = manager.postData(payload)
+                    val result = when (config.deliveryFormat) {
+                        WebhookDeliveryFormat.JSON -> {
+                            val payload = try {
+                                if (config.dataTypeFilter != null) buildJsonPayload(filteredData) else fullPayload
+                            } catch (oom: OutOfMemoryError) {
+                                lastFailure = Exception(
+                                    "Out of memory while building JSON for ${config.url}. Raise sample resolution.",
+                                    oom
+                                )
+                                continue
+                            }
+                            val manager = WebhookManager(
+                                webhookConfigs = listOf(config),
+                                context = context,
+                                dataType = "all",
+                                recordCount = totalRecords,
+                                syncType = syncType,
+                                payload = payload
+                            )
+                            manager.postData(payload)
+                        }
+                        WebhookDeliveryFormat.GRPC -> {
+                            val grpcPayload = try {
+                                ProtobufPayloadBuilder.build(filteredData, appVersionName)
+                            } catch (oom: OutOfMemoryError) {
+                                lastFailure = Exception(
+                                    "Out of memory while building protobuf for ${config.url}. Raise sample resolution.",
+                                    oom
+                                )
+                                continue
+                            }
+                            val logJson = try {
+                                if (config.dataTypeFilter != null) buildJsonPayload(filteredData) else fullPayload
+                            } catch (_: OutOfMemoryError) {
+                                null
+                            }
+                            GrpcWebhookClient.deliver(
+                                config = config,
+                                payload = grpcPayload,
+                                context = context,
+                                dataType = "all",
+                                recordCount = totalRecords,
+                                syncType = syncType,
+                                logPayload = logJson
+                            )
+                        }
+                    }
                     
                     val notifConfigs = config.notificationConfigIds.mapNotNull { id -> 
                         globalNotifs.find { it.id == id } 

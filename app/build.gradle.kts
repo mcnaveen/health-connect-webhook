@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.kotlinx.serialization)
+    alias(libs.plugins.protobuf)
 }
 
 val appVersionMajor = 1
@@ -82,6 +83,31 @@ android {
     }
 }
 
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.get()}"
+    }
+    plugins {
+        create("grpc") {
+            artifact = "io.grpc:protoc-gen-grpc-java:${libs.versions.grpc.get()}"
+        }
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.builtins {
+                register("java") {
+                    option("lite")
+                }
+            }
+            task.plugins {
+                register("grpc") {
+                    option("lite")
+                }
+            }
+        }
+    }
+}
+
 configurations.all {
     resolutionStrategy {
         force(
@@ -108,6 +134,12 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.feedbackjar.sdk)
+    implementation(libs.grpc.okhttp)
+    implementation(libs.grpc.protobuf.lite)
+    implementation(libs.grpc.stub)
+    implementation(libs.grpc.android)
+    implementation(libs.protobuf.javalite)
+    implementation(libs.javax.annotation)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

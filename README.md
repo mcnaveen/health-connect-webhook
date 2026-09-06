@@ -67,8 +67,9 @@ Health Connect aggregates data from these popular health and fitness apps:
 
 Integrations and automations can rely on these specs (kept in sync with the app code):
 
-- **[Webhook payload](docs/webhook.md)** — `POST` JSON body: root fields, every data-type array, incremental sync vs explicit ranges, units, and examples.
+- **[Webhook payload](docs/webhook.md)** — JSON `POST` body and optional **Protobuf/gRPC** delivery (`HealthWebhook.Deliver`). Schema: [`proto/hcwebhook/v1/health_payload.proto`](proto/hcwebhook/v1/health_payload.proto). Examples: [`server/example/`](server/example/).
 - **[Local HTTP server](docs/local-http.md)** — `GET` endpoints (`/`, `/latest`, `/ping`), query parameters, listen binding, default port **8787**, and how pull-based reads differ from webhook sync.
+- **[gRPC example servers](server/example/README.md)** — Docker one-liner, Python/TypeScript/Go/PHP receivers, metadata auth (`x-api-key`), and TLS notes.
 
 ## Supported Languages
 
@@ -245,7 +246,7 @@ Default port is **8787** (configurable **1024–65535**). Example: `http://192.1
 
 ### Webhook format
 
-Delivery is **`POST`** with **`Content-Type: application/json; charset=utf-8`**. The body is one JSON object: always **`timestamp`** (when the payload was built) and **`app_version`**, plus optional **snake_case** arrays per data type (each key omitted if there are no records in that batch). Background sync reads a rolling **48-hour** window and, by default, only records **new since the last successful sync** per type (first run has no prior watermark).
+Delivery is **`POST`** with **`Content-Type: application/json; charset=utf-8`** by default. Per webhook you can switch to **Protobuf / gRPC** (`HealthWebhook.Deliver`). The JSON body is one object: always **`timestamp`** (when the payload was built) and **`app_version`**, plus optional **snake_case** arrays per data type (each key omitted if there are no records in that batch). Background sync reads a rolling **48-hour** window and, by default, only records **new since the last successful sync** per type (first run has no prior watermark).
 
 Full field tables, units, nutrition/skin-temperature notes, and examples: **[docs/webhook.md](docs/webhook.md)**.
 
@@ -276,10 +277,10 @@ The local server returns the **same JSON schema** via **`GET`**; semantics (incr
 - **Health Data**: Health Connect SDK (AndroidX)
 - **Background Work**: WorkManager
 - **Scheduled Alarms**: AlarmManager (exact alarms where available)
-- **Networking**: OkHttp
+- **Networking**: OkHttp (JSON webhooks) + gRPC OkHttp / Android channel (Protobuf delivery)
 - **Feedback**: [FeedbackJar Android SDK](https://central.sonatype.com/artifact/com.feedbackjar/sdk) (`com.feedbackjar:sdk`)
 - **Local Server**: Foreground service with a lightweight HTTP socket listener
-- **Serialization**: Kotlinx Serialization
+- **Serialization**: Kotlinx Serialization (JSON) + Protocol Buffers lite (gRPC)
 
 ### Key Components
 
@@ -289,7 +290,10 @@ The local server returns the **same JSON schema** via **`GET`**; semantics (incr
 - `SyncWorker` - Background worker for periodic syncing
 - `ScheduledSyncManager` - Manages AlarmManager schedules for fixed-time syncing
 - `ScheduledSyncReceiver` - Receives alarm broadcasts and triggers scheduled syncs
-- `WebhookManager` - Handles webhook HTTP requests
+- `WebhookManager` - Handles JSON webhook HTTP requests
+- `GrpcWebhookClient` - Handles Protobuf / gRPC `HealthWebhook.Deliver`
+- `ProtobufPayloadBuilder` - Maps Health Connect data to the published protobuf schema
+- `ProtoSchemaExporter` - Shares the bundled `.proto` from app assets
 - `LocalHttpServerService` - Foreground service that keeps the local HTTP server running
 - `LocalHttpServerManager` - Handles local HTTP socket binding, request parsing, and JSON responses
 - `PreferencesManager` - Manages app configuration and preferences
@@ -318,30 +322,30 @@ The app requires the following permissions:
 
 ```
 docs/
-├── webhook.md      # Webhook POST JSON schema
+├── webhook.md      # JSON + gRPC webhook reference
 ├── local-http.md   # Local HTTP GET API
+proto/
+└── hcwebhook/v1/health_payload.proto   # Published gRPC schema
+server/example/
+├── README.md               # Docker, auth, TLS, troubleshooting
+├── docker-compose.yml
+├── python/ typescript/ go/ php/
 app/
 ├── src/
 │   ├── main/
+│   │   ├── assets/health_payload.proto  # Bundled for Share schema
+│   │   ├── proto/                       # protoc input (mirrors repo proto/)
 │   │   ├── java/com/hcwebhook/app/
-│   │   │   ├── MainActivity.kt          # Main Entry Point
-│   │   │   ├── HCWebhookApplication.kt  # Application Class
-│   │   │   ├── HealthConnectManager.kt  # Health Connect Logic
-│   │   │   ├── SyncManager.kt           # Sync Logic & Scheduling
-│   │   │   ├── SyncWorker.kt            # WorkManager Background Task
-│   │   │   ├── WebhookManager.kt        # HTTP Client
-│   │   │   ├── LocalHttpServerService.kt # Local HTTP Foreground Service
-│   │   │   ├── LocalTcpServerManager.kt # Local HTTP Socket Server
-│   │   │   ├── PreferencesManager.kt    # DataStore Preferences
-│   │   │   ├── FeedbackSubmitter.kt     # FeedbackJar submit with flavor metadata
-│   │   │   ├── LocalFeedbackEntry.kt    # On-device feedback history model
-│   │   │   ├── ScheduledSyncManager.kt  # Alarm Manager Logic
-│   │   │   ├── ScheduledSyncReceiver.kt # Broadcast Receiver
-│   │   │   ├── components/              # UI Components
-│   │   │   ├── screens/                 # Composable Screens
-│   │   │   └── ui/                      # Theme & Color
-│   │   └── res/                         # Resources
-└── build.gradle.kts                     # App-level build config
+│   │   │   ├── MainActivity.kt
+│   │   │   ├── SyncManager.kt
+│   │   │   ├── WebhookManager.kt        # JSON HTTP client
+│   │   │   ├── GrpcWebhookClient.kt     # gRPC client
+│   │   │   ├── ProtobufPayloadBuilder.kt
+│   │   │   ├── ProtoSchemaExporter.kt
+│   │   │   ├── screens/                 # Includes WebhooksScreen delivery UI
+│   │   │   └── …
+│   │   └── res/
+└── build.gradle.kts
 ```
 
 ### Building
