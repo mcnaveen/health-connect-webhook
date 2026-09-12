@@ -147,6 +147,25 @@ Only types the user enabled **and** granted Health Connect permission for are re
 
 Keys use **snake_case**. Numeric types follow Kotlin serialization to JSON (e.g. integers as JSON numbers, doubles as JSON numbers).
 
+### Sample resolution (heart rate and related series)
+
+These types can emit either a **sample** object or an **aggregate** object, depending on the per-type **sample resolution** setting in the app (`DataResolution` / configuration UI):
+
+| Setting | JSON shape |
+|---------|------------|
+| **Full** (`0`) | One object per raw sample (value field only). |
+| **N minutes** (default **1** for these types) | One object per time bucket with `avg` / `min` / `max` (skin uses `*_delta_celsius`). |
+
+Types: `heart_rate`, `heart_rate_variability`, `oxygen_saturation`, `respiratory_rate`, `skin_temperature`.
+
+On aggregates:
+
+- `time` is the **bucket start** (UTC-aligned epoch seconds for the N-minute window), not the last sample time and not the bucket end.
+- The legacy sample field (`bpm`, `rmssd_millis`, `percentage`, `rate`, or `delta_celsius`) is also present and equals `avg` / `avg_delta_celsius`. That restores older parsers that read only the sample field name. The value is still a **bucket average**, not a single measurement.
+- To detect shape: treat presence of `avg` / `min` / `max` (or skin `avg_delta_celsius`) as aggregate; do not use presence of `bpm` alone.
+
+Protobuf delivery uses a typed `oneof sample | aggregate` instead of duplicate JSON fields; see the gRPC section above.
+
 ### `steps` — array of objects
 
 | Field | Type | Description |
@@ -174,17 +193,41 @@ Each **stage** object:
 
 ### `heart_rate` — array of objects
 
+**Sample** (resolution Full):
+
 | Field | Type | Description |
 |-------|------|-------------|
 | `bpm` | number (integer) | Beats per minute. |
 | `time` | string | Sample time. |
 
+**Aggregate** (resolution N minutes):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `time` | string | Bucket start. |
+| `avg` | number | Average BPM in the bucket. |
+| `min` | number | Minimum BPM in the bucket. |
+| `max` | number | Maximum BPM in the bucket. |
+| `bpm` | number | Same as `avg` (legacy alias). |
+
 ### `heart_rate_variability` — array of objects
+
+**Sample** (resolution Full):
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `rmssd_millis` | number | RMSSD in milliseconds. |
 | `time` | string | Sample time. |
+
+**Aggregate** (resolution N minutes):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `time` | string | Bucket start. |
+| `avg` | number | Average RMSSD in the bucket. |
+| `min` | number | Minimum RMSSD in the bucket. |
+| `max` | number | Maximum RMSSD in the bucket. |
+| `rmssd_millis` | number | Same as `avg` (legacy alias). |
 
 ### `distance` — array of objects
 
@@ -233,10 +276,22 @@ Each **stage** object:
 
 ### `oxygen_saturation` — array of objects
 
+**Sample** (resolution Full):
+
 | Field | Type | Description |
 |-------|------|-------------|
 | `percentage` | number | SpO₂ (0–100 scale as provided by Health Connect). |
 | `time` | string | Measurement time. |
+
+**Aggregate** (resolution N minutes):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `time` | string | Bucket start. |
+| `avg` | number | Average SpO₂ in the bucket. |
+| `min` | number | Minimum SpO₂ in the bucket. |
+| `max` | number | Maximum SpO₂ in the bucket. |
+| `percentage` | number | Same as `avg` (legacy alias). |
 
 ### `body_temperature` — array of objects
 
@@ -247,6 +302,8 @@ Each **stage** object:
 
 ### `skin_temperature` — array of objects
 
+**Sample** (resolution Full):
+
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `time` | string | yes | Sample instant. |
@@ -254,14 +311,38 @@ Each **stage** object:
 | `baseline_celsius` | number | no | Present when the source record includes a baseline. |
 | `measurement_location` | number (integer) | yes | AndroidX `SkinTemperatureRecord` location constant (e.g. unknown / finger / toe / wrist). See [SkinTemperatureRecord](https://github.com/androidx/androidx/blob/androidx-main/health/connect/connect-client/src/main/java/androidx/health/connect/client/records/SkinTemperatureRecord.kt) in AndroidX. |
 
-Health Connect can store multiple samples per interval; the app emits **one JSON object per sample**, repeating baseline and location when applicable.
+**Aggregate** (resolution N minutes):
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `time` | string | yes | Bucket start. |
+| `avg_delta_celsius` | number | yes | Average delta in the bucket (°C). |
+| `min_delta_celsius` | number | yes | Minimum delta in the bucket. |
+| `max_delta_celsius` | number | yes | Maximum delta in the bucket. |
+| `delta_celsius` | number | yes | Same as `avg_delta_celsius` (legacy alias). |
+| `baseline_celsius` | number | no | Present when the source record includes a baseline. |
+| `measurement_location` | number (integer) | yes | Same location constant as sample form. |
+
+Health Connect can store multiple samples per interval; with Full resolution the app emits **one JSON object per sample**, repeating baseline and location when applicable. With N-minute resolution, samples in a bucket are averaged into one object.
 
 ### `respiratory_rate` — array of objects
+
+**Sample** (resolution Full):
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `rate` | number | Breaths per minute (or as provided by Health Connect). |
 | `time` | string | Measurement time. |
+
+**Aggregate** (resolution N minutes):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `time` | string | Bucket start. |
+| `avg` | number | Average rate in the bucket. |
+| `min` | number | Minimum rate in the bucket. |
+| `max` | number | Maximum rate in the bucket. |
+| `rate` | number | Same as `avg` (legacy alias). |
 
 ### `resting_heart_rate` — array of objects
 
@@ -410,6 +491,22 @@ Shape varies with your enabled types and data:
   ],
   "heart_rate": [
     { "bpm": 72, "time": "2026-05-09T08:15:00Z" }
+  ]
+}
+```
+
+Example aggregate object (N-minute resolution; `bpm` equals `avg`):
+
+```json
+{
+  "heart_rate": [
+    {
+      "time": "2026-05-09T08:15:00Z",
+      "avg": 72,
+      "min": 68,
+      "max": 80,
+      "bpm": 72
+    }
   ]
 }
 ```
