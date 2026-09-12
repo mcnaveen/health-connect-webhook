@@ -610,6 +610,7 @@ class SyncManager(private val context: Context) {
                             put("avg", hr.bpm)
                             put("min", hr.min)
                             put("max", hr.max)
+                            put("bpm", hr.bpm)
                         } else {
                             put("bpm", hr.bpm)
                             put("time", hr.time.toString())
@@ -627,6 +628,7 @@ class SyncManager(private val context: Context) {
                             put("avg", hrv.rmssdMillis)
                             put("min", hrv.min)
                             put("max", hrv.max)
+                            put("rmssd_millis", hrv.rmssdMillis)
                         } else {
                             put("rmssd_millis", hrv.rmssdMillis)
                             put("time", hrv.time.toString())
@@ -718,6 +720,7 @@ class SyncManager(private val context: Context) {
                             put("avg", o2.percentage)
                             put("min", o2.min)
                             put("max", o2.max)
+                            put("percentage", o2.percentage)
                         } else {
                             put("percentage", o2.percentage)
                             put("time", o2.time.toString())
@@ -745,6 +748,7 @@ class SyncManager(private val context: Context) {
                             put("avg_delta_celsius", skin.deltaCelsius)
                             put("min_delta_celsius", skin.minDeltaCelsius)
                             put("max_delta_celsius", skin.maxDeltaCelsius)
+                            put("delta_celsius", skin.deltaCelsius)
                         } else {
                             put("delta_celsius", skin.deltaCelsius)
                         }
@@ -763,6 +767,7 @@ class SyncManager(private val context: Context) {
                             put("avg", resp.rate)
                             put("min", resp.min)
                             put("max", resp.max)
+                            put("rate", resp.rate)
                         } else {
                             put("rate", resp.rate)
                             put("time", resp.time.toString())
