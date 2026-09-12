@@ -41,6 +41,11 @@ jobs:
       with:
         name: app-debug
         path: app/build/outputs/apk/debug/*.apk
+
+    # Minified FOSS build runs R8 with app/proguard-rules.pro (issue #77).
+    # Uses the minify build type (debug-signed) so CI does not need the release keystore.
+    - name: Assemble FOSS minify (R8)
+      run: ./gradlew :app:assembleFossMinify
       
     - name: Run tests
       run: ./gradlew test

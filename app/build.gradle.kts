@@ -61,6 +61,18 @@ android {
             )
             signingConfig = signingConfigs.getByName("release")
         }
+        // Debug-signed, minified build for R8 smoke tests (issue #77).
+        // Run: ./gradlew :app:connectedFossMinifyAndroidTest
+        create("minify") {
+            initWith(getByName("debug"))
+            matchingFallbacks += listOf("debug")
+            isMinifyEnabled = true
+            isDebuggable = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
