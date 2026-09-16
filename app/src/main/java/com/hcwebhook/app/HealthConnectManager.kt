@@ -237,7 +237,8 @@ data class SleepData(
     val sessionEndTime: Instant,
     val duration: Duration,
     val stages: List<SleepStage>,
-    val metadata: RecordMetadata? = null
+    val metadata: RecordMetadata? = null,
+    val sessionUpdatedAt: Instant? = null
 )
 
 data class SleepStage(
@@ -1113,7 +1114,8 @@ class HealthConnectManager(private val context: Context) {
                     sessionEndTime = record.endTime,
                     duration = Duration.between(record.startTime, record.endTime),
                     stages = stages,
-                    metadata = record.toRecordMetadata(startZoneOffset = record.startZoneOffset, endZoneOffset = record.endZoneOffset)
+                    metadata = record.toRecordMetadata(startZoneOffset = record.startZoneOffset, endZoneOffset = record.endZoneOffset),
+                    sessionUpdatedAt = record.metadata.lastModifiedTime
                 )
             }
     }
