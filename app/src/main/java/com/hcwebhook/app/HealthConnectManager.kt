@@ -1,6 +1,7 @@
 package com.hcwebhook.app
 
 import android.content.Context
+import android.util.Log
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import kotlinx.coroutines.CancellationException
@@ -485,8 +486,9 @@ class HealthConnectManager(private val context: Context) {
                 else -> endTime.minus(LOOKBACK_HOURS, ChronoUnit.HOURS)
             }
 
-            if (startTime.isAfter(endTime)) {
-                return Result.failure(IllegalArgumentException("start must be before or equal to end"))
+            // Health Connect / androidx require a strictly increasing range.
+            if (!startTime.isBefore(endTime)) {
+                return Result.failure(IllegalArgumentException("start must be before end"))
             }
 
             fun resolution(type: HealthDataType): Int =
@@ -2000,6 +2002,67 @@ class HealthConnectManager(private val context: Context) {
     }
 
     private suspend fun <T : Record> readAllRecords(request: ReadRecordsRequest<T>): List<T> {
+        return try {
+            readAllRecordsPaged(request)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            if (!HealthConnectReadRecovery.isCorruptIntervalRecordError(e)) throw e
+            // TimeRangeFilter.startTime/endTime are library-group; Instant between()
+            // filters always set both, and we need them to bisect corrupt windows.
+            @Suppress("RestrictedApi")
+            val start = request.timeRangeFilter.startTime
+            @Suppress("RestrictedApi")
+            val end = request.timeRangeFilter.endTime
+            if (start == null || end == null || !start.isBefore(end)) throw e
+            Log.w(
+                TAG,
+                "Corrupt ${request.recordType.simpleName} interval record(s); " +
+                    "splitting $start..$end to skip bad slices",
+                e,
+            )
+            readAllRecordsSkippingCorrupt(request, start, end)
+        }
+    }
+
+    /**
+     * Bisect [start, end) until each slice either reads cleanly or is smaller than
+     * [HealthConnectReadRecovery.MIN_CORRUPT_SKIP_CHUNK], then skip the bad slice.
+     * One companion-written zero-duration row otherwise fails the whole page decode.
+     */
+    private suspend fun <T : Record> readAllRecordsSkippingCorrupt(
+        template: ReadRecordsRequest<T>,
+        start: Instant,
+        end: Instant,
+    ): List<T> {
+        val request = ReadRecordsRequest(
+            recordType = template.recordType,
+            timeRangeFilter = TimeRangeFilter.between(start, end),
+            dataOriginFilter = template.dataOriginFilter,
+            ascendingOrder = template.ascendingOrder,
+            pageSize = template.pageSize,
+        )
+        return try {
+            readAllRecordsPaged(request)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            if (!HealthConnectReadRecovery.isCorruptIntervalRecordError(e)) throw e
+            val mid = HealthConnectReadRecovery.midpoint(start, end)
+            if (mid == null) {
+                Log.w(
+                    TAG,
+                    "Skipping corrupt ${template.recordType.simpleName} window $start..$end",
+                )
+                emptyList()
+            } else {
+                readAllRecordsSkippingCorrupt(template, start, mid) +
+                    readAllRecordsSkippingCorrupt(template, mid, end)
+            }
+        }
+    }
+
+    private suspend fun <T : Record> readAllRecordsPaged(request: ReadRecordsRequest<T>): List<T> {
         val all = mutableListOf<T>()
         var token: String? = null
         var firstPage = true
@@ -2084,6 +2147,7 @@ class HealthConnectManager(private val context: Context) {
     }
 
     companion object {
+        private const val TAG = "HealthConnectManager"
         private const val LOOKBACK_HOURS = 48L
 
         private const val RATE_LIMIT_MAX_ATTEMPTS = 4
