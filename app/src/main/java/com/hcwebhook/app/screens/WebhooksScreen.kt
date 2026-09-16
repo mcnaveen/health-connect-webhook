@@ -605,9 +605,17 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                                 val detail = buildString {
                                     val code = log?.statusCode
                                     val ms = log?.responseTimeMs
+                                    val err = log?.errorMessage ?: result.exceptionOrNull()?.message
                                     if (code != null) append("$code")
-                                    if (ms != null) { if (code != null) append(" · "); append("${ms}ms") }
-                                    if (isEmpty()) append(result.exceptionOrNull()?.message ?: "Failed")
+                                    if (ms != null) {
+                                        if (isNotEmpty()) append(" · ")
+                                        append("${ms}ms")
+                                    }
+                                    if (!err.isNullOrBlank()) {
+                                        if (isNotEmpty()) append(" · ")
+                                        append(err)
+                                    }
+                                    if (isEmpty()) append("Failed")
                                 }
                                 if (result.isSuccess) {
                                     Toast.makeText(context, context.getString(R.string.webhooks_test_success, detail), Toast.LENGTH_SHORT).show()
