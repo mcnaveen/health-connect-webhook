@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  cleartextTrafficPermitted must be set here: when networkSecurityConfig is present,
+  android:usesCleartextTraffic in the manifest is ignored (API 24+), and apps that
+  target API 28+ default base-config cleartext to false. LAN/VPN http:// webhooks need this.
+-->
 <network-security-config>
-    <base-config>
+    <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
             <certificates src="user" />
