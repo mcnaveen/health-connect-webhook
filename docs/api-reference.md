@@ -13,8 +13,8 @@ JSON `POST` body and optional **Protobuf / gRPC** delivery (`HealthWebhook.Deliv
 The JSON body is one object: always `timestamp` (when the payload was built) and
 `app_version`, plus optional snake_case arrays per data type (each key omitted if
 there are no records in that batch). Background sync reads a rolling 48-hour window
-and, by default, only sends records new since the last successful sync per type
-(the first run has no prior watermark).
+and, by default, only sends records written or changed in Health Connect since the
+last successful sync per type (the first run has no prior watermark).
 
 Delivery is `POST` with `Content-Type: application/json; charset=utf-8` by default.
 Per webhook you can switch to Protobuf / gRPC. Delivery includes short retry

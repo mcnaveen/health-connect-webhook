@@ -136,8 +136,10 @@ Unless noted otherwise, time-valued fields use **`java.time.Instant.toString()`*
 - **Background / manual sync (default)**  
   Reads within a rolling **48-hour** window (`HealthConnectManager`) and, for each enabled type, applies the **last successful sync instant** for that type so only **new or updated** records (relative to that watermark) are included. First sync has no watermark, so everything in the window can appear.
 
+  "New" is judged by when Health Connect **stored or changed** the record (`last_modified_time`), not by when the measurement happened. A watch companion app that writes the last hour of minutes in one batch is therefore delivered in full even if another app (e.g. the phone's own step counter) already sent later data of the same type. The watermark is the start of the last successful read minus a few seconds, so a record written right before a sync can occasionally arrive twice — deduplicate by origin and time (or by `metadata.id` over gRPC). An updated record is sent again as a whole; for heart rate and skin temperature that means all samples of the updated series.
+
 - **Explicit range** (e.g. local HTTP `?days=7` or a chosen start/end)  
-  Uses the requested window and **does not** apply last-sync filtering; the payload can contain all records in that range for enabled types.
+  Uses the requested window and **does not** apply last-sync filtering; the payload can contain all records in that range for enabled types. It also leaves the watermark untouched, so the next background sync still sends everything written since the previous one.
 
 Only types the user enabled **and** granted Health Connect permission for are read; others simply produce no arrays.
 

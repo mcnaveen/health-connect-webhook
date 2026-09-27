@@ -97,7 +97,8 @@ class SyncManager(private val context: Context) {
         Supports two modes:
         - timeRangeDays: the amount of days in the past to sync.
         - start/end: specific time range to sync
-        Note that custom period selection may override the last sync timestamp.
+        Explicit ranges send everything in their window and leave the incremental
+        watermark untouched (see IncrementalSync.nextCursor).
         */
 
         try {
@@ -125,7 +126,9 @@ class SyncManager(private val context: Context) {
                 emptyMap()
             }
 
-            // Read health data
+            // Read health data. Taken before the read: anything written after this
+            // instant is picked up by the next incremental sync (see IncrementalSync).
+            val readStartedAt = Instant.now()
             val healthDataResult = healthConnectManager.readHealthData(
                 enabledTypes = enabledTypes,
                 lastSyncTimestamps = lastSyncTimestamps,
@@ -279,8 +282,10 @@ class SyncManager(private val context: Context) {
             }
 
             // Update last sync timestamps
-            val syncCounts = mutableMapOf<HealthDataType, Int>()
-            updateSyncTimestamps(healthData, syncCounts)
+            val syncCounts = countByType(healthData)
+            IncrementalSync.nextCursor(readStartedAt, hasExplicitRange)?.let { cursor ->
+                syncCounts.keys.forEach { preferencesManager.setLastSyncTimestamp(it, cursor.toEpochMilli()) }
+            }
 
             // Save last sync status for UI display
             val summary = buildSyncSummary(healthData)
@@ -371,162 +376,41 @@ class SyncManager(private val context: Context) {
                 data.cervicalMucus.isEmpty() && data.sexualActivity.isEmpty() && data.basalBodyTemperature.isEmpty()
     }
 
-    /**
-     * Returns the epoch-millisecond value of the latest endTime that is NOT
-     * in the future, or null if every endTime is in the future.
-     *
-     * Clamping to now() prevents future-dated projection records (e.g., Google
-     * Health's daily calorie/distance projection ending at local midnight) from
-     * advancing the per-type lastSync cursor past wall-clock time. Without this
-     * clamp, all genuinely-closed records produced after the first sync are
-     * filtered out by the endTime >= lastSync guard in each readXxx function.
-     */
-    private fun clampedMaxEndMs(endTimes: Sequence<Instant>, now: Instant): Long? =
-        endTimes.filter { !it.isAfter(now) }.maxOrNull()?.toEpochMilli()
-
-    private fun updateSyncTimestamps(data: HealthData, syncCounts: MutableMap<HealthDataType, Int>) {
-        val now = Instant.now()
-        if (data.steps.isNotEmpty()) {
-            clampedMaxEndMs(data.steps.asSequence().map { it.endTime }, now)
-                ?.let { preferencesManager.setLastSyncTimestamp(HealthDataType.STEPS, it) }
-            syncCounts[HealthDataType.STEPS] = data.steps.size
-        }
-        if (data.sleep.isNotEmpty()) {
-            clampedMaxEndMs(data.sleep.asSequence().map { it.sessionEndTime }, now)
-                ?.let { preferencesManager.setLastSyncTimestamp(HealthDataType.SLEEP, it) }
-            syncCounts[HealthDataType.SLEEP] = data.sleep.size
-        }
-        if (data.heartRate.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.HEART_RATE, data.heartRate.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.HEART_RATE] = data.heartRate.size
-        }
-        if (data.heartRateVariability.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.HEART_RATE_VARIABILITY, data.heartRateVariability.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.HEART_RATE_VARIABILITY] = data.heartRateVariability.size
-        }
-        if (data.distance.isNotEmpty()) {
-            clampedMaxEndMs(data.distance.asSequence().map { it.endTime }, now)
-                ?.let { preferencesManager.setLastSyncTimestamp(HealthDataType.DISTANCE, it) }
-            syncCounts[HealthDataType.DISTANCE] = data.distance.size
-        }
-        if (data.activeCalories.isNotEmpty()) {
-            clampedMaxEndMs(data.activeCalories.asSequence().map { it.endTime }, now)
-                ?.let { preferencesManager.setLastSyncTimestamp(HealthDataType.ACTIVE_CALORIES, it) }
-            syncCounts[HealthDataType.ACTIVE_CALORIES] = data.activeCalories.size
-        }
-        if (data.totalCalories.isNotEmpty()) {
-            // Clamp to now() so a future-dated endTime (e.g., daily projection
-            // from Google Health ending at local midnight) cannot advance the
-            // cursor past wall-clock time and starve subsequent closed records.
-            clampedMaxEndMs(data.totalCalories.asSequence().map { it.endTime }, now)
-                ?.let { preferencesManager.setLastSyncTimestamp(HealthDataType.TOTAL_CALORIES, it) }
-            syncCounts[HealthDataType.TOTAL_CALORIES] = data.totalCalories.size
-        }
-        if (data.weight.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.WEIGHT, data.weight.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.WEIGHT] = data.weight.size
-        }
-        if (data.height.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.HEIGHT, data.height.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.HEIGHT] = data.height.size
-        }
-        if (data.bloodPressure.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.BLOOD_PRESSURE, data.bloodPressure.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.BLOOD_PRESSURE] = data.bloodPressure.size
-        }
-        if (data.bloodGlucose.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.BLOOD_GLUCOSE, data.bloodGlucose.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.BLOOD_GLUCOSE] = data.bloodGlucose.size
-        }
-        if (data.oxygenSaturation.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.OXYGEN_SATURATION, data.oxygenSaturation.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.OXYGEN_SATURATION] = data.oxygenSaturation.size
-        }
-        if (data.bodyTemperature.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.BODY_TEMPERATURE, data.bodyTemperature.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.BODY_TEMPERATURE] = data.bodyTemperature.size
-        }
-        if (data.skinTemperature.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.SKIN_TEMPERATURE, data.skinTemperature.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.SKIN_TEMPERATURE] = data.skinTemperature.size
-        }
-        if (data.respiratoryRate.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.RESPIRATORY_RATE, data.respiratoryRate.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.RESPIRATORY_RATE] = data.respiratoryRate.size
-        }
-        if (data.restingHeartRate.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.RESTING_HEART_RATE, data.restingHeartRate.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.RESTING_HEART_RATE] = data.restingHeartRate.size
-        }
-        if (data.exercise.isNotEmpty()) {
-            clampedMaxEndMs(data.exercise.asSequence().map { it.endTime }, now)
-                ?.let { preferencesManager.setLastSyncTimestamp(HealthDataType.EXERCISE, it) }
-            syncCounts[HealthDataType.EXERCISE] = data.exercise.size
-        }
-        if (data.hydration.isNotEmpty()) {
-            clampedMaxEndMs(data.hydration.asSequence().map { it.endTime }, now)
-                ?.let { preferencesManager.setLastSyncTimestamp(HealthDataType.HYDRATION, it) }
-            syncCounts[HealthDataType.HYDRATION] = data.hydration.size
-        }
-        if (data.nutrition.isNotEmpty()) {
-            clampedMaxEndMs(data.nutrition.asSequence().map { it.endTime }, now)
-                ?.let { preferencesManager.setLastSyncTimestamp(HealthDataType.NUTRITION, it) }
-            syncCounts[HealthDataType.NUTRITION] = data.nutrition.size
-        }
-        if (data.basalMetabolicRate.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.BASAL_METABOLIC_RATE, data.basalMetabolicRate.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.BASAL_METABOLIC_RATE] = data.basalMetabolicRate.size
-        }
-        if (data.bodyFat.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.BODY_FAT, data.bodyFat.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.BODY_FAT] = data.bodyFat.size
-        }
-        if (data.leanBodyMass.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.LEAN_BODY_MASS, data.leanBodyMass.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.LEAN_BODY_MASS] = data.leanBodyMass.size
-        }
-        if (data.bodyWaterMass.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.BODY_WATER_MASS, data.bodyWaterMass.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.BODY_WATER_MASS] = data.bodyWaterMass.size
-        }
-        if (data.vo2Max.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.VO2_MAX, data.vo2Max.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.VO2_MAX] = data.vo2Max.size
-        }
-        if (data.boneMass.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.BONE_MASS, data.boneMass.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.BONE_MASS] = data.boneMass.size
-        }
-        if (data.menstruationFlow.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.MENSTRUATION_FLOW, data.menstruationFlow.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.MENSTRUATION_FLOW] = data.menstruationFlow.size
-        }
-        if (data.menstruationPeriod.isNotEmpty()) {
-            clampedMaxEndMs(data.menstruationPeriod.asSequence().map { it.endTime }, now)
-                ?.let { preferencesManager.setLastSyncTimestamp(HealthDataType.MENSTRUATION_PERIOD, it) }
-            syncCounts[HealthDataType.MENSTRUATION_PERIOD] = data.menstruationPeriod.size
-        }
-        if (data.intermenstrualBleeding.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.INTERMENSTRUAL_BLEEDING, data.intermenstrualBleeding.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.INTERMENSTRUAL_BLEEDING] = data.intermenstrualBleeding.size
-        }
-        if (data.ovulationTest.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.OVULATION_TEST, data.ovulationTest.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.OVULATION_TEST] = data.ovulationTest.size
-        }
-        if (data.cervicalMucus.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.CERVICAL_MUCUS, data.cervicalMucus.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.CERVICAL_MUCUS] = data.cervicalMucus.size
-        }
-        if (data.sexualActivity.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.SEXUAL_ACTIVITY, data.sexualActivity.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.SEXUAL_ACTIVITY] = data.sexualActivity.size
-        }
-        if (data.basalBodyTemperature.isNotEmpty()) {
-            preferencesManager.setLastSyncTimestamp(HealthDataType.BASAL_BODY_TEMPERATURE, data.basalBodyTemperature.maxOf { it.time }.toEpochMilli())
-            syncCounts[HealthDataType.BASAL_BODY_TEMPERATURE] = data.basalBodyTemperature.size
-        }
-    }
+    /** Records delivered per data type; types with nothing to send are left out. */
+    private fun countByType(data: HealthData): Map<HealthDataType, Int> = mapOf(
+        HealthDataType.STEPS to data.steps.size,
+        HealthDataType.SLEEP to data.sleep.size,
+        HealthDataType.HEART_RATE to data.heartRate.size,
+        HealthDataType.HEART_RATE_VARIABILITY to data.heartRateVariability.size,
+        HealthDataType.DISTANCE to data.distance.size,
+        HealthDataType.ACTIVE_CALORIES to data.activeCalories.size,
+        HealthDataType.TOTAL_CALORIES to data.totalCalories.size,
+        HealthDataType.WEIGHT to data.weight.size,
+        HealthDataType.HEIGHT to data.height.size,
+        HealthDataType.BLOOD_PRESSURE to data.bloodPressure.size,
+        HealthDataType.BLOOD_GLUCOSE to data.bloodGlucose.size,
+        HealthDataType.OXYGEN_SATURATION to data.oxygenSaturation.size,
+        HealthDataType.BODY_TEMPERATURE to data.bodyTemperature.size,
+        HealthDataType.SKIN_TEMPERATURE to data.skinTemperature.size,
+        HealthDataType.RESPIRATORY_RATE to data.respiratoryRate.size,
+        HealthDataType.RESTING_HEART_RATE to data.restingHeartRate.size,
+        HealthDataType.EXERCISE to data.exercise.size,
+        HealthDataType.HYDRATION to data.hydration.size,
+        HealthDataType.NUTRITION to data.nutrition.size,
+        HealthDataType.BASAL_METABOLIC_RATE to data.basalMetabolicRate.size,
+        HealthDataType.BODY_FAT to data.bodyFat.size,
+        HealthDataType.LEAN_BODY_MASS to data.leanBodyMass.size,
+        HealthDataType.BODY_WATER_MASS to data.bodyWaterMass.size,
+        HealthDataType.VO2_MAX to data.vo2Max.size,
+        HealthDataType.BONE_MASS to data.boneMass.size,
+        HealthDataType.MENSTRUATION_FLOW to data.menstruationFlow.size,
+        HealthDataType.MENSTRUATION_PERIOD to data.menstruationPeriod.size,
+        HealthDataType.INTERMENSTRUAL_BLEEDING to data.intermenstrualBleeding.size,
+        HealthDataType.OVULATION_TEST to data.ovulationTest.size,
+        HealthDataType.CERVICAL_MUCUS to data.cervicalMucus.size,
+        HealthDataType.SEXUAL_ACTIVITY to data.sexualActivity.size,
+        HealthDataType.BASAL_BODY_TEMPERATURE to data.basalBodyTemperature.size,
+    ).filterValues { it > 0 }
 
     private fun buildSyncSummary(data: HealthData): String {
         val parts = mutableListOf<String>()
