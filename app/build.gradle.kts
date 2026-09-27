@@ -7,18 +7,18 @@ plugins {
 
 val appVersionMajor = 1
 val appVersionMinor = 9
-val appVersionPatch = 21
+val appVersionPatch = 22
 val appVersionCode = (appVersionMajor * 10000) + (appVersionMinor * 100) + appVersionPatch
 val appVersionName = "$appVersionMajor.$appVersionMinor.$appVersionPatch"
 
 android {
     namespace = "com.hcwebhook.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.hcwebhook.app"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersionName
 

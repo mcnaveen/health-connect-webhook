@@ -1,11 +1,13 @@
 package com.hcwebhook.app
 
 import android.content.Context
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -14,7 +16,9 @@ import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+import java.net.BindException
 import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.UUID
@@ -32,6 +36,7 @@ data class ServerRequestLog(
 )
 
 object LocalHttpServerManager {
+    private const val TAG = "LocalHttpServer"
     private val serverScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val serverMutex = Mutex()
     private var serverSocket: ServerSocket? = null
@@ -76,7 +81,7 @@ object LocalHttpServerManager {
             }
             stopLocked()
 
-            val socket = ServerSocket(port, 50, InetAddress.getByName("0.0.0.0"))
+            val socket = bindServerSocket(port) ?: return
             serverSocket = socket
             currentPort = port
             serverStartTime.set(System.currentTimeMillis())
@@ -92,6 +97,26 @@ object LocalHttpServerManager {
                 }
             }
         }
+    }
+
+    /**
+     * Bind with SO_REUSEADDR. Retry once after a short delay when the port is
+     * still held after stop (common on service restart).
+     */
+    private suspend fun bindServerSocket(port: Int): ServerSocket? {
+        repeat(2) { attempt ->
+            try {
+                return ServerSocket().apply {
+                    reuseAddress = true
+                    bind(InetSocketAddress(InetAddress.getByName("0.0.0.0"), port), 50)
+                }
+            } catch (e: BindException) {
+                Log.w(TAG, "Port $port in use (attempt ${attempt + 1})", e)
+                if (attempt == 0) delay(250)
+            }
+        }
+        Log.e(TAG, "Failed to bind local HTTP server on port $port")
+        return null
     }
 
     suspend fun stop() {

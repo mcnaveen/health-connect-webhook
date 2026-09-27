@@ -1,6 +1,7 @@
 package com.hcwebhook.app.screens
 
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -26,11 +27,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import com.hcwebhook.app.LocalHttpServerManager
 import com.hcwebhook.app.PreferencesManager
 import com.hcwebhook.app.R
@@ -46,19 +51,27 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
 private val LOG_LIMITS = listOf(25, 50, 100)
 private val prettyJson = Json { prettyPrint = true }
+/** Cap on-screen payload text so accessibility semantics do not OOM. */
+private const val MAX_PAYLOAD_DISPLAY_CHARS = 12_000
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun LogsScreen() {
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
     val preferencesManager = remember { PreferencesManager(context) }
     val pagerState = rememberPagerState { 2 }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(pagerState.currentPage) {
+        focusManager.clearFocus()
+    }
 
     // ── Webhook logs ──────────────────────────────────────────────────────────
     var allLogs by remember { mutableStateOf(preferencesManager.getWebhookLogs()) }
@@ -573,13 +586,40 @@ fun LogsScreen() {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     if (allLogs.isNotEmpty()) {
                         IconButton(onClick = {
-                            val json = prettyJson.encodeToString(allLogs)
-                            val intent = Intent(Intent.ACTION_SEND).apply {
-                                type = "application/json"
-                                putExtra(Intent.EXTRA_TEXT, json)
-                                putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.logs_export_intent_title))
+                            scope.launch {
+                                try {
+                                    val fileUri = withContext(Dispatchers.IO) {
+                                        val json = prettyJson.encodeToString(allLogs)
+                                        val exportDir = File(context.cacheDir, "exports").also { it.mkdirs() }
+                                        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+                                        val exportFile = File(exportDir, "hc_webhook_logs_$timestamp.json")
+                                        exportFile.writeText(json)
+                                        FileProvider.getUriForFile(
+                                            context,
+                                            "${context.packageName}.fileprovider",
+                                            exportFile
+                                        )
+                                    }
+                                    val intent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "application/json"
+                                        putExtra(Intent.EXTRA_STREAM, fileUri)
+                                        putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.logs_export_intent_title))
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    context.startActivity(
+                                        Intent.createChooser(intent, context.getString(R.string.logs_action_export))
+                                    )
+                                } catch (e: Exception) {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(
+                                            R.string.about_toast_export_failed,
+                                            e.message ?: "unknown"
+                                        ),
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
                             }
-                            context.startActivity(Intent.createChooser(intent, context.getString(R.string.logs_action_export)))
                         }) {
                             Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.logs_action_export))
                         }
@@ -979,6 +1019,12 @@ private fun LogDetailSheet(
             try { prettyJson.encodeToString(Json.parseToJsonElement(it)) } catch (_: Exception) { it }
         }
     }
+    val displayPayload = remember(prettyPayload) {
+        prettyPayload?.let { text ->
+            if (text.length <= MAX_PAYLOAD_DISPLAY_CHARS) text
+            else text.take(MAX_PAYLOAD_DISPLAY_CHARS) + "\n… (truncated for display)"
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -1135,7 +1181,7 @@ private fun LogDetailSheet(
         }
 
         // Payload (gRPC stores a JSON view of the same data for readability)
-        if (prettyPayload != null) {
+        if (displayPayload != null && prettyPayload != null) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
                     if (log.resolvedDeliveryFormat() == WebhookLog.FORMAT_GRPC) {
@@ -1152,11 +1198,14 @@ private fun LogDetailSheet(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = prettyPayload,
+                        text = displayPayload,
                         style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
                         modifier = Modifier
                             .padding(12.dp)
                             .horizontalScroll(rememberScrollState())
+                            .clearAndSetSemantics {
+                                contentDescription = "Payload, ${prettyPayload.length} characters"
+                            }
                     )
                 }
             }
