@@ -13,12 +13,12 @@ val appVersionName = "$appVersionMajor.$appVersionMinor.$appVersionPatch"
 
 android {
     namespace = "com.hcwebhook.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.hcwebhook.app"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersionName
 
