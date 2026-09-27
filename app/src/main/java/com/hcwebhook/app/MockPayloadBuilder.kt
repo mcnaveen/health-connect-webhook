@@ -55,6 +55,7 @@ object MockPayloadBuilder {
                         add(buildJsonObject {
                             put("session_end_time", sleep.sessionEndTime.toString())
                             put("duration_seconds", sleep.duration.seconds)
+                            sleep.sessionUpdatedAt?.let { put("sleep_updated_at", it.toString()) }
                             putJsonArray("stages") {
                                 sleep.stages.forEach { stage ->
                                     add(buildJsonObject {
@@ -475,7 +476,8 @@ object MockPayloadBuilder {
                         SleepStage("rem", t(2, 0), t(5, 30), Duration.ofSeconds(12600)),
                         SleepStage("light", t(5, 30), t(7, 0), Duration.ofSeconds(5400))
                     ),
-                    metadata = fitnessMeta
+                    metadata = fitnessMeta,
+                    sessionUpdatedAt = t(7, 0)
                 )
             ) else emptyList(),
             heartRate = if (include(HealthDataType.HEART_RATE.name)) {
