@@ -45,6 +45,48 @@ class ReleaseNotesFormatterTest {
     }
 
     @Test
+    fun parseBody_keepsHeadingsCodeAndTables() {
+        val body = """
+            ## Sync: edited records
+
+            **New `metadata` fields (JSON):**
+
+            | Field | Description |
+            |-------|-------------|
+            | `id` | Health Connect record id |
+            | `last_modified_time` | When Health Connect last changed the record |
+
+            ```json
+            "deleted": [
+              { "type": "nutrition", "id": "a1" }
+            ]
+            ```
+
+            ## What's Changed
+            * Implement Changes API support by @mcnaveen in https://github.com/mcnaveen/health-connect-webhook/pull/90
+        """.trimIndent()
+
+        val lines = ReleaseNotesFormatter.parseBody(body)
+
+        assertEquals(
+            listOf(
+                ReleaseNotesFormatter.ReleaseLine.Heading("Sync: edited records"),
+                ReleaseNotesFormatter.ReleaseLine.Paragraph("**New `metadata` fields (JSON):**"),
+                ReleaseNotesFormatter.ReleaseLine.Table(
+                    header = listOf("Field", "Description"),
+                    rows = listOf(
+                        listOf("`id`", "Health Connect record id"),
+                        listOf("`last_modified_time`", "When Health Connect last changed the record"),
+                    ),
+                ),
+                ReleaseNotesFormatter.ReleaseLine.Code("\"deleted\": [\n  { \"type\": \"nutrition\", \"id\": \"a1\" }\n]"),
+                ReleaseNotesFormatter.ReleaseLine.Bullet("Implement Changes API support"),
+            ),
+            lines,
+        )
+    }
+
+    @Test
     fun parseBody_skipsClosesOnlyLine() {
         val body = """
             ## What's Changed
