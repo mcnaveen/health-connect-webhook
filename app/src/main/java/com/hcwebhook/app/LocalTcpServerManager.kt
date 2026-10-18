@@ -216,9 +216,21 @@ object LocalHttpServerManager {
                             reply(500, """{"status":"error","message":"Server context unavailable"}""")
                             return
                         }
+                        val range = when (val parsed = LocalHttpRange.parse(queryParams)) {
+                            is LocalHttpRange.Result.Invalid -> {
+                                reply(400, """{"status":"error","message":"${parsed.message.escapeJson()}"}""")
+                                return
+                            }
+                            is LocalHttpRange.Result.Valid -> parsed
+                            LocalHttpRange.Result.None -> null
+                        }
                         val days = queryParams["days"]?.toIntOrNull()?.takeIf { it > 0 }
                         val syncManager = SyncManager(context)
-                        val payloadResult = syncManager.getRealtimeJsonPayload(timeRangeDays = days)
+                        val payloadResult = if (range != null) {
+                            syncManager.getRealtimeJsonPayload(start = range.start, end = range.end)
+                        } else {
+                            syncManager.getRealtimeJsonPayload(timeRangeDays = days)
+                        }
                         if (payloadResult.isSuccess) {
                             reply(200, payloadResult.getOrThrow())
                         } else {
@@ -262,8 +274,16 @@ object LocalHttpServerManager {
                             reply(500, """{"status":"error","message":"Server context unavailable"}""")
                             return
                         }
+                        val range = when (val parsed = LocalHttpRange.parse(queryParams)) {
+                            is LocalHttpRange.Result.Invalid -> {
+                                reply(400, """{"status":"error","message":"${parsed.message.escapeJson()}"}""")
+                                return
+                            }
+                            is LocalHttpRange.Result.Valid -> parsed
+                            LocalHttpRange.Result.None -> null
+                        }
                         val days = queryParams["days"]?.toIntOrNull()?.takeIf { it > 0 }
-                        logStatus = handleSyncRequest(writer, context, days)
+                        logStatus = handleSyncRequest(writer, context, days, range)
                     }
 
                     else -> reply(
@@ -291,9 +311,18 @@ object LocalHttpServerManager {
         }
     }
 
-    private suspend fun handleSyncRequest(writer: BufferedWriter, context: Context, days: Int?): Int {
+    private suspend fun handleSyncRequest(
+        writer: BufferedWriter,
+        context: Context,
+        days: Int?,
+        range: LocalHttpRange.Result.Valid?,
+    ): Int {
         val syncManager = SyncManager(context)
-        val result = syncManager.performSync(timeRangeDays = days, syncType = "api")
+        val result = if (range != null) {
+            syncManager.performSync(start = range.start, end = range.end, syncType = "api")
+        } else {
+            syncManager.performSync(timeRangeDays = days, syncType = "api")
+        }
         return if (result.isSuccess) {
             val syncResult = result.getOrThrow()
             val body = when (syncResult) {

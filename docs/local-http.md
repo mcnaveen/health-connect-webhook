@@ -59,10 +59,21 @@ Liveness check. Does not read Health Connect.
 |-------|--------|
 | *(none)* | Time range: from **now minus 48 hours** through **now** |
 | `days=<N>` | `N` must be a **positive integer**. Range: from **now minus N days** through **now** |
+| `start=<when>&end=<when>` | Range: from `start` through `end`. See the formats below |
 
 **200** — full health payload JSON (see [webhook.md](./webhook.md)).
 
 **500** — `{"status":"error","message":"…"}` when reading fails.
+
+**Date range (`start` / `end`).** Each value is one of:
+
+- an ISO-8601 instant: `2026-07-01T00:00:00Z` or `2026-07-01T05:30:00+05:30`
+- a date: `2026-07-01` (local midnight on the phone). For `end`, a date is **inclusive**: `end=2026-07-14` reads up to the end of July 14.
+- epoch milliseconds: `1782864000000`
+
+`start` alone reads up to now. **400** — `{"status":"error","message":"…"}` when a value cannot be parsed, `start` is not before `end`, `end` has no `start`, or `days` is sent together with `start`/`end`.
+
+Use it to backfill history in chunks, e.g. `GET /?start=2026-07-01&end=2026-07-14`, then the next two weeks.
 
 **Side effect:** a successful `GET /` also updates the in-memory "latest" cache.
 
@@ -167,6 +178,9 @@ Triggers an on-demand sync and dispatches to all enabled webhooks. Equivalent to
 |-------|--------|
 | *(none)* | Uses the default time range (last 48 h with per-type watermarks) |
 | `days=<N>` | Syncs the last N full days |
+| `start=<when>&end=<when>` | Syncs from `start` through `end`. Same formats and **400** rules as [`GET /`](#get-) |
+
+A sync with `days` or `start`/`end` does **not** move the per-type last-sync timestamps, so backfilling in chunks does not change what the next background sync sends.
 
 Request body is ignored.
 
@@ -246,6 +260,7 @@ Entries are ordered newest-first. Note that calling `/server-logs` itself is rec
 | Trigger | Interval / schedule / manual sync | Your client polls |
 | Time window (default) | Last **48 h** with **incremental** per-type watermarks | Last **48 h**, **full** read in window (no watermarks) |
 | `GET /?days=N` | N/A | **N** full days back from now |
+| `GET /?start=…&end=…` | N/A | The given range |
 | JSON schema | [webhook.md](./webhook.md) | Same |
 
 `GET /` uses `SyncManager.getRealtimeJsonPayload`; `POST /sync` and background sync use `performSync` with incremental timestamps when no explicit range is passed.
