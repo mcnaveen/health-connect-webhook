@@ -45,6 +45,16 @@ data class TypeChanges(
     val nextToken: String?,
 )
 
+internal fun Map<HealthDataType, TypeChanges>.hasChangedRecords(): Boolean =
+    values.any { it.changed.ids.isNotEmpty() || it.changed.spans.isNotEmpty() }
+
+/**
+ * Same changes without the changed records. Deletions and next tokens stay, so the
+ * tokens still move past the changes that were dropped.
+ */
+internal fun Map<HealthDataType, TypeChanges>.withoutChangedRecords(): Map<HealthDataType, TypeChanges> =
+    mapValues { (_, changes) -> changes.copy(changed = ChangedRecords.NONE) }
+
 /**
  * True when the normal incremental read drops a changed record: it starts before the read
  * window, or it ends before [lastSync] (the read keeps only `time >= lastSync`).

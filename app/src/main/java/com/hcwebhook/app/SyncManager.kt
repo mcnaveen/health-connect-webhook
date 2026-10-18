@@ -2,6 +2,7 @@ package com.hcwebhook.app
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -133,7 +134,7 @@ class SyncManager(private val context: Context) {
             // Incremental sync also asks the Health Connect Changes API what changed since the
             // last sync: edits and late writes that the lastSync filter drops, and deletions.
             val readEnd = end ?: Instant.now()
-            val typeChanges = if (!hasExplicitRange) {
+            var typeChanges = if (!hasExplicitRange) {
                 healthConnectManager.readChanges(
                     types = enabledTypes,
                     tokens = enabledTypes.associateWith { preferencesManager.getChangesToken(it) },
@@ -145,24 +146,41 @@ class SyncManager(private val context: Context) {
             }
 
             // Read health data
-            val healthDataResult = healthConnectManager.readHealthData(
-                enabledTypes = enabledTypes,
-                lastSyncTimestamps = lastSyncTimestamps,
-                timeRangeDays = timeRangeDays,
-                start = start,
-                end = readEnd,
-                dataTypeResolutions = preferencesManager.getDataTypeResolutions(),
-                changes = typeChanges.mapValues { it.value.changed },
-            )
+            suspend fun readData(changes: Map<HealthDataType, TypeChanges>): Result<HealthData> =
+                healthConnectManager.readHealthData(
+                    enabledTypes = enabledTypes,
+                    lastSyncTimestamps = lastSyncTimestamps,
+                    timeRangeDays = timeRangeDays,
+                    start = start,
+                    end = readEnd,
+                    dataTypeResolutions = preferencesManager.getDataTypeResolutions(),
+                    changes = changes.mapValues { it.value.changed },
+                ).map { data ->
+                    data.copy(
+                        deleted = changes.flatMap { (type, typeChange) ->
+                            typeChange.deletedIds.map { DeletedRecord(type, it) }
+                        },
+                    )
+                }
+
+            var healthDataResult = readData(typeChanges)
             if (healthDataResult.isFailure) {
                 return@withContext Result.failure(healthDataResult.exceptionOrNull() ?: Exception("Failed to read health data"))
             }
+            var healthData = healthDataResult.getOrThrow()
 
-            val healthData = healthDataResult.getOrThrow().copy(
-                deleted = typeChanges.flatMap { (type, changes) ->
-                    changes.deletedIds.map { DeletedRecord(type, it) }
-                },
-            )
+            // A big late write (e.g. weeks of heart rate from a watch) can make the changed
+            // records too large to send. The tokens move on only after a successful sync, so
+            // every sync would fail again. Drop the changed records once and send the rest.
+            if (countHealthData(healthData) > MAX_RECORDS_PER_PAYLOAD && typeChanges.hasChangedRecords()) {
+                Log.w(TAG, "Payload too large with changed records; sending without them")
+                typeChanges = typeChanges.withoutChangedRecords()
+                healthDataResult = readData(typeChanges)
+                if (healthDataResult.isFailure) {
+                    return@withContext Result.failure(healthDataResult.exceptionOrNull() ?: Exception("Failed to read health data"))
+                }
+                healthData = healthDataResult.getOrThrow()
+            }
 
             // Check if there's any new data
             if (isHealthDataEmpty(healthData)) {
@@ -1046,6 +1064,7 @@ class SyncManager(private val context: Context) {
          * exceed this and OOMs mid-tier devices while building JsonObject trees.
          */
         private const val MAX_RECORDS_PER_PAYLOAD = 25_000
+        private const val TAG = "SyncManager"
     }
 
     private data class BmiEntry(

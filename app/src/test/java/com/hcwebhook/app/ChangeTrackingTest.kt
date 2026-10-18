@@ -100,6 +100,23 @@ class ChangeTrackingTest {
     }
 
     @Test
+    fun withoutChangedRecords_keepsDeletionsAndTokens() {
+        val t = at("2026-05-01T10:00:00Z")
+        val changes = mapOf(
+            HealthDataType.HEART_RATE to TypeChanges(ChangedRecords(setOf("hr"), listOf(t to t)), listOf("gone"), "token-2"),
+            HealthDataType.WEIGHT to TypeChanges(ChangedRecords.NONE, emptyList(), "token-9"),
+        )
+        assertTrue(changes.hasChangedRecords())
+
+        val dropped = changes.withoutChangedRecords()
+
+        assertFalse(dropped.hasChangedRecords())
+        assertEquals(listOf("gone"), dropped.getValue(HealthDataType.HEART_RATE).deletedIds)
+        assertEquals("token-2", dropped.getValue(HealthDataType.HEART_RATE).nextToken)
+        assertEquals("token-9", dropped.getValue(HealthDataType.WEIGHT).nextToken)
+    }
+
+    @Test
     fun bucketItems_rebuildsOnlyBucketsWithChangedItems() {
         data class Item(val bucket: Long, val isNew: Boolean, val id: String)
         val items = listOf(
