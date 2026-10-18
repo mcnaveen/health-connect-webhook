@@ -244,7 +244,16 @@
     <string name="settings_timestamps_title">Timestamp del payload</string>
     <string name="settings_timestamps_utc">UTC</string>
     <string name="settings_timestamps_local">Ora locale</string>
-    <string name="settings_timestamps_desc">%1$s. Gli orari appaiono come %2$s e il payload include \"timezone\": \"%3$s\". Cambiarlo può interrompere le automazioni che leggono gli orari come testo.</string>
+    <string name="settings_section_sync">Sincronizzazione</string>
+    <string name="settings_section_app">App</string>
+    <string name="settings_section_help">Aiuto</string>
+    <string name="settings_section_about">Informazioni</string>
+    <string name="settings_language_title">Lingua</string>
+    <string name="settings_language_system">Predefinita di sistema</string>
+    <string name="settings_local_http_on">Attivo sulla porta %1$d</string>
+    <string name="settings_local_http_off">Spento</string>
+    <string name="settings_timestamps_example">Gli orari appaiono come %1$s · \"timezone\": \"%2$s\"</string>
+    <string name="settings_timestamps_warning">Cambiarlo può interrompere le automazioni che leggono gli orari come testo.</string>
     <string name="about_action_export">Esportare</string>
     <string name="about_action_import">Importare</string>
     <string name="about_section_settings">Impostazioni app</string>

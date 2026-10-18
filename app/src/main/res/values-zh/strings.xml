@@ -244,7 +244,16 @@
     <string name="settings_timestamps_title">Payload 时间戳</string>
     <string name="settings_timestamps_utc">UTC</string>
     <string name="settings_timestamps_local">本地时间</string>
-    <string name="settings_timestamps_desc">%1$s。时间格式如 %2$s，payload 包含 \"timezone\": \"%3$s\"。更改此设置可能影响按文本读取时间的自动化。</string>
+    <string name="settings_section_sync">同步</string>
+    <string name="settings_section_app">应用</string>
+    <string name="settings_section_help">帮助</string>
+    <string name="settings_section_about">关于</string>
+    <string name="settings_language_title">语言</string>
+    <string name="settings_language_system">跟随系统</string>
+    <string name="settings_local_http_on">运行于端口 %1$d</string>
+    <string name="settings_local_http_off">关闭</string>
+    <string name="settings_timestamps_example">时间格式如 %1$s · \"timezone\": \"%2$s\"</string>
+    <string name="settings_timestamps_warning">更改此设置可能影响按文本读取时间的自动化。</string>
     <string name="about_action_export">出口</string>
     <string name="about_action_import">进口</string>
     <string name="about_section_settings">应用设置</string>

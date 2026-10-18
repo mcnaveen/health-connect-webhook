@@ -4,49 +4,43 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Translate
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.Notes
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Lan
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.hcwebhook.app.BuildConfig
 import com.hcwebhook.app.FlavorUtils
 import com.hcwebhook.app.PayloadTime
 import com.hcwebhook.app.PreferencesManager
-import com.hcwebhook.app.TimestampStyle
 import com.hcwebhook.app.R
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.automirrored.filled.Notes
-import androidx.compose.material.icons.automirrored.filled.Chat
-import androidx.compose.material.icons.filled.ChevronRight
-import com.hcwebhook.app.ui.theme.IconBackgroundBlue
-import com.hcwebhook.app.ui.theme.IconBackgroundGreen
-import com.hcwebhook.app.ui.theme.IconBackgroundPurple
-import com.hcwebhook.app.ui.theme.IconTintBlue
-import com.hcwebhook.app.ui.theme.IconTintGreen
-import com.hcwebhook.app.ui.theme.IconTintPurple
+import com.hcwebhook.app.TimestampStyle
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -74,6 +68,10 @@ fun AboutScreen(
         context.packageManager.getPackageInfo(context.packageName, 0).versionCode.toLong()
     } catch (e: android.content.pm.PackageManager.NameNotFoundException) { 0L }
 
+    // The server screen is a separate destination, so this reads fresh values on return.
+    val localHttpEnabled = remember { preferencesManager.isLocalTcpEnabled() }
+    val localHttpPort = remember { preferencesManager.getLocalTcpPort() }
+
     // ── UI ────────────────────────────────────────────────────────────────────
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -81,299 +79,121 @@ fun AboutScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // ── App identity ─────────────────────────────────────────────────
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(CircleShape)
-                                .background(IconBackgroundBlue)
-                                .then(
-                                    if (BuildConfig.DEBUG) {
-                                        Modifier.combinedClickable(
-                                            onClick = {},
-                                            onLongClick = {
-                                                preferencesManager.debugForceWeeklyFeedbackPrompt()
-                                                Toast.makeText(
-                                                    context,
-                                                    context.getString(R.string.feedback_weekly_debug_forced),
-                                                    Toast.LENGTH_SHORT,
-                                                ).show()
-                                            },
-                                        )
-                                    } else {
-                                        Modifier
-                                    },
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Info,
-                                contentDescription = null,
-                                tint = IconTintBlue,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text(
-                                text = stringResource(R.string.about_app_title),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = stringResource(R.string.about_app_version, versionName, versionCode),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = stringResource(R.string.about_app_desc),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+            SectionLabel(stringResource(R.string.settings_section_sync))
+            SettingsGroup {
+                SettingsRow(
+                    icon = Icons.Filled.Lan,
+                    title = stringResource(R.string.about_local_http_title),
+                    subtitle = if (localHttpEnabled) {
+                        stringResource(R.string.settings_local_http_on, localHttpPort)
+                    } else {
+                        stringResource(R.string.settings_local_http_off)
+                    },
+                    onClick = onOpenLocalHttpSettings,
+                )
+                RowDivider()
+                SettingsRow(
+                    icon = Icons.Filled.Notifications,
+                    title = stringResource(R.string.about_notifications_title),
+                    subtitle = stringResource(R.string.about_notifications_desc),
+                    onClick = onOpenNotificationsSettings,
+                )
+                RowDivider()
+                TimestampStyleRow(preferencesManager)
+            }
+
+            SectionLabel(stringResource(R.string.settings_section_app))
+            SettingsGroup {
+                LanguageRow()
+                RowDivider()
+                SettingsRow(
+                    icon = Icons.Filled.Backup,
+                    title = stringResource(R.string.about_settings_backup_title),
+                    subtitle = stringResource(R.string.about_settings_backup_desc),
+                    onClick = onOpenSettingsBackup,
+                )
+            }
+
+            SectionLabel(stringResource(R.string.settings_section_help))
+            SettingsGroup {
+                SettingsRow(
+                    icon = Icons.AutoMirrored.Filled.Notes,
+                    title = stringResource(R.string.about_link_changelog),
+                    subtitle = stringResource(R.string.about_link_changelog_desc),
+                    onClick = onOpenChangelog,
+                )
+                RowDivider()
+                SettingsRow(
+                    icon = Icons.AutoMirrored.Filled.Chat,
+                    title = stringResource(R.string.about_link_feedback),
+                    subtitle = stringResource(R.string.about_feedback_desc),
+                    onClick = { showFeedbackSheet = true },
+                )
+                RowDivider()
+                SettingsRow(
+                    icon = Icons.Filled.PlayArrow,
+                    title = stringResource(R.string.about_link_intro),
+                    onClick = onRestartOnboarding,
+                )
+                if (!FlavorUtils.isPlayStore) {
+                    RowDivider()
+                    SettingsRow(
+                        icon = Icons.Filled.Code,
+                        title = stringResource(R.string.about_link_github),
+                        trailingIcon = Icons.AutoMirrored.Filled.OpenInNew,
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/mcnaveen/health-connect-webhook"))
+                            context.startActivity(intent)
+                        },
                     )
                 }
             }
 
-            // ── App settings ─────────────────────────────────────────────────
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column {
-                    Text(
-                        text = stringResource(R.string.about_section_settings),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp)
-                    )
-                    LinkRow(
-                        label = stringResource(R.string.about_local_http_title),
-                        subtitle = stringResource(R.string.config_local_tcp_desc),
-                        icon = Icons.Filled.Lan,
-                        onClick = { onOpenLocalHttpSettings() }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    LinkRow(
-                        label = stringResource(R.string.about_notifications_title),
-                        subtitle = stringResource(R.string.about_notifications_desc),
-                        icon = Icons.Filled.Add,
-                        onClick = { onOpenNotificationsSettings() }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    LinkRow(
-                        label = stringResource(R.string.about_settings_backup_title),
-                        subtitle = stringResource(R.string.about_settings_backup_desc),
-                        icon = Icons.Filled.Backup,
-                        onClick = { onOpenSettingsBackup() }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    TimestampStyleRow()
-                }
+            SectionLabel(stringResource(R.string.settings_section_about))
+            SettingsGroup {
+                TextBlock(
+                    title = stringResource(R.string.about_privacy_title),
+                    // One bullet per line instead of one long paragraph.
+                    body = stringResource(R.string.about_privacy_desc).replace(" • ", "\n• "),
+                )
+                RowDivider(startPadding = 16.dp)
+                TextBlock(
+                    title = stringResource(R.string.medical_disclaimer_title),
+                    body = stringResource(R.string.medical_disclaimer_desc),
+                )
             }
 
-            LanguageSelectorCard()
-
-            // ── Feedback ─────────────────────────────────────────────────────
-            Card(
+            // ── Version footer ───────────────────────────────────────────────
+            Text(
+                text = stringResource(R.string.about_app_title) + "\n" +
+                    stringResource(R.string.about_app_version, versionName, versionCode),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { showFeedbackSheet = true },
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(IconBackgroundPurple),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Chat,
-                            contentDescription = null,
-                            tint = IconTintPurple,
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.about_link_feedback),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.about_feedback_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.Filled.ChevronRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
-
-            // ── Help & resources ─────────────────────────────────────────────
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column {
-                    Text(
-                        text = stringResource(R.string.about_links_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp)
-                    )
-
-                    LinkRow(
-                        label = stringResource(R.string.about_link_changelog),
-                        subtitle = stringResource(R.string.about_link_changelog_desc),
-                        icon = Icons.AutoMirrored.Filled.Notes,
-                        onClick = { onOpenChangelog() }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                    LinkRow(
-                        label = stringResource(R.string.about_link_intro),
-                        icon = Icons.Filled.PlayArrow,
-                        onClick = { onRestartOnboarding() }
-                    )
-
-                    if (!FlavorUtils.isPlayStore) {
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                        LinkRow(
-                            label = stringResource(R.string.about_link_github),
-                            icon = Icons.Filled.Code,
-                            onClick = {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/mcnaveen/health-connect-webhook"))
-                                context.startActivity(intent)
-                            }
-                        )
-                    }
-                }
-            }
-
-            // ── Privacy ──────────────────────────────────────────────────────
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(IconBackgroundGreen),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Security,
-                            contentDescription = null,
-                            tint = IconTintGreen,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            text = stringResource(R.string.about_privacy_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = stringResource(R.string.about_privacy_desc),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-            }
-
-            // ── Medical disclaimer ───────────────────────────────────────────
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Warning,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            text = stringResource(R.string.medical_disclaimer_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = stringResource(R.string.medical_disclaimer_desc),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-                }
-            }
+                    .padding(top = 24.dp)
+                    .then(
+                        if (BuildConfig.DEBUG) {
+                            Modifier.combinedClickable(
+                                onClick = {},
+                                onLongClick = {
+                                    preferencesManager.debugForceWeeklyFeedbackPrompt()
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.feedback_weekly_debug_forced),
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                },
+                            )
+                        } else {
+                            Modifier
+                        },
+                    ),
+            )
 
             Spacer(modifier = Modifier.height(80.dp)) // Bottom padding for nav bar
-
         }
 
         // Snackbar overlay
@@ -394,52 +214,120 @@ fun AboutScreen(
     }
 }
 
+// Two text sizes only: bodyLarge for row titles, bodyMedium for everything else.
+// Section labels and block titles differ by weight, not size.
+
 @Composable
-private fun LinkRow(
-    label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 8.dp),
+    )
+}
+
+@Composable
+private fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+    ) {
+        Column(content = content)
+    }
+}
+
+@Composable
+private fun RowDivider(startPadding: androidx.compose.ui.unit.Dp = 56.dp) {
+    // Starts under the text, not the icon.
+    HorizontalDivider(
+        modifier = Modifier.padding(start = startPadding),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+    )
+}
+
+@Composable
+private fun SettingsRow(
+    icon: ImageVector,
+    title: String,
     onClick: () -> Unit,
-    subtitle: String? = null
+    subtitle: String? = null,
+    value: String? = null,
+    trailingIcon: ImageVector? = Icons.Filled.ChevronRight,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .heightIn(min = 48.dp)
-            .padding(horizontal = 16.dp, vertical = if (subtitle != null) 12.dp else 0.dp),
+            .heightIn(min = 56.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            if (subtitle != null) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(18.dp)
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp),
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            if (subtitle != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (value != null) {
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        if (trailingIcon != null) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = trailingIcon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun TextBlock(title: String, body: String) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = body,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
 
-
 /** UTC or local time for every time in the JSON payload. */
 @Composable
-private fun TimestampStyleRow() {
-    val context = LocalContext.current
-    val preferencesManager = remember { PreferencesManager(context) }
+private fun TimestampStyleRow(preferencesManager: PreferencesManager) {
     var style by remember { mutableStateOf(preferencesManager.getTimestampStyle()) }
     var expanded by remember { mutableStateOf(false) }
     val time = PayloadTime(style)
@@ -449,21 +337,31 @@ private fun TimestampStyleRow() {
     }
 
     Box {
-        LinkRow(
-            label = stringResource(R.string.settings_timestamps_title),
+        SettingsRow(
+            icon = Icons.Filled.Schedule,
+            title = stringResource(R.string.settings_timestamps_title),
             subtitle = stringResource(
-                R.string.settings_timestamps_desc,
-                stringResource(label(style)),
-                time.format(java.time.Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS)),
+                R.string.settings_timestamps_example,
+                time.format(Instant.now().truncatedTo(ChronoUnit.SECONDS)),
                 time.timezoneName,
             ),
-            icon = Icons.Filled.Schedule,
+            value = stringResource(label(style)),
+            trailingIcon = null,
             onClick = { expanded = true },
         )
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            Text(
+                text = stringResource(R.string.settings_timestamps_warning),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .widthIn(max = 280.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
             TimestampStyle.entries.forEach { option ->
                 DropdownMenuItem(
                     text = { Text(stringResource(label(option))) },
+                    trailingIcon = { if (option == style) Icon(Icons.Filled.Check, contentDescription = null) },
                     onClick = {
                         preferencesManager.setTimestampStyle(option)
                         style = option
@@ -476,10 +374,11 @@ private fun TimestampStyleRow() {
 }
 
 @Composable
-private fun LanguageSelectorCard() {
+private fun LanguageRow() {
     var expanded by remember { mutableStateOf(false) }
+    val systemDefault = stringResource(R.string.settings_language_system)
     val languages = listOf(
-        "" to "System Default",
+        "" to systemDefault,
         "en" to "English",
         "ta" to "தமிழ்", // Tamil
         "fr" to "Français", // French
@@ -491,61 +390,35 @@ private fun LanguageSelectorCard() {
         "ko" to "한국어", // Korean
         "it" to "Italiano" // Italian
     )
+    val currentTag = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
+        .get(0)?.language.orEmpty()
+    val currentName = languages.firstOrNull { it.first == currentTag }?.second ?: systemDefault
 
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Box(modifier = Modifier.fillMaxWidth().clickable { expanded = true }) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.Translate,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            text = "Language",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Change the application language context",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-            
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                languages.forEach { (tag, name) ->
-                    DropdownMenuItem(
-                        text = { Text(name) },
-                        onClick = {
-                            if (tag.isEmpty()) {
-                                androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(androidx.core.os.LocaleListCompat.getEmptyLocaleList())
-                            } else {
-                                androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(androidx.core.os.LocaleListCompat.forLanguageTags(tag))
-                            }
-                            expanded = false
+    Box {
+        SettingsRow(
+            icon = Icons.Filled.Translate,
+            title = stringResource(R.string.settings_language_title),
+            value = currentName,
+            trailingIcon = null,
+            onClick = { expanded = true },
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            languages.forEach { (tag, name) ->
+                DropdownMenuItem(
+                    text = { Text(name) },
+                    trailingIcon = { if (tag == currentTag) Icon(Icons.Filled.Check, contentDescription = null) },
+                    onClick = {
+                        if (tag.isEmpty()) {
+                            androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(androidx.core.os.LocaleListCompat.getEmptyLocaleList())
+                        } else {
+                            androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(androidx.core.os.LocaleListCompat.forLanguageTags(tag))
                         }
-                    )
-                }
+                        expanded = false
+                    }
+                )
             }
         }
     }
