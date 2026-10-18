@@ -286,7 +286,16 @@
     <string name="settings_timestamps_title">Payload timestamps</string>
     <string name="settings_timestamps_utc">UTC</string>
     <string name="settings_timestamps_local">Local time</string>
-    <string name="settings_timestamps_desc">%1$s. Times look like %2$s and the payload includes \"timezone\": \"%3$s\". Changing this can break automations that read times as text.</string>
+    <string name="settings_section_sync">Sync</string>
+    <string name="settings_section_app">App</string>
+    <string name="settings_section_help">Help</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_language_title">Language</string>
+    <string name="settings_language_system">System default</string>
+    <string name="settings_local_http_on">Running on port %1$d</string>
+    <string name="settings_local_http_off">Off</string>
+    <string name="settings_timestamps_example">Times look like %1$s · \"timezone\": \"%2$s\"</string>
+    <string name="settings_timestamps_warning">Changing this can break automations that read times as text.</string>
     <string name="about_action_export">Export</string>
     <string name="about_action_import">Import</string>
     <string name="about_section_settings">App settings</string>

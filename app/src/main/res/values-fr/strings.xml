@@ -244,7 +244,16 @@
     <string name="settings_timestamps_title">Horodatage du payload</string>
     <string name="settings_timestamps_utc">UTC</string>
     <string name="settings_timestamps_local">Heure locale</string>
-    <string name="settings_timestamps_desc">%1$s. Les heures ressemblent à %2$s et le payload contient \"timezone\": \"%3$s\". Ce changement peut casser les automatisations qui lisent les heures comme du texte.</string>
+    <string name="settings_section_sync">Synchronisation</string>
+    <string name="settings_section_app">Application</string>
+    <string name="settings_section_help">Aide</string>
+    <string name="settings_section_about">À propos</string>
+    <string name="settings_language_title">Langue</string>
+    <string name="settings_language_system">Langue du système</string>
+    <string name="settings_local_http_on">Actif sur le port %1$d</string>
+    <string name="settings_local_http_off">Désactivé</string>
+    <string name="settings_timestamps_example">Les heures ressemblent à %1$s · \"timezone\": \"%2$s\"</string>
+    <string name="settings_timestamps_warning">Ce changement peut casser les automatisations qui lisent les heures comme du texte.</string>
     <string name="about_action_export">Exporter</string>
     <string name="about_action_import">Importer</string>
     <string name="about_section_settings">Paramètres de l\'application</string>

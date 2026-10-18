@@ -244,7 +244,16 @@
     <string name="settings_timestamps_title">Carimbos de data/hora do payload</string>
     <string name="settings_timestamps_utc">UTC</string>
     <string name="settings_timestamps_local">Hora local</string>
-    <string name="settings_timestamps_desc">%1$s. As horas ficam como %2$s e o payload inclui \"timezone\": \"%3$s\". Mudar isso pode quebrar automações que leem as horas como texto.</string>
+    <string name="settings_section_sync">Sincronização</string>
+    <string name="settings_section_app">App</string>
+    <string name="settings_section_help">Ajuda</string>
+    <string name="settings_section_about">Sobre</string>
+    <string name="settings_language_title">Idioma</string>
+    <string name="settings_language_system">Padrão do sistema</string>
+    <string name="settings_local_http_on">Ativo na porta %1$d</string>
+    <string name="settings_local_http_off">Desligado</string>
+    <string name="settings_timestamps_example">As horas ficam como %1$s · \"timezone\": \"%2$s\"</string>
+    <string name="settings_timestamps_warning">Mudar isso pode quebrar automações que leem as horas como texto.</string>
     <string name="about_action_export">Exportar</string>
     <string name="about_action_import">Importar</string>
     <string name="about_section_settings">Configurações do app</string>

@@ -244,7 +244,16 @@
     <string name="settings_timestamps_title">Payload நேர முத்திரைகள்</string>
     <string name="settings_timestamps_utc">UTC</string>
     <string name="settings_timestamps_local">உள்ளூர் நேரம்</string>
-    <string name="settings_timestamps_desc">%1$s. நேரங்கள் %2$s போல இருக்கும், payload-இல் \"timezone\": \"%3$s\" இருக்கும். இதை மாற்றினால், நேரத்தை உரையாகப் படிக்கும் தானியக்கங்கள் உடையலாம்.</string>
+    <string name="settings_section_sync">ஒத்திசைவு</string>
+    <string name="settings_section_app">செயலி</string>
+    <string name="settings_section_help">உதவி</string>
+    <string name="settings_section_about">பற்றி</string>
+    <string name="settings_language_title">மொழி</string>
+    <string name="settings_language_system">கணினி இயல்புநிலை</string>
+    <string name="settings_local_http_on">போர்ட் %1$d-இல் இயங்குகிறது</string>
+    <string name="settings_local_http_off">முடக்கம்</string>
+    <string name="settings_timestamps_example">நேரங்கள் %1$s போல இருக்கும் · \"timezone\": \"%2$s\"</string>
+    <string name="settings_timestamps_warning">இதை மாற்றினால், நேரத்தை உரையாகப் படிக்கும் தானியக்கங்கள் உடையலாம்.</string>
     <string name="about_action_export">ஏற்றுமதி</string>
     <string name="about_action_import">இறக்குமதி</string>
     <string name="about_section_settings">பயன்பாட்டு அமைப்புகள்</string>

@@ -244,7 +244,16 @@
     <string name="settings_timestamps_title">ペイロードのタイムスタンプ</string>
     <string name="settings_timestamps_utc">UTC</string>
     <string name="settings_timestamps_local">ローカル時刻</string>
-    <string name="settings_timestamps_desc">%1$s。時刻は %2$s のようになり、ペイロードには \"timezone\": \"%3$s\" が含まれます。変更すると、時刻を文字列として読む自動化が動かなくなる場合があります。</string>
+    <string name="settings_section_sync">同期</string>
+    <string name="settings_section_app">アプリ</string>
+    <string name="settings_section_help">ヘルプ</string>
+    <string name="settings_section_about">情報</string>
+    <string name="settings_language_title">言語</string>
+    <string name="settings_language_system">システムのデフォルト</string>
+    <string name="settings_local_http_on">ポート %1$d で実行中</string>
+    <string name="settings_local_http_off">オフ</string>
+    <string name="settings_timestamps_example">時刻の例: %1$s · \"timezone\": \"%2$s\"</string>
+    <string name="settings_timestamps_warning">変更すると、時刻を文字列として読む自動化が動かなくなる場合があります。</string>
     <string name="about_action_export">輸出</string>
     <string name="about_action_import">輸入</string>
     <string name="about_section_settings">アプリ設定</string>
