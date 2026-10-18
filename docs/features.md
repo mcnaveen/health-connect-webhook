@@ -40,4 +40,4 @@ from baseline when provided) · Respiratory Rate · Resting Heart Rate · Exerci
 Sessions · Hydration · Nutrition (calories, protein, carbs, fat, sugar, sodium,
 fiber, name) · Basal Metabolic Rate · Body Fat · Lean Body Mass · VO2 Max · Bone
 Mass · Menstruation Flow · Menstruation Period · Intermenstrual Bleeding ·
-Ovulation Test · Cervical Mucus · Sexual Activity · Basal Body Temperature
+Ovulation Test · Cervical Mucus · Sexual Activity · Basal Body Temperature · Mindfulness

@@ -28,6 +28,7 @@
     <string name="onboarding_group_body_composition">Body Composition</string>
     <string name="onboarding_group_nutrition">Nutrition &amp; Hydration</string>
     <string name="onboarding_group_cycle_tracking">Cycle Tracking</string>
+    <string name="onboarding_group_wellness">Wellness</string>
     
     <string name="onboarding_privacy_title">Your Data, Your Control</string>
     <string name="onboarding_privacy_subtitle">This app is a transparent forwarder. Here’s exactly how your data is handled:</string>
@@ -105,6 +106,8 @@
     <string name="dt_sexual_activity_rationale">Send sexual activity logs to your webhook to correlate with cycle data, track patterns, and support reproductive health insights.</string>
     <string name="dt_basal_body_temp_name">Basal Body Temperature</string>
     <string name="dt_basal_body_temp_rationale">Forward morning basal body temperature readings to your webhook to detect ovulation, track cycle phases, and support fertility awareness charting.</string>
+    <string name="dt_mindfulness_name">Mindfulness</string>
+    <string name="dt_mindfulness_rationale">Forward mindfulness sessions (meditation, breathing, and more) with their duration to your webhook to track your wellness routine.</string>
     <string name="dt_hc_rationale">Health Connect to Webhook requires access to your health and fitness data. This data is strictly used to fulfill the core functionality of the app: securely transmitting your chosen health metrics directly to your personal webhook URLs. We do not sell or share your data with any third parties. Only the data types you explicitly choose to configure below will be requested and synced.</string>
     <string name="datatypes_granted_summary">%1$d of %2$d permissions granted</string>
     <string name="datatypes_selected_summary">%1$d items selected to sync</string>

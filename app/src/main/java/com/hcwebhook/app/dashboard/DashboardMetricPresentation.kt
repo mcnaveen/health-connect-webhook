@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Spa
 import androidx.compose.material.icons.filled.Speed
@@ -71,6 +72,7 @@ object DashboardMetricPresentation {
         HealthDataType.CERVICAL_MUCUS,
         HealthDataType.SEXUAL_ACTIVITY -> style(Icons.Filled.Favorite, IconBackgroundRed, IconTintRed)
         HealthDataType.BASAL_BODY_TEMPERATURE -> style(Icons.Filled.Thermostat, IconBackgroundOrange, IconTintOrange)
+        HealthDataType.MINDFULNESS -> style(Icons.Filled.SelfImprovement, IconBackgroundPurple, IconTintPurple)
     }
 
     private fun style(icon: ImageVector, background: Color, tint: Color) =

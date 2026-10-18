@@ -513,6 +513,19 @@ Health Connect can store multiple samples per interval; with Full resolution the
 | `measurement_location` | number (integer) | Measurement location (as defined by Health Connect constants). |
 | `time` | string | Measurement time. |
 
+### `mindfulness` — array of objects
+
+Health Connect **Wellness** category. Needs a Health Connect version with mindfulness support (Android 16+, or a recent Health Connect app). On other devices the type sends nothing.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `session_type` | string | yes | `meditation`, `breathing`, `music`, `movement`, `unguided`, or `unknown`. |
+| `title` | string | no | Session title from the source app. |
+| `notes` | string | no | Session notes from the source app. |
+| `start_time` | string | yes | Session start. |
+| `end_time` | string | yes | Session end. |
+| `duration_seconds` | number (integer) | yes | Session duration in seconds. |
+
 ---
 
 ## Example (illustrative only)

@@ -29,6 +29,7 @@
     <string name="onboarding_group_body_composition">체성분</string>
     <string name="onboarding_group_nutrition">영양 및 수분</string>
     <string name="onboarding_group_cycle_tracking">생리 주기 추적</string>
+    <string name="onboarding_group_wellness">웰니스</string>
     
     <string name="onboarding_privacy_title">내 데이터, 내 마음대로</string>
     <string name="onboarding_privacy_subtitle">이 앱은 투명하게 데이터를 전달합니다. 데이터 처리 방식은 다음과 같습니다:</string>
@@ -106,6 +107,8 @@
     <string name="dt_sexual_activity_rationale">성 활동 기록을 webhook에 전송하여 주기 데이터와 상관관계를 분석하고 생식 건강에 관한 통찰을 얻습니다.</string>
     <string name="dt_basal_body_temp_name">기초 체온</string>
     <string name="dt_basal_body_temp_rationale">아침 기초 체온 측정값을 전송하여 배란을 감지하고, 주기 단계를 추적하며, 가임능력 인식을 지원합니다.</string>
+    <string name="dt_mindfulness_name">마음챙김</string>
+    <string name="dt_mindfulness_rationale">마음챙김 세션(명상, 호흡 등)과 시간을 webhook으로 전송하여 웰니스 루틴을 추적합니다.</string>
     <string name="dt_hc_rationale">Health Connect to Webhook은 건강, 피트니스 데이터의 액세스를 필수적으로 요청하게 됩니다. 오직 해당 데이터들은 사용자가 스스로 허용한 특정 Webhook 서버들에 개인의 측정 항목을 전송하기 위해 쓰입니다. 앱 및 개발자는 제 3 측 및 다른 집단에서 수집된 귀하의 어떤 부분도 전혀 판매 행위, 활용을 하지 않습니다. 또한 요청되고 동기화되는 항목은 오직 기능에서 수동으로 선택해주신 부분만이 전송되므로 자유롭고 투명합니다.</string>
     <string name="datatypes_granted_summary">권한 %2$d개 중 %1$d개 허용됨</string>
     <string name="datatypes_selected_summary">%1$d개 동기화 항목 선택됨</string>

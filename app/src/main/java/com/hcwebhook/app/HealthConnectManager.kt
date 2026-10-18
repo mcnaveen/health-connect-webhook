@@ -1,8 +1,13 @@
+// Mindfulness (Health Connect Wellness) is still an experimental Health Connect API.
+@file:OptIn(ExperimentalMindfulnessSessionApi::class)
+
 package com.hcwebhook.app
 
 import android.content.Context
 import android.util.Log
 import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.HealthConnectFeatures
+import androidx.health.connect.client.feature.ExperimentalMindfulnessSessionApi
 import androidx.health.connect.client.changes.DeletionChange
 import androidx.health.connect.client.changes.UpsertionChange
 import androidx.health.connect.client.permission.HealthPermission
@@ -122,6 +127,9 @@ enum class HealthDataType(val nameResId: Int, val recordClass: KClass<out Record
     ),
     BASAL_BODY_TEMPERATURE(
         R.string.dt_basal_body_temp_name, BasalBodyTemperatureRecord::class, R.string.dt_basal_body_temp_rationale
+    ),
+    MINDFULNESS(
+        R.string.dt_mindfulness_name, MindfulnessSessionRecord::class, R.string.dt_mindfulness_rationale
     )
 }
 
@@ -158,6 +166,7 @@ data class HealthData(
     val cervicalMucus: List<CervicalMucusData>,
     val sexualActivity: List<SexualActivityData>,
     val basalBodyTemperature: List<BasalBodyTemperatureData>,
+    val mindfulness: List<MindfulnessData> = emptyList(),
     val deleted: List<DeletedRecord> = emptyList(),
 ) {
     fun totalRecordCount(): Int =
@@ -169,7 +178,7 @@ data class HealthData(
             basalMetabolicRate.size + bodyFat.size + leanBodyMass.size + bodyWaterMass.size +
             vo2Max.size + boneMass.size + menstruationFlow.size + menstruationPeriod.size +
             intermenstrualBleeding.size + ovulationTest.size + cervicalMucus.size +
-            sexualActivity.size + basalBodyTemperature.size + deleted.size
+            sexualActivity.size + basalBodyTemperature.size + mindfulness.size + deleted.size
 }
 
 /**
@@ -464,6 +473,17 @@ data class BasalBodyTemperatureData(
     val metadata: RecordMetadata? = null
 )
 
+/** Health Connect "Wellness" category. [sessionType] is the Health Connect name, e.g. "meditation". */
+data class MindfulnessData(
+    val sessionType: String,
+    val title: String? = null,
+    val notes: String? = null,
+    val startTime: Instant,
+    val endTime: Instant,
+    val duration: Duration,
+    val metadata: RecordMetadata? = null
+)
+
 class HealthConnectManager(private val context: Context) {
 
     private val healthConnectClient by lazy {
@@ -597,6 +617,9 @@ class HealthConnectManager(private val context: Context) {
                 attributed(HealthDataType.SEXUAL_ACTIVITY) { withChangedDays(HealthDataType.SEXUAL_ACTIVITY) { s, e -> readSexualActivityData(s, e, lastSyncTimestamps[HealthDataType.SEXUAL_ACTIVITY], changed(HealthDataType.SEXUAL_ACTIVITY)) } } else emptyList()
             val basalBodyTemperatureData = if (HealthDataType.BASAL_BODY_TEMPERATURE in enabledTypes)
                 attributed(HealthDataType.BASAL_BODY_TEMPERATURE) { withChangedDays(HealthDataType.BASAL_BODY_TEMPERATURE) { s, e -> readBasalBodyTemperatureData(s, e, lastSyncTimestamps[HealthDataType.BASAL_BODY_TEMPERATURE], changed(HealthDataType.BASAL_BODY_TEMPERATURE)) } } else emptyList()
+            // Mindfulness needs a newer Health Connect; skip it where the feature is missing.
+            val mindfulnessData = if (HealthDataType.MINDFULNESS in enabledTypes && isMindfulnessAvailable())
+                attributed(HealthDataType.MINDFULNESS) { withChangedDays(HealthDataType.MINDFULNESS) { s, e -> readMindfulnessData(s, e, lastSyncTimestamps[HealthDataType.MINDFULNESS], changed(HealthDataType.MINDFULNESS)) } } else emptyList()
 
             Result.success(HealthData(
                 steps = stepsData,
@@ -630,7 +653,8 @@ class HealthConnectManager(private val context: Context) {
                 ovulationTest = ovulationTestData,
                 cervicalMucus = cervicalMucusData,
                 sexualActivity = sexualActivityData,
-                basalBodyTemperature = basalBodyTemperatureData
+                basalBodyTemperature = basalBodyTemperatureData,
+                mindfulness = mindfulnessData,
             ))
         } catch (e: CancellationException) {
             throw e
@@ -900,6 +924,18 @@ class HealthConnectManager(private val context: Context) {
             DashboardFormatter::formatCelsius,
             R.string.dashboard_sub_celsius_latest,
         )
+        HealthDataType.MINDFULNESS -> {
+            val sessions = if (isMindfulnessAvailable()) readMindfulnessData(dayStart, dayEnd, null) else emptyList()
+            DashboardMetric(
+                type,
+                if (sessions.isNotEmpty()) {
+                    DashboardFormatter.formatDurationMinutes(DashboardFormatter.sumDurationsMinutes(sessions.map { it.duration }))
+                } else {
+                    DashboardFormatter.NO_DATA
+                },
+                if (sessions.isNotEmpty()) R.string.dashboard_sub_today else R.string.dashboard_sub_no_data,
+            )
+        }
     }
 
     private fun latestMetric(
@@ -2165,6 +2201,37 @@ class HealthConnectManager(private val context: Context) {
             .map { BasalBodyTemperatureData(it.temperature.inCelsius, it.measurementLocation, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
+    private suspend fun readMindfulnessData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<MindfulnessData> {
+        val request = ReadRecordsRequest(recordType = MindfulnessSessionRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
+        return readAllRecords(request)
+            .filter { changed.keeps(lastSync, it.endTime, it.metadata.id) }
+            .map {
+                MindfulnessData(
+                    sessionType = mindfulnessSessionTypeName(it.mindfulnessSessionType),
+                    title = it.title?.takeIf { title -> title.isNotBlank() },
+                    notes = it.notes?.takeIf { notes -> notes.isNotBlank() },
+                    startTime = it.startTime,
+                    endTime = it.endTime,
+                    duration = Duration.between(it.startTime, it.endTime),
+                    metadata = it.toRecordMetadata(startZoneOffset = it.startZoneOffset, endZoneOffset = it.endZoneOffset),
+                )
+            }
+    }
+
+    // Health Connect keeps its own name map internal, so keep the same names here.
+    private fun mindfulnessSessionTypeName(type: Int): String = when (type) {
+        MindfulnessSessionRecord.MINDFULNESS_SESSION_TYPE_MEDITATION -> "meditation"
+        MindfulnessSessionRecord.MINDFULNESS_SESSION_TYPE_BREATHING -> "breathing"
+        MindfulnessSessionRecord.MINDFULNESS_SESSION_TYPE_MUSIC -> "music"
+        MindfulnessSessionRecord.MINDFULNESS_SESSION_TYPE_MOVEMENT -> "movement"
+        MindfulnessSessionRecord.MINDFULNESS_SESSION_TYPE_UNGUIDED -> "unguided"
+        else -> "unknown"
+    }
+
+    private fun isMindfulnessAvailable(): Boolean =
+        healthConnectClient.features.getFeatureStatus(HealthConnectFeatures.FEATURE_MINDFULNESS_SESSION) ==
+            HealthConnectFeatures.FEATURE_STATUS_AVAILABLE
+
     private suspend fun <T : Record> readAllRecords(request: ReadRecordsRequest<T>): List<T> {
         return try {
             readAllRecordsPaged(request)
@@ -2391,6 +2458,7 @@ class HealthConnectManager(private val context: Context) {
             HealthPermission.getReadPermission(CervicalMucusRecord::class),
             HealthPermission.getReadPermission(SexualActivityRecord::class),
             HealthPermission.getReadPermission(BasalBodyTemperatureRecord::class),
+            HealthPermission.getReadPermission(MindfulnessSessionRecord::class),
             "android.permission.health.READ_HEALTH_DATA_HISTORY"
         )
     }

@@ -435,6 +435,21 @@ object MockPayloadBuilder {
                     }
                 }
             }
+            if (data.mindfulness.isNotEmpty()) {
+                putJsonArray("mindfulness") {
+                    data.mindfulness.forEach {
+                        add(buildJsonObject {
+                            put("session_type", it.sessionType)
+                            it.title?.let { title -> put("title", title) }
+                            it.notes?.let { notes -> put("notes", notes) }
+                            put("start_time", it.startTime.toString())
+                            put("end_time", it.endTime.toString())
+                            put("duration_seconds", it.duration.seconds)
+                            it.metadata?.let { meta -> putMetadata(meta) }
+                        })
+                    }
+                }
+            }
         }.toString()
     }
 
@@ -636,6 +651,16 @@ object MockPayloadBuilder {
             ) else emptyList(),
             basalBodyTemperature = if (include(HealthDataType.BASAL_BODY_TEMPERATURE.name)) listOf(
                 BasalBodyTemperatureData(36.4, 1, t(6, 30), fitnessMeta)
+            ) else emptyList(),
+            mindfulness = if (include(HealthDataType.MINDFULNESS.name)) listOf(
+                MindfulnessData(
+                    sessionType = "meditation",
+                    title = "Morning meditation",
+                    startTime = t(7, 0),
+                    endTime = t(7, 15),
+                    duration = Duration.ofMinutes(15),
+                    metadata = fitnessMeta,
+                )
             ) else emptyList()
         )
     }

@@ -1,5 +1,8 @@
+@file:OptIn(ExperimentalMindfulnessSessionApi::class)
+
 package com.hcwebhook.app
 
+import androidx.health.connect.client.feature.ExperimentalMindfulnessSessionApi
 import androidx.health.connect.client.records.*
 import java.time.Instant
 import java.time.LocalDate
@@ -99,6 +102,7 @@ internal fun recordSpan(record: Record): Pair<Instant, Instant>? = when (record)
     is CervicalMucusRecord -> record.time to record.time
     is SexualActivityRecord -> record.time to record.time
     is BasalBodyTemperatureRecord -> record.time to record.time
+    is MindfulnessSessionRecord -> record.startTime to record.endTime
     else -> null
 }
 

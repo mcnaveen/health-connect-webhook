@@ -386,6 +386,7 @@ class SyncManager(private val context: Context) {
             cervicalMucus = if ("CERVICAL_MUCUS" in allowed) data.cervicalMucus else emptyList(),
             sexualActivity = if ("SEXUAL_ACTIVITY" in allowed) data.sexualActivity else emptyList(),
             basalBodyTemperature = if ("BASAL_BODY_TEMPERATURE" in allowed) data.basalBodyTemperature else emptyList(),
+            mindfulness = if ("MINDFULNESS" in allowed) data.mindfulness else emptyList(),
             deleted = data.deleted.filter { it.type.name in allowed },
         )
     }
@@ -402,6 +403,7 @@ class SyncManager(private val context: Context) {
                 data.menstruationFlow.size + data.menstruationPeriod.size +
                 data.intermenstrualBleeding.size + data.ovulationTest.size +
                 data.cervicalMucus.size + data.sexualActivity.size + data.basalBodyTemperature.size +
+                data.mindfulness.size +
                 data.deleted.size
     }
 
@@ -420,6 +422,7 @@ class SyncManager(private val context: Context) {
                 data.menstruationFlow.isEmpty() && data.menstruationPeriod.isEmpty() &&
                 data.intermenstrualBleeding.isEmpty() && data.ovulationTest.isEmpty() &&
                 data.cervicalMucus.isEmpty() && data.sexualActivity.isEmpty() && data.basalBodyTemperature.isEmpty() &&
+                data.mindfulness.isEmpty() &&
                 data.deleted.isEmpty()
     }
 
@@ -590,6 +593,11 @@ class SyncManager(private val context: Context) {
             setTimestamp(HealthDataType.BASAL_BODY_TEMPERATURE, data.basalBodyTemperature.maxOf { it.time }.toEpochMilli())
             syncCounts[HealthDataType.BASAL_BODY_TEMPERATURE] = data.basalBodyTemperature.size
         }
+        if (data.mindfulness.isNotEmpty()) {
+            clampedMaxEndMs(data.mindfulness.asSequence().map { it.endTime }, now)
+                ?.let { setTimestamp(HealthDataType.MINDFULNESS, it) }
+            syncCounts[HealthDataType.MINDFULNESS] = data.mindfulness.size
+        }
     }
 
     private fun buildSyncSummary(data: HealthData): String {
@@ -612,6 +620,9 @@ class SyncManager(private val context: Context) {
         }
         if (data.exercise.isNotEmpty()) {
             parts.add("${data.exercise.size} exercise")
+        }
+        if (data.mindfulness.isNotEmpty()) {
+            parts.add("${data.mindfulness.size} mindfulness")
         }
         if (data.weight.isNotEmpty()) {
             parts.add("${data.weight.size} weight")
@@ -1052,6 +1063,20 @@ class SyncManager(private val context: Context) {
                         put("celsius", it.celsius)
                         put("measurement_location", it.measurementLocation)
                         put("time", it.time.toString())
+                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                    }) }
+                }
+            }
+
+            if (healthData.mindfulness.isNotEmpty()) {
+                putJsonArray("mindfulness") {
+                    healthData.mindfulness.forEach { add(buildJsonObject {
+                        put("session_type", it.sessionType)
+                        it.title?.let { title -> put("title", title) }
+                        it.notes?.let { notes -> put("notes", notes) }
+                        put("start_time", it.startTime.toString())
+                        put("end_time", it.endTime.toString())
+                        put("duration_seconds", it.duration.seconds)
                         it.metadata?.let { meta -> putRecordMetadata(meta) }
                     }) }
                 }

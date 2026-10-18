@@ -29,6 +29,7 @@
     <string name="onboarding_group_body_composition">உடல் அமைப்பு</string>
     <string name="onboarding_group_nutrition">ஊட்டச்சத்து &amp; நீரேற்றம்</string>
     <string name="onboarding_group_cycle_tracking">மாதவிடாய் சுழற்சி கண்காணிப்பு</string>
+    <string name="onboarding_group_wellness">நல்வாழ்வு</string>
     
     <string name="onboarding_privacy_title">உங்கள் தரவு, உங்கள் கட்டுப்பாடு</string>
     <string name="onboarding_privacy_subtitle">இந்த செயலி வெளிப்படையானதாகும். உங்கள் தரவுகள் எவ்வாறு கையாளப்படுகின்றன என்பது இங்கே:</string>
@@ -106,6 +107,8 @@
     <string name="dt_sexual_activity_rationale">பாலியல் செயல்பாடு பதிவுகளை webhook இல் அனுப்பி, சுழற்சி தரவுகளுடன் தொடர்புப்படுத்தி இனப்பெருக்கல் ஆரோக்கியத்திற்கான உள்நோக்குகளைப் பெறலாம்.</string>
     <string name="dt_basal_body_temp_name">அடிப்படை உடல் வெப்பநிலை</string>
     <string name="dt_basal_body_temp_rationale">காலை அடிப்படை உடல் வெப்ப அளவீடுகளை அனுப்பி, கருத்தறிப்பைப் கண்டறித்து, சுழற்சி கட்டத்தின்றைப் பதிவுசெய்து, கருத்தறிப்பு விழிப்புணர்வை உதவலாம்.</string>
+    <string name="dt_mindfulness_name">மன நிறைவு</string>
+    <string name="dt_mindfulness_rationale">தியானம், மூச்சுப் பயிற்சி போன்ற மன நிறைவு அமர்வுகளை அவற்றின் கால அளவுடன் உங்கள் webhook-க்கு அனுப்பி, உங்கள் நல்வாழ்வு வழக்கத்தைக் கண்காணிக்கலாம்.</string>
     <string name="dt_hc_rationale">Health Connect to Webhook ஆனது உங்கள் ஆரோக்கியம் மற்றும் உடற்பயிற்சித் தரவை வாசித்தறிய அனுமதி கேட்கிறது. இவை உங்களது விருப்பமான Webhook-URL மூலம் தகவல்களை பாதுகாப்பாக அனுப்புகின்ற இந்தச் செயலியின் அடிப்படை நோக்கத்திற்கு மட்டுமே பயன்படுத்தபடுகிறது. உங்கள் தரவு எக்காரணம் கொண்டும் மூன்றாம் தரப்பினருக்கு விற்கப்படுவதில்லை; பகிரப்படுவதில்லை. நீங்கள் எந்த எந்தப் பிரிவை ஒத்திசைக்கிறீர்களோ அவை மட்டுமே கோரப்படும்.</string>
     <string name="datatypes_granted_summary">%2$d இல் %1$d அனுமதிகள் வழங்கப்பட்டன</string>
     <string name="datatypes_selected_summary">ஒத்திசைக்க %1$d பிரிவுகள் தேர்ந்தெடுக்கப்பட்டுள்ளன</string>

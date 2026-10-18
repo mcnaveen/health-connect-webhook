@@ -29,6 +29,7 @@
     <string name="onboarding_group_body_composition">身体成分</string>
     <string name="onboarding_group_nutrition">营养与水分</string>
     <string name="onboarding_group_cycle_tracking">周期追踪</string>
+    <string name="onboarding_group_wellness">健康</string>
     
     <string name="onboarding_privacy_title">您的数据，由您掌控</string>
     <string name="onboarding_privacy_subtitle">此应用是一个透明的转发器。您的数据具体处理方式如下：</string>
@@ -106,6 +107,8 @@
     <string name="dt_sexual_activity_rationale">将性行为记录发送到 webhook，与周期数据关联分析，获取生殖健康洞察。</string>
     <string name="dt_basal_body_temp_name">基础体温</string>
     <string name="dt_basal_body_temp_rationale">转发清晨基础体温测量数据，检测排卵、跟踪周期阶段并支持生育意识。</string>
+    <string name="dt_mindfulness_name">正念</string>
+    <string name="dt_mindfulness_rationale">将正念练习（冥想、呼吸等）及其时长转发到您的 webhook，以跟踪您的健康习惯。</string>
     <string name="dt_hc_rationale">Health Connect to Webhook 要求需要对您的健康及其活动数据做授权进入读取。然而此类访问收集纯粹也只会用此作此应用唯一的原始功用也就是把你指定的健康方面数据向你的个人指定网址即所谓的 Webhook URL 做严密输送而已。本应用不会拿这些向其他第三方提供与出售，更由于仅由您开启的项会被发出读取需求及接发使得所有选项权永远掌控在你个人手上不受限制。</string>
     <string name="datatypes_granted_summary">已获授权 %1$d / %2$d</string>
     <string name="datatypes_selected_summary">已选择 %1$d 项进行同步</string>

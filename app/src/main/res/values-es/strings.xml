@@ -29,6 +29,7 @@
     <string name="onboarding_group_body_composition">Composición corporal</string>
     <string name="onboarding_group_nutrition">Nutrición e hidratación</string>
     <string name="onboarding_group_cycle_tracking">Seguimiento del ciclo</string>
+    <string name="onboarding_group_wellness">Bienestar</string>
     
     <string name="onboarding_privacy_title">Tus Datos, Tu Control</string>
     <string name="onboarding_privacy_subtitle">Esta aplicación es un canal transparente. Así es exactamente como se manejan tus datos:</string>
@@ -106,6 +107,8 @@
     <string name="dt_sexual_activity_rationale">Envíe registros de actividad sexual a su webhook para correlacionar con datos del ciclo y obtener información sobre salud reproductiva.</string>
     <string name="dt_basal_body_temp_name">Temperatura corporal basal</string>
     <string name="dt_basal_body_temp_rationale">Reenvíe mediciones de temperatura corporal basal matutina para detectar la ovulación, rastrear fases del ciclo y apoyar métodos de conciencia de fertilidad.</string>
+    <string name="dt_mindfulness_name">Atención plena</string>
+    <string name="dt_mindfulness_rationale">Reenvíe las sesiones de atención plena (meditación, respiración y más) con su duración a su webhook para seguir su rutina de bienestar.</string>
     <string name="dt_hc_rationale">Health Connect to Webhook requiere acceso a sus datos de salud y estado físico. Estos datos se utilizan estrictamente para las funcionalidades de la aplicación: transmitir de forma segura sus métricas de salud directamente a sus URL de webhook personales. Nunca venderemos ni compartiremos sus datos. Solo se solicitarán y sincronizarán los datos que configure expresamente.</string>
     <string name="datatypes_granted_summary">%1$d de %2$d permisos concedidos</string>
     <string name="datatypes_selected_summary">%1$d elementos seleccionados para sincronizar</string>

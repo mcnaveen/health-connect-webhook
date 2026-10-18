@@ -29,6 +29,7 @@
     <string name="onboarding_group_body_composition">Composição Corporal</string>
     <string name="onboarding_group_nutrition">Nutrição e Hidratação</string>
     <string name="onboarding_group_cycle_tracking">Rastreamento do ciclo</string>
+    <string name="onboarding_group_wellness">Bem-estar</string>
     
     <string name="onboarding_privacy_title">Seus Dados, Seu Controle</string>
     <string name="onboarding_privacy_subtitle">Este aplicativo é um encaminhador transparente. Veja exatamente como seus dados são tratados:</string>
@@ -106,6 +107,8 @@
     <string name="dt_sexual_activity_rationale">Envie registros de atividade sexual ao seu webhook para correlacioná-los com dados do ciclo e obter informações sobre saúde reprodutiva.</string>
     <string name="dt_basal_body_temp_name">Temperatura basal do corpo</string>
     <string name="dt_basal_body_temp_rationale">Transmita as medições de temperatura basal matinal para detectar a ovulação, rastrear fases do ciclo e apoiar métodos de consciência da fertilidade.</string>
+    <string name="dt_mindfulness_name">Atenção plena</string>
+    <string name="dt_mindfulness_rationale">Transmita as sessões de atenção plena (meditação, respiração e mais) com sua duração para o seu webhook para acompanhar sua rotina de bem-estar.</string>
     <string name="dt_hc_rationale">O Health Connect to Webhook exige acesso a seus dados de aptidão e de saúde física. Os mesmos auxiliam rigorosamente seus parâmetros transmitindo exclusivamente suas preferências aos links cadastrados perante você sob as bases das plataformas sem haver partilha não autorizada à outra via, configurados consoante tua ordem expressa do que aceita partilhar ou repassar.</string>
     <string name="datatypes_granted_summary">%1$d de %2$d permissões concedidas</string>
     <string name="datatypes_selected_summary">%1$d itens selecionados para sinc</string>

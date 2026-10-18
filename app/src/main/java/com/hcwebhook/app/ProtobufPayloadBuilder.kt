@@ -27,6 +27,7 @@ import com.hcwebhook.app.proto.v1.IntervalZoneOffset
 import com.hcwebhook.app.proto.v1.MassRecord
 import com.hcwebhook.app.proto.v1.MenstruationFlowRecord
 import com.hcwebhook.app.proto.v1.MenstruationPeriodRecord
+import com.hcwebhook.app.proto.v1.MindfulnessRecord
 import com.hcwebhook.app.proto.v1.NutritionRecord
 import com.hcwebhook.app.proto.v1.OvulationTestRecord
 import com.hcwebhook.app.proto.v1.OxygenSaturationAggregate
@@ -425,6 +426,18 @@ object ProtobufPayloadBuilder {
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
                     .build()
             )
+        }
+
+        healthData.mindfulness.forEach {
+            val session = MindfulnessRecord.newBuilder()
+                .setSessionType(it.sessionType)
+                .setStartTime(it.startTime.toTimestamp())
+                .setEndTime(it.endTime.toTimestamp())
+                .setDuration(it.duration.toProtoDuration())
+            it.title?.let { title -> session.setTitle(title) }
+            it.notes?.let { notes -> session.setNotes(notes) }
+            it.metadata?.let { meta -> session.metadata = meta.toProto() }
+            builder.addMindfulness(session.build())
         }
 
         healthData.deleted.forEach {

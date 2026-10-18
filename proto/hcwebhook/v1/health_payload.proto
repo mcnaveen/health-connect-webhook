@@ -70,6 +70,8 @@ message HealthPayload {
   repeated BasalBodyTemperatureRecord basal_body_temperature = 35;
   // Records deleted from Health Connect since the last sync.
   repeated DeletedRecord deleted = 36;
+  // Health Connect "Wellness" category.
+  repeated MindfulnessRecord mindfulness = 37;
 }
 
 message DeletedRecord {
@@ -387,4 +389,16 @@ message BasalBodyTemperatureRecord {
   int32 measurement_location = 2;
   google.protobuf.Timestamp time = 3;
   optional RecordMetadata metadata = 4;
+}
+
+message MindfulnessRecord {
+  // Health Connect session type name: "meditation", "breathing", "music",
+  // "movement", "unguided" or "unknown".
+  string session_type = 1;
+  optional string title = 2;
+  optional string notes = 3;
+  google.protobuf.Timestamp start_time = 4;
+  google.protobuf.Timestamp end_time = 5;
+  google.protobuf.Duration duration = 6;
+  optional RecordMetadata metadata = 7;
 }

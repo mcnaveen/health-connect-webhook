@@ -29,6 +29,7 @@
     <string name="onboarding_group_body_composition">Körperzusammensetzung</string>
     <string name="onboarding_group_nutrition">Ernährung &amp; Flüssigkeitszufuhr</string>
     <string name="onboarding_group_cycle_tracking">Zyklusverfolgung</string>
+    <string name="onboarding_group_wellness">Wohlbefinden</string>
     
     <string name="onboarding_privacy_title">Ihre Daten, Ihre Kontrolle</string>
     <string name="onboarding_privacy_subtitle">Diese App ist ein transparenter Weiterleiter. So werden Ihre Daten verarbeitet:</string>
@@ -106,6 +107,8 @@
     <string name="dt_sexual_activity_rationale">Senden Sie Protokolle sexueller Aktivitäten an Ihren Webhook, um diese mit Zyklusdaten zu korrelieren und reproduktive Gesundheitseinblicke zu gewinnen.</string>
     <string name="dt_basal_body_temp_name">Basaltemperatur</string>
     <string name="dt_basal_body_temp_rationale">Leiten Sie Morgen-Basaltemperaturmessungen weiter, um den Eisprung zu erkennen, Zyklusphasen zu verfolgen und Fertilitätsbewusstsein zu unterstützen.</string>
+    <string name="dt_mindfulness_name">Achtsamkeit</string>
+    <string name="dt_mindfulness_rationale">Leiten Sie Achtsamkeitssitzungen (Meditation, Atmung und mehr) mit ihrer Dauer an Ihren Webhook weiter, um Ihre Wohlbefindensroutine zu verfolgen.</string>
     <string name="dt_hc_rationale">Health Connect to Webhook benötigt Zugriff auf Ihre Gesundheits- und Fitnessdaten. Diese Daten werden ausschließlich zur Erfüllung der Kernfunktion der App verwendet: sichere Übermittlung Ihrer ausgewählten Metriken direkt an Ihre persönlichen Webhook-URLs. Wir verkaufen oder teilen Ihre Daten niemals. Nur die von Ihnen explizit ausgewählten Datentypen werden abgefragt.</string>
     <string name="datatypes_granted_summary">%1$d von %2$d Berechtigungen erteilt</string>
     <string name="datatypes_selected_summary">%1$d Elemente zum Synchronisieren ausgewählt</string>

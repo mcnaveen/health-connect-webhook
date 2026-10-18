@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.WaterDrop
@@ -306,6 +307,9 @@ private fun DataTypesPage() {
                 HealthDataType.CERVICAL_MUCUS,
                 HealthDataType.SEXUAL_ACTIVITY,
                 HealthDataType.BASAL_BODY_TEMPERATURE
+            ),
+            stringResource(R.string.onboarding_group_wellness) to listOf(
+                HealthDataType.MINDFULNESS
             )
         )
 
@@ -524,6 +528,7 @@ fun iconForDataType(type: HealthDataType): ImageVector = when (type) {
     HealthDataType.CERVICAL_MUCUS,
     HealthDataType.SEXUAL_ACTIVITY     -> Icons.Filled.Favorite
     HealthDataType.BASAL_BODY_TEMPERATURE -> Icons.Filled.DeviceThermostat
+    HealthDataType.MINDFULNESS         -> Icons.Filled.SelfImprovement
 }
 
 @Composable

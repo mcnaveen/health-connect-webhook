@@ -122,6 +122,30 @@ class ProtobufPayloadBuilderTest {
     }
 
     @Test
+    fun build_includesMindfulnessSessions() {
+        val start = Instant.parse("2026-05-09T07:00:00Z")
+        val data = emptyHealthData().copy(
+            mindfulness = listOf(
+                MindfulnessData(
+                    sessionType = "meditation",
+                    title = "Morning",
+                    startTime = start,
+                    endTime = start.plusSeconds(900),
+                    duration = java.time.Duration.ofMinutes(15),
+                )
+            )
+        )
+
+        val payload = ProtobufPayloadBuilder.build(data, "1.0.0", start)
+        assertEquals(1, payload.mindfulnessCount)
+        val session = payload.getMindfulness(0)
+        assertEquals("meditation", session.sessionType)
+        assertEquals("Morning", session.title)
+        assertFalse(session.hasNotes())
+        assertEquals(900L, session.duration.seconds)
+    }
+
+    @Test
     fun build_includesDeletedRecords() {
         val t = Instant.parse("2026-05-09T08:00:00Z")
         val data = emptyHealthData().copy(

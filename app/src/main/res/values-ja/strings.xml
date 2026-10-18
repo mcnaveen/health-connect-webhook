@@ -29,6 +29,7 @@
     <string name="onboarding_group_body_composition">体組成</string>
     <string name="onboarding_group_nutrition">栄養と水分補給</string>
     <string name="onboarding_group_cycle_tracking">生理周期トラッキング</string>
+    <string name="onboarding_group_wellness">ウェルネス</string>
     
     <string name="onboarding_privacy_title">データをあなた自身で管理</string>
     <string name="onboarding_privacy_subtitle">このアプリは透明性の高いデータ転送ツールです。データの取り扱いについては以下の通りです：</string>
@@ -106,6 +107,8 @@
     <string name="dt_sexual_activity_rationale">性行為の記録をWebhookに送信し、サイクルデータと相関させ、生殖健康に関する洞察を得ます。</string>
     <string name="dt_basal_body_temp_name">基礎体温</string>
     <string name="dt_basal_body_temp_rationale">最低体温(基礎体温)の朝の計測値を転送し、排卵の検知、サイクルフェーズの追跡、她性の自己観察法をサポートします。</string>
+    <string name="dt_mindfulness_name">マインドフルネス</string>
+    <string name="dt_mindfulness_rationale">マインドフルネスのセッション(瞑想、呼吸など)とその時間をWebhookに転送し、ウェルネスの習慣を記録します。</string>
     <string name="dt_hc_rationale">「Health Connect to Webhook」は健康およびフィットネスデータへのアクセスを要求します。これらのデータは選択された各人の健康指標を各自の指定する特定のWebhook URLへと安全確実の送信し届けるという当アプリの中核機能を構成するためだけにて厳重に運用され使用されます。弊社は使用者の個人データを第三者に決して公開、あるいは営利として提供することは一切行ないませんし、手動で各自が指定したデータタイプのみの読み取りとシステム送信のみを行います。</string>
     <string name="datatypes_granted_summary">権限が%1$d/%2$d付与されました</string>
     <string name="datatypes_selected_summary">同期対象: %1$d項目選択中</string>
