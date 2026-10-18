@@ -138,7 +138,7 @@ Unless noted otherwise, time-valued fields use **`java.time.Instant.toString()`*
   Reads within a rolling **48-hour** window (`HealthConnectManager`) and, for each enabled type, applies the **last successful sync instant** for that type so only **new** records (relative to that watermark) are included. First sync has no watermark, so everything in the window can appear. The sync also sends records that were **edited**, **written late**, or **deleted** since the last sync, also when they are older than the window. See [Edits and deletions](#edits-and-deletions).
 
 - **Explicit range** (e.g. local HTTP `?days=7` or a chosen start/end)  
-  Uses the requested window and **does not** apply last-sync filtering; the payload can contain all records in that range for enabled types.
+  Uses the requested window and **does not** apply last-sync filtering; the payload can contain all records in that range for enabled types. It also **does not move** the last-sync instant, so the next default sync continues where the last default sync stopped.
 
 Only types the user enabled **and** granted Health Connect permission for are read; others simply produce no arrays.
 
