@@ -123,6 +123,7 @@ form differs where protobuf can be stricter than JSON:
 |-------|------|----------------|-------------|
 | `timestamp` | string | yes | ISO-8601 instant when the payload was built (`Instant.now()`), not the time range of the health records. |
 | `app_version` | string | yes | Human-readable app version name from the running build. |
+| `timezone` | string | yes | Zone the payload times are written in: `UTC`, or the phone zone such as `Asia/Kolkata`. See [Time fields](#time-fields). |
 | All other keys | array | no | One array per enabled data type that has **at least one** record in this payload. Omitted keys mean “no records in this batch” for that type—not “disabled in settings.” |
 | `deleted` | array | no | Records deleted from Health Connect since the last sync. See [Edits and deletions](#edits-and-deletions). |
 
@@ -130,7 +131,16 @@ Arrays are **never** empty: if a type has no data for this sync, the key is omit
 
 ### Time fields
 
-Unless noted otherwise, time-valued fields use **`java.time.Instant.toString()`** (ISO-8601 UTC with `Z`, e.g. `2026-05-09T12:34:56.789Z`).
+All times in the JSON payload (`timestamp`, record times, `metadata.last_modified_time`) are ISO-8601 and follow the **Payload timestamps** setting (Settings → App settings):
+
+| Setting | Example | `timezone` |
+|---------|---------|------------|
+| **UTC** | `2026-05-09T12:34:56.789Z` | `UTC` |
+| **Local time** | `2026-05-09T18:04:56.789+05:30` | phone zone, e.g. `Asia/Kolkata` |
+
+Both forms are the same instant; parse them as ISO-8601 with an offset. New installs default to **Local time**. Installs from before this setting keep **UTC**, so existing automations do not break.
+
+Protobuf payloads always use `google.protobuf.Timestamp` (UTC) and are not affected; each record's metadata carries its UTC offset.
 
 ### Which records appear (incremental vs full window)
 

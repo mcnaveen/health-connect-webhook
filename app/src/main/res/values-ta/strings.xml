@@ -241,6 +241,10 @@
 • எந்த தரவு வகைகள் ஒத்திசைக்கப்படுகின்றன மற்றும் அவை எங்கு அனுப்பப்படுகின்றன என்பதில் உங்களுக்கு முழுக் கட்டுப்பாடு உள்ளது</string>
     <string name="about_settings_backup_title">அமைப்புகள் காப்புப்பிரதி</string>
     <string name="about_settings_backup_desc">உங்கள் வெப்ஹூக் URLகள், தலைப்புகள் மற்றும் ஒத்திசைவு அட்டவணையை ஏற்றுமதி செய்யவும் அல்லது இறக்குமதி செய்யவும்</string>
+    <string name="settings_timestamps_title">Payload நேர முத்திரைகள்</string>
+    <string name="settings_timestamps_utc">UTC</string>
+    <string name="settings_timestamps_local">உள்ளூர் நேரம்</string>
+    <string name="settings_timestamps_desc">%1$s. நேரங்கள் %2$s போல இருக்கும், payload-இல் \"timezone\": \"%3$s\" இருக்கும். இதை மாற்றினால், நேரத்தை உரையாகப் படிக்கும் தானியக்கங்கள் உடையலாம்.</string>
     <string name="about_action_export">ஏற்றுமதி</string>
     <string name="about_action_import">இறக்குமதி</string>
     <string name="about_section_settings">பயன்பாட்டு அமைப்புகள்</string>

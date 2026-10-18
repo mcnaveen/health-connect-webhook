@@ -241,6 +241,10 @@
 • 您可以完全控制同步哪些数据类型以及将其发送到何处</string>
     <string name="about_settings_backup_title">设置备份</string>
     <string name="about_settings_backup_desc">导出或导入您的 Webhook URL、标头和同步计划</string>
+    <string name="settings_timestamps_title">Payload 时间戳</string>
+    <string name="settings_timestamps_utc">UTC</string>
+    <string name="settings_timestamps_local">本地时间</string>
+    <string name="settings_timestamps_desc">%1$s。时间格式如 %2$s，payload 包含 \"timezone\": \"%3$s\"。更改此设置可能影响按文本读取时间的自动化。</string>
     <string name="about_action_export">出口</string>
     <string name="about_action_import">进口</string>
     <string name="about_section_settings">应用设置</string>

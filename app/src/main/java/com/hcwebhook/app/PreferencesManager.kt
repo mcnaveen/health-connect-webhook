@@ -38,6 +38,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_SCHEDULED_SYNCS = "scheduled_syncs"
         private const val KEY_KNOWN_GRANTED_PERMISSIONS = "known_granted_permissions"
         private const val KEY_HAS_SEEN_ONBOARDING = "has_seen_onboarding"
+        private const val KEY_TIMESTAMP_STYLE = "timestamp_style"
         private const val KEY_LAST_SEEN_VERSION_CODE = "last_seen_version_code"
         private const val KEY_LOCAL_TCP_ENABLED = "local_tcp_enabled"
         private const val KEY_LOCAL_TCP_PORT = "local_tcp_port"
@@ -315,6 +316,28 @@ class PreferencesManager(context: Context) {
     }
 
     fun hasSeenOnboarding(): Boolean = prefs.getBoolean(KEY_HAS_SEEN_ONBOARDING, false)
+
+    /**
+     * Stores the timestamp style on the first launch with this setting. Existing installs keep
+     * UTC so their automations do not break; new installs get local time. Call this before
+     * onboarding can mark the install as seen.
+     */
+    fun initTimestampStyle() {
+        if (prefs.contains(KEY_TIMESTAMP_STYLE)) return
+        val isExistingUser = hasSeenOnboarding() || prefs.contains(KEY_WEBHOOK_CONFIGS)
+        setTimestampStyle(if (isExistingUser) TimestampStyle.UTC else TimestampStyle.LOCAL)
+    }
+
+    fun getTimestampStyle(): TimestampStyle =
+        prefs.getString(KEY_TIMESTAMP_STYLE, null)
+            ?.let { stored -> TimestampStyle.entries.firstOrNull { it.name == stored } }
+            ?: TimestampStyle.UTC
+
+    fun setTimestampStyle(style: TimestampStyle) {
+        prefs.edit().putString(KEY_TIMESTAMP_STYLE, style.name).apply()
+    }
+
+    fun payloadTime(): PayloadTime = PayloadTime(getTimestampStyle())
 
     fun setHasSeenOnboarding() {
         prefs.edit().putBoolean(KEY_HAS_SEEN_ONBOARDING, true).apply()

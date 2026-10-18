@@ -16,6 +16,7 @@ class HCWebhookApplication : Application() {
         super.onCreate()
         FeedbackJar.init(this, FEEDBACKJAR_WIDGET_ID)
         preferencesManager = PreferencesManager(this)
+        preferencesManager.initTimestampStyle()
 
         // Schedule syncs based on the selected sync mode
         when (preferencesManager.getSyncMode()) {

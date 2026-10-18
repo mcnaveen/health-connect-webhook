@@ -569,7 +569,7 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                                 val result = withContext(Dispatchers.IO) {
                                     when (editDeliveryFormat) {
                                         WebhookDeliveryFormat.JSON -> {
-                                            val mockPayload = MockPayloadBuilder.build(typesForMock.ifEmpty { null }, appVersion)
+                                            val mockPayload = MockPayloadBuilder.build(typesForMock.ifEmpty { null }, appVersion, preferencesManager.payloadTime())
                                             WebhookManager(
                                                 webhookConfigs = listOf(testConfig),
                                                 context = context,
@@ -584,7 +584,8 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                                             val payload = ProtobufPayloadBuilder.build(mockData, appVersion)
                                             val logJson = MockPayloadBuilder.build(
                                                 typesForMock.ifEmpty { null },
-                                                appVersion
+                                                appVersion,
+                                                preferencesManager.payloadTime(),
                                             )
                                             GrpcWebhookClient.deliver(
                                                 config = testConfig,

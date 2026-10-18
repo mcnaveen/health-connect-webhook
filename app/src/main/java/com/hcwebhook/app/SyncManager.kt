@@ -17,7 +17,7 @@ import kotlinx.serialization.json.putJsonObject
 import java.time.Instant
 
 /** Emit a record's Health Connect provenance as a nested "metadata" object. */
-private fun JsonObjectBuilder.putRecordMetadata(meta: RecordMetadata) {
+private fun JsonObjectBuilder.putRecordMetadata(meta: RecordMetadata, time: PayloadTime) {
     putJsonObject("metadata") {
         put("data_origin", meta.dataOrigin)
         put("recording_method", meta.recordingMethod)
@@ -25,7 +25,7 @@ private fun JsonObjectBuilder.putRecordMetadata(meta: RecordMetadata) {
         if (meta.id.isNotEmpty()) put("id", meta.id)
         meta.clientRecordId?.let { put("client_record_id", it) }
         if (meta.clientRecordVersion != 0L) put("client_record_version", meta.clientRecordVersion)
-        meta.lastModifiedTime?.let { put("last_modified_time", it.toString()) }
+        meta.lastModifiedTime?.let { put("last_modified_time", time.format(it)) }
         if (meta.deviceManufacturer != null || meta.deviceModel != null || meta.deviceType != null) {
             putJsonObject("device") {
                 meta.deviceManufacturer?.let { put("manufacturer", it) }
@@ -641,18 +641,20 @@ class SyncManager(private val context: Context) {
     }
 
     private fun buildJsonPayload(healthData: HealthData): String {
+        val time = preferencesManager.payloadTime()
         val json = buildJsonObject {
-            put("timestamp", Instant.now().toString())
+            put("timestamp", time.format(Instant.now()))
             put("app_version", appVersionName)
+            put("timezone", time.timezoneName)
 
             if (healthData.steps.isNotEmpty()) {
                 putJsonArray("steps") {
                     healthData.steps.forEach { step ->
                         add(buildJsonObject {
                             put("count", step.count)
-                            put("start_time", step.startTime.toString())
-                            put("end_time", step.endTime.toString())
-                            step.metadata?.let { meta -> putRecordMetadata(meta) }
+                            put("start_time", time.format(step.startTime))
+                            put("end_time", time.format(step.endTime))
+                            step.metadata?.let { meta -> putRecordMetadata(meta, time) }
                         })
                     }
                 }
@@ -662,19 +664,19 @@ class SyncManager(private val context: Context) {
                 putJsonArray("sleep") {
                     healthData.sleep.forEach { sleep ->
                         add(buildJsonObject {
-                            put("session_end_time", sleep.sessionEndTime.toString())
+                            put("session_end_time", time.format(sleep.sessionEndTime))
                             put("duration_seconds", sleep.duration.seconds)
                             putJsonArray("stages") {
                                 sleep.stages.forEach { stage ->
                                     add(buildJsonObject {
                                         put("stage", stage.stage)
-                                        put("start_time", stage.startTime.toString())
-                                        put("end_time", stage.endTime.toString())
+                                        put("start_time", time.format(stage.startTime))
+                                        put("end_time", time.format(stage.endTime))
                                         put("duration_seconds", stage.duration.seconds)
                                     })
                                 }
                             }
-                            sleep.metadata?.let { meta -> putRecordMetadata(meta) }
+                            sleep.metadata?.let { meta -> putRecordMetadata(meta, time) }
                         })
                     }
                 }
@@ -684,16 +686,16 @@ class SyncManager(private val context: Context) {
                 putJsonArray("heart_rate") {
                     healthData.heartRate.forEach { hr -> add(buildJsonObject {
                         if (hr.min != null) {
-                            put("time", hr.time.toString())
+                            put("time", time.format(hr.time))
                             put("avg", hr.bpm)
                             put("min", hr.min)
                             put("max", hr.max)
                             put("bpm", hr.bpm)
                         } else {
                             put("bpm", hr.bpm)
-                            put("time", hr.time.toString())
+                            put("time", time.format(hr.time))
                         }
-                        hr.metadata?.let { meta -> putRecordMetadata(meta) }
+                        hr.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -702,16 +704,16 @@ class SyncManager(private val context: Context) {
                 putJsonArray("heart_rate_variability") {
                     healthData.heartRateVariability.forEach { hrv -> add(buildJsonObject {
                         if (hrv.min != null) {
-                            put("time", hrv.time.toString())
+                            put("time", time.format(hrv.time))
                             put("avg", hrv.rmssdMillis)
                             put("min", hrv.min)
                             put("max", hrv.max)
                             put("rmssd_millis", hrv.rmssdMillis)
                         } else {
                             put("rmssd_millis", hrv.rmssdMillis)
-                            put("time", hrv.time.toString())
+                            put("time", time.format(hrv.time))
                         }
-                        hrv.metadata?.let { meta -> putRecordMetadata(meta) }
+                        hrv.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -720,9 +722,9 @@ class SyncManager(private val context: Context) {
                 putJsonArray("distance") {
                     healthData.distance.forEach { add(buildJsonObject {
                         put("meters", it.meters)
-                        put("start_time", it.startTime.toString())
-                        put("end_time", it.endTime.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("start_time", time.format(it.startTime))
+                        put("end_time", time.format(it.endTime))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -731,9 +733,9 @@ class SyncManager(private val context: Context) {
                 putJsonArray("active_calories") {
                     healthData.activeCalories.forEach { add(buildJsonObject {
                         put("calories", it.calories)
-                        put("start_time", it.startTime.toString())
-                        put("end_time", it.endTime.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("start_time", time.format(it.startTime))
+                        put("end_time", time.format(it.endTime))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -742,9 +744,9 @@ class SyncManager(private val context: Context) {
                 putJsonArray("total_calories") {
                     healthData.totalCalories.forEach { add(buildJsonObject {
                         put("calories", it.calories)
-                        put("start_time", it.startTime.toString())
-                        put("end_time", it.endTime.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("start_time", time.format(it.startTime))
+                        put("end_time", time.format(it.endTime))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -753,8 +755,8 @@ class SyncManager(private val context: Context) {
                 putJsonArray("weight") {
                     healthData.weight.forEach { add(buildJsonObject {
                         put("kilograms", it.kilograms)
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -763,8 +765,8 @@ class SyncManager(private val context: Context) {
                 putJsonArray("height") {
                     healthData.height.forEach { add(buildJsonObject {
                         put("meters", it.meters)
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -774,8 +776,8 @@ class SyncManager(private val context: Context) {
                     healthData.bloodPressure.forEach { add(buildJsonObject {
                         put("systolic", it.systolic)
                         put("diastolic", it.diastolic)
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -784,8 +786,8 @@ class SyncManager(private val context: Context) {
                 putJsonArray("blood_glucose") {
                     healthData.bloodGlucose.forEach { add(buildJsonObject {
                         put("mmol_per_liter", it.mmolPerLiter)
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -794,16 +796,16 @@ class SyncManager(private val context: Context) {
                 putJsonArray("oxygen_saturation") {
                     healthData.oxygenSaturation.forEach { o2 -> add(buildJsonObject {
                         if (o2.min != null) {
-                            put("time", o2.time.toString())
+                            put("time", time.format(o2.time))
                             put("avg", o2.percentage)
                             put("min", o2.min)
                             put("max", o2.max)
                             put("percentage", o2.percentage)
                         } else {
                             put("percentage", o2.percentage)
-                            put("time", o2.time.toString())
+                            put("time", time.format(o2.time))
                         }
-                        o2.metadata?.let { meta -> putRecordMetadata(meta) }
+                        o2.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -812,8 +814,8 @@ class SyncManager(private val context: Context) {
                 putJsonArray("body_temperature") {
                     healthData.bodyTemperature.forEach { add(buildJsonObject {
                         put("celsius", it.celsius)
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -821,7 +823,7 @@ class SyncManager(private val context: Context) {
             if (healthData.skinTemperature.isNotEmpty()) {
                 putJsonArray("skin_temperature") {
                     healthData.skinTemperature.forEach { skin -> add(buildJsonObject {
-                        put("time", skin.time.toString())
+                        put("time", time.format(skin.time))
                         if (skin.minDeltaCelsius != null) {
                             put("avg_delta_celsius", skin.deltaCelsius)
                             put("min_delta_celsius", skin.minDeltaCelsius)
@@ -832,7 +834,7 @@ class SyncManager(private val context: Context) {
                         }
                         skin.baselineCelsius?.let { baseline -> put("baseline_celsius", baseline) }
                         put("measurement_location", skin.measurementLocation)
-                        skin.metadata?.let { meta -> putRecordMetadata(meta) }
+                        skin.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -841,16 +843,16 @@ class SyncManager(private val context: Context) {
                 putJsonArray("respiratory_rate") {
                     healthData.respiratoryRate.forEach { resp -> add(buildJsonObject {
                         if (resp.min != null) {
-                            put("time", resp.time.toString())
+                            put("time", time.format(resp.time))
                             put("avg", resp.rate)
                             put("min", resp.min)
                             put("max", resp.max)
                             put("rate", resp.rate)
                         } else {
                             put("rate", resp.rate)
-                            put("time", resp.time.toString())
+                            put("time", time.format(resp.time))
                         }
-                        resp.metadata?.let { meta -> putRecordMetadata(meta) }
+                        resp.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -859,8 +861,8 @@ class SyncManager(private val context: Context) {
                 putJsonArray("resting_heart_rate") {
                     healthData.restingHeartRate.forEach { add(buildJsonObject {
                         put("bpm", it.bpm)
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -870,8 +872,8 @@ class SyncManager(private val context: Context) {
                     healthData.exercise.forEach { add(buildJsonObject {
                         put("type", it.type)
                         it.title?.let { title -> put("title", title) }
-                        put("start_time", it.startTime.toString())
-                        put("end_time", it.endTime.toString())
+                        put("start_time", time.format(it.startTime))
+                        put("end_time", time.format(it.endTime))
                         put("duration_seconds", it.duration.seconds)
                         it.distanceMeters?.let { distanceMeters ->
                             put("distance_meters", distanceMeters)
@@ -888,7 +890,7 @@ class SyncManager(private val context: Context) {
                         it.strideLengthMeters?.let { strideLengthMeters ->
                             put("stride_length_m", strideLengthMeters)
                         }
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -897,9 +899,9 @@ class SyncManager(private val context: Context) {
                 putJsonArray("hydration") {
                     healthData.hydration.forEach { add(buildJsonObject {
                         put("liters", it.liters)
-                        put("start_time", it.startTime.toString())
-                        put("end_time", it.endTime.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("start_time", time.format(it.startTime))
+                        put("end_time", time.format(it.endTime))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -915,9 +917,9 @@ class SyncManager(private val context: Context) {
                         it.sodium?.let { sodium -> put("sodium_grams", sodium) }
                         it.dietaryFiber?.let { fiber -> put("dietary_fiber_grams", fiber) }
                         it.name?.let { name -> put("name", name) }
-                        put("start_time", it.startTime.toString())
-                        put("end_time", it.endTime.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("start_time", time.format(it.startTime))
+                        put("end_time", time.format(it.endTime))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -926,8 +928,8 @@ class SyncManager(private val context: Context) {
                 putJsonArray("basal_metabolic_rate") {
                     healthData.basalMetabolicRate.forEach { add(buildJsonObject {
                         put("watts", it.watts)
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -936,8 +938,8 @@ class SyncManager(private val context: Context) {
                 putJsonArray("body_fat") {
                     healthData.bodyFat.forEach { add(buildJsonObject {
                         put("percentage", it.percentage)
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -946,8 +948,8 @@ class SyncManager(private val context: Context) {
                 putJsonArray("lean_body_mass") {
                     healthData.leanBodyMass.forEach { add(buildJsonObject {
                         put("kilograms", it.kilograms)
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -956,8 +958,8 @@ class SyncManager(private val context: Context) {
                 putJsonArray("body_water_mass") {
                     healthData.bodyWaterMass.forEach { add(buildJsonObject {
                         put("kilograms", it.kilograms)
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -970,7 +972,7 @@ class SyncManager(private val context: Context) {
                     computeBmiEntries(healthData.weight, healthData.height).forEach { entry ->
                         add(buildJsonObject {
                             put("value", entry.value)
-                            put("time", entry.time.toString())
+                            put("time", time.format(entry.time))
                             put("weight_kg", entry.weightKg)
                             put("height_meters", entry.heightMeters)
                         })
@@ -982,8 +984,8 @@ class SyncManager(private val context: Context) {
                 putJsonArray("vo2_max") {
                     healthData.vo2Max.forEach { add(buildJsonObject {
                         put("ml_per_kg_per_min", it.mlPerKgPerMin)
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -992,8 +994,8 @@ class SyncManager(private val context: Context) {
                 putJsonArray("bone_mass") {
                     healthData.boneMass.forEach { add(buildJsonObject {
                         put("kilograms", it.kilograms)
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -1002,8 +1004,8 @@ class SyncManager(private val context: Context) {
                 putJsonArray("menstruation_flow") {
                     healthData.menstruationFlow.forEach { add(buildJsonObject {
                         put("flow", it.flow)
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -1011,9 +1013,9 @@ class SyncManager(private val context: Context) {
             if (healthData.menstruationPeriod.isNotEmpty()) {
                 putJsonArray("menstruation_period") {
                     healthData.menstruationPeriod.forEach { add(buildJsonObject {
-                        put("start_time", it.startTime.toString())
-                        put("end_time", it.endTime.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("start_time", time.format(it.startTime))
+                        put("end_time", time.format(it.endTime))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -1021,8 +1023,8 @@ class SyncManager(private val context: Context) {
             if (healthData.intermenstrualBleeding.isNotEmpty()) {
                 putJsonArray("intermenstrual_bleeding") {
                     healthData.intermenstrualBleeding.forEach { add(buildJsonObject {
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -1031,8 +1033,8 @@ class SyncManager(private val context: Context) {
                 putJsonArray("ovulation_test") {
                     healthData.ovulationTest.forEach { add(buildJsonObject {
                         put("result", it.result)
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -1041,8 +1043,8 @@ class SyncManager(private val context: Context) {
                 putJsonArray("cervical_mucus") {
                     healthData.cervicalMucus.forEach { add(buildJsonObject {
                         put("appearance", it.appearance)
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -1051,8 +1053,8 @@ class SyncManager(private val context: Context) {
                 putJsonArray("sexual_activity") {
                     healthData.sexualActivity.forEach { add(buildJsonObject {
                         put("protection_used", it.protectionUsed)
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -1062,8 +1064,8 @@ class SyncManager(private val context: Context) {
                     healthData.basalBodyTemperature.forEach { add(buildJsonObject {
                         put("celsius", it.celsius)
                         put("measurement_location", it.measurementLocation)
-                        put("time", it.time.toString())
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        put("time", time.format(it.time))
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }
@@ -1074,10 +1076,10 @@ class SyncManager(private val context: Context) {
                         put("session_type", it.sessionType)
                         it.title?.let { title -> put("title", title) }
                         it.notes?.let { notes -> put("notes", notes) }
-                        put("start_time", it.startTime.toString())
-                        put("end_time", it.endTime.toString())
+                        put("start_time", time.format(it.startTime))
+                        put("end_time", time.format(it.endTime))
                         put("duration_seconds", it.duration.seconds)
-                        it.metadata?.let { meta -> putRecordMetadata(meta) }
+                        it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }
             }

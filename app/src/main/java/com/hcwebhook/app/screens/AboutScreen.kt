@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Lan
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,7 +30,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.hcwebhook.app.BuildConfig
 import com.hcwebhook.app.FlavorUtils
+import com.hcwebhook.app.PayloadTime
 import com.hcwebhook.app.PreferencesManager
+import com.hcwebhook.app.TimestampStyle
 import com.hcwebhook.app.R
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Code
@@ -178,6 +181,8 @@ fun AboutScreen(
                         icon = Icons.Filled.Backup,
                         onClick = { onOpenSettingsBackup() }
                     )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    TimestampStyleRow()
                 }
             }
 
@@ -429,6 +434,46 @@ private fun LinkRow(
     }
 }
 
+
+/** UTC or local time for every time in the JSON payload. */
+@Composable
+private fun TimestampStyleRow() {
+    val context = LocalContext.current
+    val preferencesManager = remember { PreferencesManager(context) }
+    var style by remember { mutableStateOf(preferencesManager.getTimestampStyle()) }
+    var expanded by remember { mutableStateOf(false) }
+    val time = PayloadTime(style)
+    fun label(option: TimestampStyle) = when (option) {
+        TimestampStyle.UTC -> R.string.settings_timestamps_utc
+        TimestampStyle.LOCAL -> R.string.settings_timestamps_local
+    }
+
+    Box {
+        LinkRow(
+            label = stringResource(R.string.settings_timestamps_title),
+            subtitle = stringResource(
+                R.string.settings_timestamps_desc,
+                stringResource(label(style)),
+                time.format(java.time.Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS)),
+                time.timezoneName,
+            ),
+            icon = Icons.Filled.Schedule,
+            onClick = { expanded = true },
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            TimestampStyle.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(label(option))) },
+                    onClick = {
+                        preferencesManager.setTimestampStyle(option)
+                        style = option
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
 
 @Composable
 private fun LanguageSelectorCard() {

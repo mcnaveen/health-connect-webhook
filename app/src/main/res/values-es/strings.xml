@@ -241,6 +241,10 @@
 • Tienes control total sobre qué tipos de datos se sincronizan y dónde se envían.</string>
     <string name="about_settings_backup_title">Copia de seguridad de configuración</string>
     <string name="about_settings_backup_desc">Exporte o importe las URL de sus webhooks, encabezados y programación de sincronización</string>
+    <string name="settings_timestamps_title">Marcas de tiempo del payload</string>
+    <string name="settings_timestamps_utc">UTC</string>
+    <string name="settings_timestamps_local">Hora local</string>
+    <string name="settings_timestamps_desc">%1$s. Las horas se ven como %2$s y el payload incluye \"timezone\": \"%3$s\". Cambiarlo puede romper automatizaciones que leen las horas como texto.</string>
     <string name="about_action_export">Exportar</string>
     <string name="about_action_import">Importar</string>
     <string name="about_section_settings">Ajustes de la app</string>

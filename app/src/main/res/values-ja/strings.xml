@@ -241,6 +241,10 @@
 • どのデータタイプを同期し、どこに送信するかを完全に制御できます。</string>
     <string name="about_settings_backup_title">設定のバックアップ</string>
     <string name="about_settings_backup_desc">Webhook URL、ヘッダー、同期スケジュールをエクスポートまたはインポートする</string>
+    <string name="settings_timestamps_title">ペイロードのタイムスタンプ</string>
+    <string name="settings_timestamps_utc">UTC</string>
+    <string name="settings_timestamps_local">ローカル時刻</string>
+    <string name="settings_timestamps_desc">%1$s。時刻は %2$s のようになり、ペイロードには \"timezone\": \"%3$s\" が含まれます。変更すると、時刻を文字列として読む自動化が動かなくなる場合があります。</string>
     <string name="about_action_export">輸出</string>
     <string name="about_action_import">輸入</string>
     <string name="about_section_settings">アプリ設定</string>

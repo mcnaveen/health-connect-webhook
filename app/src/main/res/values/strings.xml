@@ -283,6 +283,10 @@
 • You have full control over which data types are synced and where they are sent</string>
     <string name="about_settings_backup_title">Settings Backup</string>
     <string name="about_settings_backup_desc">Export or import your webhook URLs, headers, and sync schedule</string>
+    <string name="settings_timestamps_title">Payload timestamps</string>
+    <string name="settings_timestamps_utc">UTC</string>
+    <string name="settings_timestamps_local">Local time</string>
+    <string name="settings_timestamps_desc">%1$s. Times look like %2$s and the payload includes \"timezone\": \"%3$s\". Changing this can break automations that read times as text.</string>
     <string name="about_action_export">Export</string>
     <string name="about_action_import">Import</string>
     <string name="about_section_settings">App settings</string>

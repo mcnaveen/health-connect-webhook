@@ -27,14 +27,15 @@ object MockPayloadBuilder {
         deviceType = 1
     )
 
-    fun build(enabledTypes: Set<String>? = null, appVersion: String = "unknown"): String {
+    fun build(enabledTypes: Set<String>? = null, appVersion: String = "unknown", time: PayloadTime = PayloadTime.UTC): String {
         val data = buildHealthData(enabledTypes)
         val now = Instant.now()
         // Prefer the same logical records as gRPC; emit JSON by hand so we can
         // keep the explicit "test": true flag (not part of HealthData / proto).
         return buildJsonObject {
-            put("timestamp", now.toString())
+            put("timestamp", time.format(now))
             put("app_version", appVersion)
+            put("timezone", time.timezoneName)
             put("test", true)
 
             if (data.steps.isNotEmpty()) {
@@ -42,8 +43,8 @@ object MockPayloadBuilder {
                     data.steps.forEach { step ->
                         add(buildJsonObject {
                             put("count", step.count)
-                            put("start_time", step.startTime.toString())
-                            put("end_time", step.endTime.toString())
+                            put("start_time", time.format(step.startTime))
+                            put("end_time", time.format(step.endTime))
                             step.metadata?.let { putMetadata(it) }
                         })
                     }
@@ -53,14 +54,14 @@ object MockPayloadBuilder {
                 putJsonArray("sleep") {
                     data.sleep.forEach { sleep ->
                         add(buildJsonObject {
-                            put("session_end_time", sleep.sessionEndTime.toString())
+                            put("session_end_time", time.format(sleep.sessionEndTime))
                             put("duration_seconds", sleep.duration.seconds)
                             putJsonArray("stages") {
                                 sleep.stages.forEach { stage ->
                                     add(buildJsonObject {
                                         put("stage", stage.stage)
-                                        put("start_time", stage.startTime.toString())
-                                        put("end_time", stage.endTime.toString())
+                                        put("start_time", time.format(stage.startTime))
+                                        put("end_time", time.format(stage.endTime))
                                         put("duration_seconds", stage.duration.seconds)
                                     })
                                 }
@@ -75,7 +76,7 @@ object MockPayloadBuilder {
                     data.heartRate.forEach { hr ->
                         add(buildJsonObject {
                             put("bpm", hr.bpm)
-                            put("time", hr.time.toString())
+                            put("time", time.format(hr.time))
                             hr.metadata?.let { putMetadata(it) }
                         })
                     }
@@ -86,7 +87,7 @@ object MockPayloadBuilder {
                     data.heartRateVariability.forEach { hrv ->
                         add(buildJsonObject {
                             put("rmssd_millis", hrv.rmssdMillis)
-                            put("time", hrv.time.toString())
+                            put("time", time.format(hrv.time))
                             hrv.metadata?.let { putMetadata(it) }
                         })
                     }
@@ -97,8 +98,8 @@ object MockPayloadBuilder {
                     data.distance.forEach {
                         add(buildJsonObject {
                             put("meters", it.meters)
-                            put("start_time", it.startTime.toString())
-                            put("end_time", it.endTime.toString())
+                            put("start_time", time.format(it.startTime))
+                            put("end_time", time.format(it.endTime))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -109,8 +110,8 @@ object MockPayloadBuilder {
                     data.activeCalories.forEach {
                         add(buildJsonObject {
                             put("calories", it.calories)
-                            put("start_time", it.startTime.toString())
-                            put("end_time", it.endTime.toString())
+                            put("start_time", time.format(it.startTime))
+                            put("end_time", time.format(it.endTime))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -121,8 +122,8 @@ object MockPayloadBuilder {
                     data.totalCalories.forEach {
                         add(buildJsonObject {
                             put("calories", it.calories)
-                            put("start_time", it.startTime.toString())
-                            put("end_time", it.endTime.toString())
+                            put("start_time", time.format(it.startTime))
+                            put("end_time", time.format(it.endTime))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -133,7 +134,7 @@ object MockPayloadBuilder {
                     data.weight.forEach {
                         add(buildJsonObject {
                             put("kilograms", it.kilograms)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -144,7 +145,7 @@ object MockPayloadBuilder {
                     data.height.forEach {
                         add(buildJsonObject {
                             put("meters", it.meters)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -156,7 +157,7 @@ object MockPayloadBuilder {
                         add(buildJsonObject {
                             put("systolic", it.systolic)
                             put("diastolic", it.diastolic)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -167,7 +168,7 @@ object MockPayloadBuilder {
                     data.bloodGlucose.forEach {
                         add(buildJsonObject {
                             put("mmol_per_liter", it.mmolPerLiter)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -178,7 +179,7 @@ object MockPayloadBuilder {
                     data.oxygenSaturation.forEach {
                         add(buildJsonObject {
                             put("percentage", it.percentage)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -189,7 +190,7 @@ object MockPayloadBuilder {
                     data.bodyTemperature.forEach {
                         add(buildJsonObject {
                             put("celsius", it.celsius)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -199,7 +200,7 @@ object MockPayloadBuilder {
                 putJsonArray("skin_temperature") {
                     data.skinTemperature.forEach { skin ->
                         add(buildJsonObject {
-                            put("time", skin.time.toString())
+                            put("time", time.format(skin.time))
                             put("delta_celsius", skin.deltaCelsius)
                             skin.baselineCelsius?.let { put("baseline_celsius", it) }
                             put("measurement_location", skin.measurementLocation)
@@ -213,7 +214,7 @@ object MockPayloadBuilder {
                     data.respiratoryRate.forEach {
                         add(buildJsonObject {
                             put("rate", it.rate)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -224,7 +225,7 @@ object MockPayloadBuilder {
                     data.restingHeartRate.forEach {
                         add(buildJsonObject {
                             put("bpm", it.bpm)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -236,8 +237,8 @@ object MockPayloadBuilder {
                         add(buildJsonObject {
                             put("type", it.type)
                             it.title?.let { title -> put("title", title) }
-                            put("start_time", it.startTime.toString())
-                            put("end_time", it.endTime.toString())
+                            put("start_time", time.format(it.startTime))
+                            put("end_time", time.format(it.endTime))
                             put("duration_seconds", it.duration.seconds)
                             it.distanceMeters?.let { d -> put("distance_meters", d) }
                             it.steps?.let { s -> put("steps", s) }
@@ -254,8 +255,8 @@ object MockPayloadBuilder {
                     data.hydration.forEach {
                         add(buildJsonObject {
                             put("liters", it.liters)
-                            put("start_time", it.startTime.toString())
-                            put("end_time", it.endTime.toString())
+                            put("start_time", time.format(it.startTime))
+                            put("end_time", time.format(it.endTime))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -273,8 +274,8 @@ object MockPayloadBuilder {
                             it.sodium?.let { s -> put("sodium_grams", s) }
                             it.dietaryFiber?.let { f -> put("dietary_fiber_grams", f) }
                             it.name?.let { n -> put("name", n) }
-                            put("start_time", it.startTime.toString())
-                            put("end_time", it.endTime.toString())
+                            put("start_time", time.format(it.startTime))
+                            put("end_time", time.format(it.endTime))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -285,7 +286,7 @@ object MockPayloadBuilder {
                     data.basalMetabolicRate.forEach {
                         add(buildJsonObject {
                             put("watts", it.watts)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -296,7 +297,7 @@ object MockPayloadBuilder {
                     data.bodyFat.forEach {
                         add(buildJsonObject {
                             put("percentage", it.percentage)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -307,7 +308,7 @@ object MockPayloadBuilder {
                     data.leanBodyMass.forEach {
                         add(buildJsonObject {
                             put("kilograms", it.kilograms)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -318,7 +319,7 @@ object MockPayloadBuilder {
                     data.bodyWaterMass.forEach {
                         add(buildJsonObject {
                             put("kilograms", it.kilograms)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -330,7 +331,7 @@ object MockPayloadBuilder {
                 putJsonArray("bmi") {
                     add(buildJsonObject {
                         put("value", w.kilograms / (h.meters * h.meters))
-                        put("time", w.time.toString())
+                        put("time", time.format(w.time))
                         put("weight_kg", w.kilograms)
                         put("height_meters", h.meters)
                     })
@@ -341,7 +342,7 @@ object MockPayloadBuilder {
                     data.vo2Max.forEach {
                         add(buildJsonObject {
                             put("ml_per_kg_per_min", it.mlPerKgPerMin)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -352,7 +353,7 @@ object MockPayloadBuilder {
                     data.boneMass.forEach {
                         add(buildJsonObject {
                             put("kilograms", it.kilograms)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -363,7 +364,7 @@ object MockPayloadBuilder {
                     data.menstruationFlow.forEach {
                         add(buildJsonObject {
                             put("flow", it.flow)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -373,8 +374,8 @@ object MockPayloadBuilder {
                 putJsonArray("menstruation_period") {
                     data.menstruationPeriod.forEach {
                         add(buildJsonObject {
-                            put("start_time", it.startTime.toString())
-                            put("end_time", it.endTime.toString())
+                            put("start_time", time.format(it.startTime))
+                            put("end_time", time.format(it.endTime))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -384,7 +385,7 @@ object MockPayloadBuilder {
                 putJsonArray("intermenstrual_bleeding") {
                     data.intermenstrualBleeding.forEach {
                         add(buildJsonObject {
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -395,7 +396,7 @@ object MockPayloadBuilder {
                     data.ovulationTest.forEach {
                         add(buildJsonObject {
                             put("result", it.result)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -406,7 +407,7 @@ object MockPayloadBuilder {
                     data.cervicalMucus.forEach {
                         add(buildJsonObject {
                             put("appearance", it.appearance)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -417,7 +418,7 @@ object MockPayloadBuilder {
                     data.sexualActivity.forEach {
                         add(buildJsonObject {
                             put("protection_used", it.protectionUsed)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -429,7 +430,7 @@ object MockPayloadBuilder {
                         add(buildJsonObject {
                             put("celsius", it.celsius)
                             put("measurement_location", it.measurementLocation)
-                            put("time", it.time.toString())
+                            put("time", time.format(it.time))
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -442,8 +443,8 @@ object MockPayloadBuilder {
                             put("session_type", it.sessionType)
                             it.title?.let { title -> put("title", title) }
                             it.notes?.let { notes -> put("notes", notes) }
-                            put("start_time", it.startTime.toString())
-                            put("end_time", it.endTime.toString())
+                            put("start_time", time.format(it.startTime))
+                            put("end_time", time.format(it.endTime))
                             put("duration_seconds", it.duration.seconds)
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })

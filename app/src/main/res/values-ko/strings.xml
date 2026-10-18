@@ -241,6 +241,10 @@
 • 동기화되는 데이터 유형과 전송 위치를 완벽하게 제어할 수 있습니다.</string>
     <string name="about_settings_backup_title">설정 백업</string>
     <string name="about_settings_backup_desc">웹훅 URL, 헤더 및 동기화 일정을 내보내거나 가져옵니다.</string>
+    <string name="settings_timestamps_title">페이로드 타임스탬프</string>
+    <string name="settings_timestamps_utc">UTC</string>
+    <string name="settings_timestamps_local">현지 시간</string>
+    <string name="settings_timestamps_desc">%1$s. 시간은 %2$s 형식이며 페이로드에 \"timezone\": \"%3$s\"가 포함됩니다. 변경하면 시간을 텍스트로 읽는 자동화가 깨질 수 있습니다.</string>
     <string name="about_action_export">내보내다</string>
     <string name="about_action_import">수입</string>
     <string name="about_section_settings">앱 설정</string>
