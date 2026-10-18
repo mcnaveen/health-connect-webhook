@@ -280,14 +280,14 @@ fun LocalHttpSettingsScreen(onBack: () -> Unit) {
             if (localTcpEnabled) {
                 data class Endpoint(val method: String, val path: String, val description: String)
                 val endpoints = listOf(
-                    Endpoint("GET",  "/",            "Health data · ?days=N"),
+                    Endpoint("GET",  "/",            "Health data · ?days=N or ?start=&end="),
                     Endpoint("GET",  "/ping",         "Liveness check"),
                     Endpoint("GET",  "/latest",       "Last synced payload"),
                     Endpoint("GET",  "/logs",         "Webhook logs · ?limit · ?success · ?dataType · ?since"),
                     Endpoint("GET",  "/stats",        "Aggregate stats — totals, success rate, avg response time"),
                     Endpoint("GET",  "/health",       "Server uptime & last sync info"),
                     Endpoint("GET",  "/server-logs",  "HTTP access log · ?limit · ?method · ?path · ?since"),
-                    Endpoint("POST", "/sync",         "Trigger sync · ?days=N"),
+                    Endpoint("POST", "/sync",         "Trigger sync · ?days=N or ?start=&end="),
                 )
                 Card {
                     Column(modifier = Modifier.padding(16.dp)) {
