@@ -17,6 +17,7 @@ class PreferencesManager(context: Context) {
     companion object {
         private const val PREFS_NAME = "hc_webhook_prefs"
         private const val KEY_LAST_SYNC_TS_PREFIX = "last_sync_ts_"
+        private const val KEY_CHANGES_TOKEN_PREFIX = "changes_token_"
         private const val KEY_LAST_STEPS_SYNC_TS = "last_steps_sync_ts"
         private const val KEY_LAST_SLEEP_SYNC_TS = "last_sleep_sync_ts"
         private const val KEY_SYNC_INTERVAL_MINUTES = "sync_interval_minutes"
@@ -153,6 +154,15 @@ class PreferencesManager(context: Context) {
 
     fun setLastSyncTimestamp(type: HealthDataType, timestamp: Long) {
         prefs.edit().putLong(KEY_LAST_SYNC_TS_PREFIX + type.name, timestamp).apply()
+    }
+
+    /** Health Connect Changes API token for this type, used to find edited and deleted records. */
+    fun getChangesToken(type: HealthDataType): String? =
+        prefs.getString(KEY_CHANGES_TOKEN_PREFIX + type.name, null)
+
+    fun setChangesToken(type: HealthDataType, token: String?) {
+        val key = KEY_CHANGES_TOKEN_PREFIX + type.name
+        if (token == null) prefs.edit().remove(key).apply() else prefs.edit().putString(key, token).apply()
     }
 
     fun getWebhookLogs(): List<WebhookLog> {

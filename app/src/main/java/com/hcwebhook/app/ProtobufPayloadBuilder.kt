@@ -10,6 +10,7 @@ import com.hcwebhook.app.proto.v1.BmiRecord
 import com.hcwebhook.app.proto.v1.BodyFatRecord
 import com.hcwebhook.app.proto.v1.CaloriesRecord
 import com.hcwebhook.app.proto.v1.CervicalMucusRecord
+import com.hcwebhook.app.proto.v1.DeletedRecord as ProtoDeletedRecord
 import com.hcwebhook.app.proto.v1.DistanceRecord
 import com.hcwebhook.app.proto.v1.ExerciseRecord
 import com.hcwebhook.app.proto.v1.HealthPayload
@@ -422,6 +423,15 @@ object ProtobufPayloadBuilder {
                     .setMeasurementLocation(it.measurementLocation)
                     .setTime(it.time.toTimestamp())
                     .apply { it.metadata?.let { meta -> metadata = meta.toProto() } }
+                    .build()
+            )
+        }
+
+        healthData.deleted.forEach {
+            builder.addDeleted(
+                ProtoDeletedRecord.newBuilder()
+                    .setType(it.type.name.lowercase())
+                    .setId(it.id)
                     .build()
             )
         }

@@ -124,6 +124,7 @@ form differs where protobuf can be stricter than JSON:
 | `timestamp` | string | yes | ISO-8601 instant when the payload was built (`Instant.now()`), not the time range of the health records. |
 | `app_version` | string | yes | Human-readable app version name from the running build. |
 | All other keys | array | no | One array per enabled data type that has **at least one** record in this payload. Omitted keys mean “no records in this batch” for that type—not “disabled in settings.” |
+| `deleted` | array | no | Records deleted from Health Connect since the last sync. See [Edits and deletions](#edits-and-deletions). |
 
 Arrays are **never** empty: if a type has no data for this sync, the key is omitted entirely.
 
@@ -134,12 +135,52 @@ Unless noted otherwise, time-valued fields use **`java.time.Instant.toString()`*
 ### Which records appear (incremental vs full window)
 
 - **Background / manual sync (default)**  
-  Reads within a rolling **48-hour** window (`HealthConnectManager`) and, for each enabled type, applies the **last successful sync instant** for that type so only **new or updated** records (relative to that watermark) are included. First sync has no watermark, so everything in the window can appear.
+  Reads within a rolling **48-hour** window (`HealthConnectManager`) and, for each enabled type, applies the **last successful sync instant** for that type so only **new** records (relative to that watermark) are included. First sync has no watermark, so everything in the window can appear. The sync also sends records that were **edited**, **written late**, or **deleted** since the last sync, also when they are older than the window. See [Edits and deletions](#edits-and-deletions).
 
 - **Explicit range** (e.g. local HTTP `?days=7` or a chosen start/end)  
   Uses the requested window and **does not** apply last-sync filtering; the payload can contain all records in that range for enabled types.
 
 Only types the user enabled **and** granted Health Connect permission for are read; others simply produce no arrays.
+
+### Edits and deletions
+
+The default sync uses the Health Connect Changes API to find what changed since the last successful sync, for each enabled type:
+
+- **Edited or late records.** An edit keeps the original record time, and a late write (for example a watch that syncs a day late) has an old time, so the time watermark drops them. The app sends them again, with the same `metadata.id` and a newer `metadata.last_modified_time`. Replace the stored record that has the same `id`.
+  - **Full** resolution: the changed record.
+  - **N-minute** resolution: each bucket that holds a changed record, rebuilt from all its records.
+  - **Daily** resolution: the full-day total of each day that holds a changed record.
+
+  Upsert aggregates by type and `start_time` / `time`, so a resent bucket or day replaces the old value.
+- **Deleted records.** The `deleted` array lists one object per record:
+
+  | Field | Type | Description |
+  |-------|------|-------------|
+  | `type` | string | Data type, as the payload key (e.g. `nutrition`, `heart_rate`). |
+  | `id` | string | Health Connect record id. Matches `metadata.id` of the record sent before. |
+
+  Health Connect does not give the time of a deleted record, so the app cannot rebuild buckets or daily totals after a deletion. When you store aggregates, a deletion changes no total until the next full read of that period (for example a manual sync with a time range).
+
+Limits:
+
+- The first sync after an upgrade starts tracking. Changes before it are not sent.
+- Changes older than 30 days can be lost: Health Connect expires the tracking token, and the app then starts a new one.
+- One sync reads at most 31 old days per type for changes.
+- Explicit ranges (manual time range, local HTTP) read the full window and do not use change tracking.
+
+### Record metadata
+
+Raw records carry a `metadata` object. N-minute heart rate, HRV, SpO₂, respiratory rate, and skin temperature aggregates carry the metadata of their first sample:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `data_origin` | string | Package name of the app that wrote the record. |
+| `recording_method` | string | `actively_recorded`, `automatically_recorded`, `manual_entry`, or `unknown`. |
+| `device` | object | Optional `manufacturer`, `model`, `type`. |
+| `id` | string | Health Connect record id. Use it to deduplicate and to apply edits and `deleted`. |
+| `client_record_id` | string | Optional. Id that the source app gave the record. |
+| `client_record_version` | number | Optional. Version that the source app gave the record. |
+| `last_modified_time` | string | When Health Connect last changed the record. |
 
 ---
 

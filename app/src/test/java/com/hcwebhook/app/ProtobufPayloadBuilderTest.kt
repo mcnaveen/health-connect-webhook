@@ -122,6 +122,19 @@ class ProtobufPayloadBuilderTest {
     }
 
     @Test
+    fun build_includesDeletedRecords() {
+        val t = Instant.parse("2026-05-09T08:00:00Z")
+        val data = emptyHealthData().copy(
+            deleted = listOf(DeletedRecord(HealthDataType.NUTRITION, "rec-1"))
+        )
+
+        val payload = ProtobufPayloadBuilder.build(data, "1.0.0", t)
+        assertEquals(1, payload.deletedCount)
+        assertEquals("nutrition", payload.getDeleted(0).type)
+        assertEquals("rec-1", payload.getDeleted(0).id)
+    }
+
+    @Test
     fun buildTestPayload_isRichLikeJsonMock() {
         val payload = ProtobufPayloadBuilder.buildTestPayload("1.2.3")
 

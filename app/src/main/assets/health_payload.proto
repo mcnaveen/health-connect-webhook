@@ -68,6 +68,15 @@ message HealthPayload {
   repeated CervicalMucusRecord cervical_mucus = 33;
   repeated SexualActivityRecord sexual_activity = 34;
   repeated BasalBodyTemperatureRecord basal_body_temperature = 35;
+  // Records deleted from Health Connect since the last sync.
+  repeated DeletedRecord deleted = 36;
+}
+
+message DeletedRecord {
+  // Data type, as the snake_case payload key (e.g. "nutrition", "heart_rate").
+  string type = 1;
+  // Health Connect record id; matches RecordMetadata.id of the record sent before.
+  string id = 2;
 }
 
 message RecordMetadata {

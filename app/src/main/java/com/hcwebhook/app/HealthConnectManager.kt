@@ -3,12 +3,15 @@ package com.hcwebhook.app
 import android.content.Context
 import android.util.Log
 import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.changes.DeletionChange
+import androidx.health.connect.client.changes.UpsertionChange
 import androidx.health.connect.client.permission.HealthPermission
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import androidx.health.connect.client.records.*
 import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.request.AggregateRequest
+import androidx.health.connect.client.request.ChangesTokenRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import java.time.Duration
@@ -154,7 +157,8 @@ data class HealthData(
     val ovulationTest: List<OvulationTestData>,
     val cervicalMucus: List<CervicalMucusData>,
     val sexualActivity: List<SexualActivityData>,
-    val basalBodyTemperature: List<BasalBodyTemperatureData>
+    val basalBodyTemperature: List<BasalBodyTemperatureData>,
+    val deleted: List<DeletedRecord> = emptyList(),
 ) {
     fun totalRecordCount(): Int =
         steps.size + sleep.size + heartRate.size + heartRateVariability.size +
@@ -165,7 +169,7 @@ data class HealthData(
             basalMetabolicRate.size + bodyFat.size + leanBodyMass.size + bodyWaterMass.size +
             vo2Max.size + boneMass.size + menstruationFlow.size + menstruationPeriod.size +
             intermenstrualBleeding.size + ovulationTest.size + cervicalMucus.size +
-            sexualActivity.size + basalBodyTemperature.size
+            sexualActivity.size + basalBodyTemperature.size + deleted.size
 }
 
 /**
@@ -477,6 +481,7 @@ class HealthConnectManager(private val context: Context) {
         start: Instant? = null,
         end: Instant? = null,
         dataTypeResolutions: Map<HealthDataType, Int> = emptyMap(),
+        changes: Map<HealthDataType, ChangedRecords> = emptyMap(),
     ): Result<HealthData> {
         return try {
             val endTime = end ?: Instant.now()
@@ -507,78 +512,91 @@ class HealthConnectManager(private val context: Context) {
                     throw Exception("${type.name}: ${e.message}", e)
                 }
 
+            fun changed(type: HealthDataType): ChangedRecords = changes[type] ?: ChangedRecords.NONE
+
+            // Changed records can be older than the window. Read their days too, then drop
+            // the copies that the two reads share where they overlap.
+            suspend fun <T> withChangedDays(type: HealthDataType, read: suspend (Instant, Instant) -> List<T>): List<T> {
+                val extraWindows = changedDayWindows(changed(type), startTime, endTime, ZoneId.systemDefault())
+                if (extraWindows.isEmpty()) return read(startTime, endTime)
+                return (extraWindows.flatMap { (s, e) -> read(s, e) } + read(startTime, endTime)).distinct()
+            }
+
             val stepsData = if (HealthDataType.STEPS in enabledTypes)
-                attributed(HealthDataType.STEPS) { readStepsData(startTime, endTime, lastSyncTimestamps[HealthDataType.STEPS], resolution(HealthDataType.STEPS)) } else emptyList()
+                attributed(HealthDataType.STEPS) { withChangedDays(HealthDataType.STEPS) { s, e -> readStepsData(s, e, lastSyncTimestamps[HealthDataType.STEPS], resolution(HealthDataType.STEPS), changed(HealthDataType.STEPS)) } } else emptyList()
             val sleepData = if (HealthDataType.SLEEP in enabledTypes)
-                attributed(HealthDataType.SLEEP) { readSleepData(startTime, endTime, lastSyncTimestamps[HealthDataType.SLEEP], resolution(HealthDataType.SLEEP)) } else emptyList()
+                attributed(HealthDataType.SLEEP) { withChangedDays(HealthDataType.SLEEP) { s, e -> readSleepData(s, e, lastSyncTimestamps[HealthDataType.SLEEP], resolution(HealthDataType.SLEEP), changed(HealthDataType.SLEEP)) } } else emptyList()
             val heartRateData = if (HealthDataType.HEART_RATE in enabledTypes)
-                attributed(HealthDataType.HEART_RATE) { readHeartRateData(startTime, endTime, lastSyncTimestamps[HealthDataType.HEART_RATE], resolution(HealthDataType.HEART_RATE)) } else emptyList()
+                attributed(HealthDataType.HEART_RATE) { withChangedDays(HealthDataType.HEART_RATE) { s, e -> readHeartRateData(s, e, lastSyncTimestamps[HealthDataType.HEART_RATE], resolution(HealthDataType.HEART_RATE), changed(HealthDataType.HEART_RATE)) } } else emptyList()
             val heartRateVariabilityData = if (HealthDataType.HEART_RATE_VARIABILITY in enabledTypes)
-                attributed(HealthDataType.HEART_RATE_VARIABILITY) { readHeartRateVariabilityData(startTime, endTime, lastSyncTimestamps[HealthDataType.HEART_RATE_VARIABILITY], resolution(HealthDataType.HEART_RATE_VARIABILITY)) } else emptyList()
+                attributed(HealthDataType.HEART_RATE_VARIABILITY) { withChangedDays(HealthDataType.HEART_RATE_VARIABILITY) { s, e -> readHeartRateVariabilityData(s, e, lastSyncTimestamps[HealthDataType.HEART_RATE_VARIABILITY], resolution(HealthDataType.HEART_RATE_VARIABILITY), changed(HealthDataType.HEART_RATE_VARIABILITY)) } } else emptyList()
             val distanceData = if (HealthDataType.DISTANCE in enabledTypes)
-                attributed(HealthDataType.DISTANCE) { readDistanceData(startTime, endTime, lastSyncTimestamps[HealthDataType.DISTANCE], resolution(HealthDataType.DISTANCE)) } else emptyList()
+                attributed(HealthDataType.DISTANCE) { withChangedDays(HealthDataType.DISTANCE) { s, e -> readDistanceData(s, e, lastSyncTimestamps[HealthDataType.DISTANCE], resolution(HealthDataType.DISTANCE), changed(HealthDataType.DISTANCE)) } } else emptyList()
             val activeCaloriesData = if (HealthDataType.ACTIVE_CALORIES in enabledTypes)
-                attributed(HealthDataType.ACTIVE_CALORIES) { readActiveCaloriesData(startTime, endTime, lastSyncTimestamps[HealthDataType.ACTIVE_CALORIES], resolution(HealthDataType.ACTIVE_CALORIES)) } else emptyList()
+                attributed(HealthDataType.ACTIVE_CALORIES) { withChangedDays(HealthDataType.ACTIVE_CALORIES) { s, e -> readActiveCaloriesData(s, e, lastSyncTimestamps[HealthDataType.ACTIVE_CALORIES], resolution(HealthDataType.ACTIVE_CALORIES), changed(HealthDataType.ACTIVE_CALORIES)) } } else emptyList()
             val totalCaloriesData = if (HealthDataType.TOTAL_CALORIES in enabledTypes)
-                attributed(HealthDataType.TOTAL_CALORIES) { readTotalCaloriesData(startTime, endTime, lastSyncTimestamps[HealthDataType.TOTAL_CALORIES], resolution(HealthDataType.TOTAL_CALORIES)) } else emptyList()
+                attributed(HealthDataType.TOTAL_CALORIES) { withChangedDays(HealthDataType.TOTAL_CALORIES) { s, e -> readTotalCaloriesData(s, e, lastSyncTimestamps[HealthDataType.TOTAL_CALORIES], resolution(HealthDataType.TOTAL_CALORIES), changed(HealthDataType.TOTAL_CALORIES)) } } else emptyList()
             val weightData = if (HealthDataType.WEIGHT in enabledTypes)
-                attributed(HealthDataType.WEIGHT) { readWeightData(startTime, endTime, lastSyncTimestamps[HealthDataType.WEIGHT]) } else emptyList()
+                attributed(HealthDataType.WEIGHT) { withChangedDays(HealthDataType.WEIGHT) { s, e -> readWeightData(s, e, lastSyncTimestamps[HealthDataType.WEIGHT], changed(HealthDataType.WEIGHT)) } } else emptyList()
             val heightData = if (HealthDataType.HEIGHT in enabledTypes)
-                attributed(HealthDataType.HEIGHT) { readHeightData(startTime, endTime, lastSyncTimestamps[HealthDataType.HEIGHT]) } else emptyList()
+                attributed(HealthDataType.HEIGHT) { withChangedDays(HealthDataType.HEIGHT) { s, e -> readHeightData(s, e, lastSyncTimestamps[HealthDataType.HEIGHT], changed(HealthDataType.HEIGHT)) } } else emptyList()
             val bloodPressureData = if (HealthDataType.BLOOD_PRESSURE in enabledTypes)
-                attributed(HealthDataType.BLOOD_PRESSURE) { readBloodPressureData(startTime, endTime, lastSyncTimestamps[HealthDataType.BLOOD_PRESSURE]) } else emptyList()
+                attributed(HealthDataType.BLOOD_PRESSURE) { withChangedDays(HealthDataType.BLOOD_PRESSURE) { s, e -> readBloodPressureData(s, e, lastSyncTimestamps[HealthDataType.BLOOD_PRESSURE], changed(HealthDataType.BLOOD_PRESSURE)) } } else emptyList()
             val bloodGlucoseData = if (HealthDataType.BLOOD_GLUCOSE in enabledTypes)
-                attributed(HealthDataType.BLOOD_GLUCOSE) { readBloodGlucoseData(startTime, endTime, lastSyncTimestamps[HealthDataType.BLOOD_GLUCOSE]) } else emptyList()
+                attributed(HealthDataType.BLOOD_GLUCOSE) { withChangedDays(HealthDataType.BLOOD_GLUCOSE) { s, e -> readBloodGlucoseData(s, e, lastSyncTimestamps[HealthDataType.BLOOD_GLUCOSE], changed(HealthDataType.BLOOD_GLUCOSE)) } } else emptyList()
             val oxygenSaturationData = if (HealthDataType.OXYGEN_SATURATION in enabledTypes)
-                attributed(HealthDataType.OXYGEN_SATURATION) { readOxygenSaturationData(startTime, endTime, lastSyncTimestamps[HealthDataType.OXYGEN_SATURATION], resolution(HealthDataType.OXYGEN_SATURATION)) } else emptyList()
+                attributed(HealthDataType.OXYGEN_SATURATION) { withChangedDays(HealthDataType.OXYGEN_SATURATION) { s, e -> readOxygenSaturationData(s, e, lastSyncTimestamps[HealthDataType.OXYGEN_SATURATION], resolution(HealthDataType.OXYGEN_SATURATION), changed(HealthDataType.OXYGEN_SATURATION)) } } else emptyList()
             val bodyTemperatureData = if (HealthDataType.BODY_TEMPERATURE in enabledTypes)
-                attributed(HealthDataType.BODY_TEMPERATURE) { readBodyTemperatureData(startTime, endTime, lastSyncTimestamps[HealthDataType.BODY_TEMPERATURE]) } else emptyList()
+                attributed(HealthDataType.BODY_TEMPERATURE) { withChangedDays(HealthDataType.BODY_TEMPERATURE) { s, e -> readBodyTemperatureData(s, e, lastSyncTimestamps[HealthDataType.BODY_TEMPERATURE], changed(HealthDataType.BODY_TEMPERATURE)) } } else emptyList()
             val skinTemperatureData = if (HealthDataType.SKIN_TEMPERATURE in enabledTypes)
-                attributed(HealthDataType.SKIN_TEMPERATURE) { readSkinTemperatureData(startTime, endTime, lastSyncTimestamps[HealthDataType.SKIN_TEMPERATURE], resolution(HealthDataType.SKIN_TEMPERATURE)) } else emptyList()
+                attributed(HealthDataType.SKIN_TEMPERATURE) { withChangedDays(HealthDataType.SKIN_TEMPERATURE) { s, e -> readSkinTemperatureData(s, e, lastSyncTimestamps[HealthDataType.SKIN_TEMPERATURE], resolution(HealthDataType.SKIN_TEMPERATURE), changed(HealthDataType.SKIN_TEMPERATURE)) } } else emptyList()
             val respiratoryRateData = if (HealthDataType.RESPIRATORY_RATE in enabledTypes)
-                attributed(HealthDataType.RESPIRATORY_RATE) { readRespiratoryRateData(startTime, endTime, lastSyncTimestamps[HealthDataType.RESPIRATORY_RATE], resolution(HealthDataType.RESPIRATORY_RATE)) } else emptyList()
+                attributed(HealthDataType.RESPIRATORY_RATE) { withChangedDays(HealthDataType.RESPIRATORY_RATE) { s, e -> readRespiratoryRateData(s, e, lastSyncTimestamps[HealthDataType.RESPIRATORY_RATE], resolution(HealthDataType.RESPIRATORY_RATE), changed(HealthDataType.RESPIRATORY_RATE)) } } else emptyList()
             val restingHeartRateData = if (HealthDataType.RESTING_HEART_RATE in enabledTypes)
-                attributed(HealthDataType.RESTING_HEART_RATE) { readRestingHeartRateData(startTime, endTime, lastSyncTimestamps[HealthDataType.RESTING_HEART_RATE]) } else emptyList()
+                attributed(HealthDataType.RESTING_HEART_RATE) { withChangedDays(HealthDataType.RESTING_HEART_RATE) { s, e -> readRestingHeartRateData(s, e, lastSyncTimestamps[HealthDataType.RESTING_HEART_RATE], changed(HealthDataType.RESTING_HEART_RATE)) } } else emptyList()
             val exerciseData = if (HealthDataType.EXERCISE in enabledTypes)
                 attributed(HealthDataType.EXERCISE) {
-                    readExerciseData(
-                        startTime,
-                        endTime,
-                        lastSyncTimestamps[HealthDataType.EXERCISE],
-                        HealthDataType.DISTANCE in enabledTypes,
-                        HealthDataType.STEPS in enabledTypes
-                    )
+                    withChangedDays(HealthDataType.EXERCISE) { s, e ->
+                        readExerciseData(
+                            s,
+                            e,
+                            lastSyncTimestamps[HealthDataType.EXERCISE],
+                            HealthDataType.DISTANCE in enabledTypes,
+                            HealthDataType.STEPS in enabledTypes,
+                            changed(HealthDataType.EXERCISE),
+                        )
+                    }
                 } else emptyList()
             val hydrationData = if (HealthDataType.HYDRATION in enabledTypes)
-                attributed(HealthDataType.HYDRATION) { readHydrationData(startTime, endTime, lastSyncTimestamps[HealthDataType.HYDRATION], resolution(HealthDataType.HYDRATION)) } else emptyList()
+                attributed(HealthDataType.HYDRATION) { withChangedDays(HealthDataType.HYDRATION) { s, e -> readHydrationData(s, e, lastSyncTimestamps[HealthDataType.HYDRATION], resolution(HealthDataType.HYDRATION), changed(HealthDataType.HYDRATION)) } } else emptyList()
             val nutritionData = if (HealthDataType.NUTRITION in enabledTypes)
-                attributed(HealthDataType.NUTRITION) { readNutritionData(startTime, endTime, lastSyncTimestamps[HealthDataType.NUTRITION], resolution(HealthDataType.NUTRITION)) } else emptyList()
+                attributed(HealthDataType.NUTRITION) { withChangedDays(HealthDataType.NUTRITION) { s, e -> readNutritionData(s, e, lastSyncTimestamps[HealthDataType.NUTRITION], resolution(HealthDataType.NUTRITION), changed(HealthDataType.NUTRITION)) } } else emptyList()
             val basalMetabolicRateData = if (HealthDataType.BASAL_METABOLIC_RATE in enabledTypes)
-                attributed(HealthDataType.BASAL_METABOLIC_RATE) { readBasalMetabolicRateData(startTime, endTime, lastSyncTimestamps[HealthDataType.BASAL_METABOLIC_RATE]) } else emptyList()
+                attributed(HealthDataType.BASAL_METABOLIC_RATE) { withChangedDays(HealthDataType.BASAL_METABOLIC_RATE) { s, e -> readBasalMetabolicRateData(s, e, lastSyncTimestamps[HealthDataType.BASAL_METABOLIC_RATE], changed(HealthDataType.BASAL_METABOLIC_RATE)) } } else emptyList()
             val bodyFatData = if (HealthDataType.BODY_FAT in enabledTypes)
-                attributed(HealthDataType.BODY_FAT) { readBodyFatData(startTime, endTime, lastSyncTimestamps[HealthDataType.BODY_FAT]) } else emptyList()
+                attributed(HealthDataType.BODY_FAT) { withChangedDays(HealthDataType.BODY_FAT) { s, e -> readBodyFatData(s, e, lastSyncTimestamps[HealthDataType.BODY_FAT], changed(HealthDataType.BODY_FAT)) } } else emptyList()
             val leanBodyMassData = if (HealthDataType.LEAN_BODY_MASS in enabledTypes)
-                attributed(HealthDataType.LEAN_BODY_MASS) { readLeanBodyMassData(startTime, endTime, lastSyncTimestamps[HealthDataType.LEAN_BODY_MASS]) } else emptyList()
+                attributed(HealthDataType.LEAN_BODY_MASS) { withChangedDays(HealthDataType.LEAN_BODY_MASS) { s, e -> readLeanBodyMassData(s, e, lastSyncTimestamps[HealthDataType.LEAN_BODY_MASS], changed(HealthDataType.LEAN_BODY_MASS)) } } else emptyList()
             val bodyWaterMassData = if (HealthDataType.BODY_WATER_MASS in enabledTypes)
-                attributed(HealthDataType.BODY_WATER_MASS) { readBodyWaterMassData(startTime, endTime, lastSyncTimestamps[HealthDataType.BODY_WATER_MASS]) } else emptyList()
+                attributed(HealthDataType.BODY_WATER_MASS) { withChangedDays(HealthDataType.BODY_WATER_MASS) { s, e -> readBodyWaterMassData(s, e, lastSyncTimestamps[HealthDataType.BODY_WATER_MASS], changed(HealthDataType.BODY_WATER_MASS)) } } else emptyList()
             val vo2MaxData = if (HealthDataType.VO2_MAX in enabledTypes)
-                attributed(HealthDataType.VO2_MAX) { readVo2MaxData(startTime, endTime, lastSyncTimestamps[HealthDataType.VO2_MAX]) } else emptyList()
+                attributed(HealthDataType.VO2_MAX) { withChangedDays(HealthDataType.VO2_MAX) { s, e -> readVo2MaxData(s, e, lastSyncTimestamps[HealthDataType.VO2_MAX], changed(HealthDataType.VO2_MAX)) } } else emptyList()
             val boneMassData = if (HealthDataType.BONE_MASS in enabledTypes)
-                attributed(HealthDataType.BONE_MASS) { readBoneMassData(startTime, endTime, lastSyncTimestamps[HealthDataType.BONE_MASS]) } else emptyList()
+                attributed(HealthDataType.BONE_MASS) { withChangedDays(HealthDataType.BONE_MASS) { s, e -> readBoneMassData(s, e, lastSyncTimestamps[HealthDataType.BONE_MASS], changed(HealthDataType.BONE_MASS)) } } else emptyList()
             val menstruationFlowData = if (HealthDataType.MENSTRUATION_FLOW in enabledTypes)
-                attributed(HealthDataType.MENSTRUATION_FLOW) { readMenstruationFlowData(startTime, endTime, lastSyncTimestamps[HealthDataType.MENSTRUATION_FLOW]) } else emptyList()
+                attributed(HealthDataType.MENSTRUATION_FLOW) { withChangedDays(HealthDataType.MENSTRUATION_FLOW) { s, e -> readMenstruationFlowData(s, e, lastSyncTimestamps[HealthDataType.MENSTRUATION_FLOW], changed(HealthDataType.MENSTRUATION_FLOW)) } } else emptyList()
             val menstruationPeriodData = if (HealthDataType.MENSTRUATION_PERIOD in enabledTypes)
-                attributed(HealthDataType.MENSTRUATION_PERIOD) { readMenstruationPeriodData(startTime, endTime, lastSyncTimestamps[HealthDataType.MENSTRUATION_PERIOD]) } else emptyList()
+                attributed(HealthDataType.MENSTRUATION_PERIOD) { withChangedDays(HealthDataType.MENSTRUATION_PERIOD) { s, e -> readMenstruationPeriodData(s, e, lastSyncTimestamps[HealthDataType.MENSTRUATION_PERIOD], changed(HealthDataType.MENSTRUATION_PERIOD)) } } else emptyList()
             val intermenstrualBleedingData = if (HealthDataType.INTERMENSTRUAL_BLEEDING in enabledTypes)
-                attributed(HealthDataType.INTERMENSTRUAL_BLEEDING) { readIntermenstrualBleedingData(startTime, endTime, lastSyncTimestamps[HealthDataType.INTERMENSTRUAL_BLEEDING]) } else emptyList()
+                attributed(HealthDataType.INTERMENSTRUAL_BLEEDING) { withChangedDays(HealthDataType.INTERMENSTRUAL_BLEEDING) { s, e -> readIntermenstrualBleedingData(s, e, lastSyncTimestamps[HealthDataType.INTERMENSTRUAL_BLEEDING], changed(HealthDataType.INTERMENSTRUAL_BLEEDING)) } } else emptyList()
             val ovulationTestData = if (HealthDataType.OVULATION_TEST in enabledTypes)
-                attributed(HealthDataType.OVULATION_TEST) { readOvulationTestData(startTime, endTime, lastSyncTimestamps[HealthDataType.OVULATION_TEST]) } else emptyList()
+                attributed(HealthDataType.OVULATION_TEST) { withChangedDays(HealthDataType.OVULATION_TEST) { s, e -> readOvulationTestData(s, e, lastSyncTimestamps[HealthDataType.OVULATION_TEST], changed(HealthDataType.OVULATION_TEST)) } } else emptyList()
             val cervicalMucusData = if (HealthDataType.CERVICAL_MUCUS in enabledTypes)
-                attributed(HealthDataType.CERVICAL_MUCUS) { readCervicalMucusData(startTime, endTime, lastSyncTimestamps[HealthDataType.CERVICAL_MUCUS]) } else emptyList()
+                attributed(HealthDataType.CERVICAL_MUCUS) { withChangedDays(HealthDataType.CERVICAL_MUCUS) { s, e -> readCervicalMucusData(s, e, lastSyncTimestamps[HealthDataType.CERVICAL_MUCUS], changed(HealthDataType.CERVICAL_MUCUS)) } } else emptyList()
             val sexualActivityData = if (HealthDataType.SEXUAL_ACTIVITY in enabledTypes)
-                attributed(HealthDataType.SEXUAL_ACTIVITY) { readSexualActivityData(startTime, endTime, lastSyncTimestamps[HealthDataType.SEXUAL_ACTIVITY]) } else emptyList()
+                attributed(HealthDataType.SEXUAL_ACTIVITY) { withChangedDays(HealthDataType.SEXUAL_ACTIVITY) { s, e -> readSexualActivityData(s, e, lastSyncTimestamps[HealthDataType.SEXUAL_ACTIVITY], changed(HealthDataType.SEXUAL_ACTIVITY)) } } else emptyList()
             val basalBodyTemperatureData = if (HealthDataType.BASAL_BODY_TEMPERATURE in enabledTypes)
-                attributed(HealthDataType.BASAL_BODY_TEMPERATURE) { readBasalBodyTemperatureData(startTime, endTime, lastSyncTimestamps[HealthDataType.BASAL_BODY_TEMPERATURE]) } else emptyList()
+                attributed(HealthDataType.BASAL_BODY_TEMPERATURE) { withChangedDays(HealthDataType.BASAL_BODY_TEMPERATURE) { s, e -> readBasalBodyTemperatureData(s, e, lastSyncTimestamps[HealthDataType.BASAL_BODY_TEMPERATURE], changed(HealthDataType.BASAL_BODY_TEMPERATURE)) } } else emptyList()
 
             Result.success(HealthData(
                 steps = stepsData,
@@ -963,23 +981,92 @@ class HealthConnectManager(private val context: Context) {
         return dates
     }
 
+    /**
+     * Reads what changed in Health Connect for each type since its stored Changes token.
+     * Changed records are kept only when the normal `time >= lastSync` read misses them
+     * (see [ChangedRecords]). A type with no token gets a new token and no changes. When a
+     * read fails, or the token expired, the type gets no changes and a new token, so one bad
+     * type cannot block the sync.
+     */
+    suspend fun readChanges(
+        types: Set<HealthDataType>,
+        tokens: Map<HealthDataType, String?>,
+        lastSyncTimestamps: Map<HealthDataType, Instant?>,
+        windowEnd: Instant,
+    ): Map<HealthDataType, TypeChanges> {
+        val windowStart = windowEnd.minus(LOOKBACK_HOURS, ChronoUnit.HOURS)
+        return types.associateWith { type ->
+            readTypeChanges(type, tokens[type], lastSyncTimestamps[type], windowStart)
+        }
+    }
+
+    private suspend fun readTypeChanges(
+        type: HealthDataType,
+        token: String?,
+        lastSync: Instant?,
+        windowStart: Instant,
+    ): TypeChanges {
+        val none = ChangedRecords.NONE
+        return try {
+            if (token == null) return TypeChanges(none, emptyList(), newChangesToken(type))
+            val ids = mutableSetOf<String>()
+            val spans = mutableListOf<Pair<Instant, Instant>>()
+            val deletedIds = mutableListOf<String>()
+            var nextToken: String = token
+            do {
+                val current = nextToken
+                val response = withHealthConnectRetry { healthConnectClient.getChanges(current) }
+                if (response.changesTokenExpired) {
+                    Log.w(TAG, "${type.name}: changes token expired, starting a new one")
+                    return TypeChanges(none, emptyList(), newChangesToken(type))
+                }
+                for (change in response.changes) {
+                    when (change) {
+                        is UpsertionChange -> {
+                            val span = recordSpan(change.record) ?: continue
+                            if (isMissedByIncrementalRead(span, lastSync, windowStart)) {
+                                ids.add(change.record.metadata.id)
+                                spans.add(span)
+                            }
+                        }
+                        is DeletionChange -> deletedIds.add(change.recordId)
+                    }
+                }
+                nextToken = response.nextChangesToken
+            } while (response.hasMore)
+            TypeChanges(ChangedRecords(ids, spans), deletedIds.distinct(), nextToken)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "${type.name}: could not read changes, starting a new token", e)
+            TypeChanges(none, emptyList(), null)
+        }
+    }
+
+    private suspend fun newChangesToken(type: HealthDataType): String =
+        withHealthConnectRetry {
+            healthConnectClient.getChangesToken(ChangesTokenRequest(recordTypes = setOf(type.recordClass)))
+        }
+
     private suspend fun readStepsData(
         startTime: Instant,
         endTime: Instant,
         lastSync: Instant?,
-        resolutionMinutes: Int
+        resolutionMinutes: Int,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<StepsData> {
         return when {
-            resolutionMinutes < 0 -> readDailyStepsData(startTime, endTime, lastSync)
-            resolutionMinutes == 0 -> readRawStepsData(startTime, endTime, lastSync)
-            else -> readBucketedStepsData(startTime, endTime, lastSync, resolutionMinutes)
+            resolutionMinutes < 0 -> readDailyStepsData(startTime, endTime, lastSync, changed)
+            resolutionMinutes == 0 -> readRawStepsData(startTime, endTime, lastSync, changed)
+            else -> readBucketedStepsData(startTime, endTime, lastSync, resolutionMinutes, changed)
         }
     }
 
     private suspend fun readRawStepsData(
         startTime: Instant,
         endTime: Instant,
-        lastSync: Instant?
+        lastSync: Instant?,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<StepsData> {
         // Full resolution: forward each Health Connect step interval as-is.
         val request = ReadRecordsRequest(
@@ -987,7 +1074,7 @@ class HealthConnectManager(private val context: Context) {
             timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
         )
         return readAllRecords(request)
-            .filter { lastSync == null || it.endTime >= lastSync }
+            .filter { changed.keeps(lastSync, it.endTime, it.metadata.id) }
             .filter { it.count > 0 }
             .map { StepsData(count = it.count, startTime = it.startTime, endTime = it.endTime, metadata = it.toRecordMetadata(startZoneOffset = it.startZoneOffset, endZoneOffset = it.endZoneOffset)) }
     }
@@ -996,7 +1083,8 @@ class HealthConnectManager(private val context: Context) {
         startTime: Instant,
         endTime: Instant,
         lastSync: Instant?,
-        bucketMinutes: Int
+        bucketMinutes: Int,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<StepsData> {
         // Group raw step intervals into fixed time buckets (keyed by start time)
         // and sum their counts, emitting one StepsData per bucket.
@@ -1005,9 +1093,13 @@ class HealthConnectManager(private val context: Context) {
             timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
         )
         val bucketSeconds = bucketMinutes.toLong() * 60L
-        return readAllRecords(request)
-            .filter { lastSync == null || it.endTime >= lastSync }
-            .filter { it.count > 0 }
+        val records = readAllRecords(request).filter { it.count > 0 }
+        return bucketItems(
+            items = records,
+            bucketOf = { it.startTime.epochSecond / bucketSeconds },
+            isNew = { lastSync == null || it.endTime >= lastSync },
+            isChanged = { it.metadata.id in changed.ids },
+        )
             .groupBy { it.startTime.epochSecond / bucketSeconds }
             .toSortedMap()
             .map { (bucketIndex, records) ->
@@ -1023,7 +1115,8 @@ class HealthConnectManager(private val context: Context) {
     private suspend fun readDailyStepsData(
         startTime: Instant,
         endTime: Instant,
-        lastSync: Instant?
+        lastSync: Instant?,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<StepsData> {
         // Aggregate steps per calendar day (using device timezone) instead of
         // a single multi-day total. This produces clean per-day records that
@@ -1041,7 +1134,7 @@ class HealthConnectManager(private val context: Context) {
 
             // Skip empty clamps (exclusive end on midnight) and days before lastSync
             if (!queryStart.isBefore(queryEnd)) continue
-            if (lastSync != null && queryEnd.isBefore(lastSync)) continue
+            if (lastSync != null && queryEnd.isBefore(lastSync) && !changed.touches(queryStart, queryEnd)) continue
 
             val aggregateRequest = AggregateRequest(
                 metrics = setOf(StepsRecord.COUNT_TOTAL),
@@ -1082,6 +1175,7 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?,
         resolutionMinutes: Int,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<SleepData> {
         val request = ReadRecordsRequest(
             recordType = SleepSessionRecord::class,
@@ -1093,7 +1187,7 @@ class HealthConnectManager(private val context: Context) {
 
         return response
             .filter { record ->
-                lastSync == null || record.endTime >= lastSync
+                changed.keeps(lastSync, record.endTime, record.metadata.id)
             }
             .map { record ->
                 val stages = if (includeStages) {
@@ -1122,25 +1216,29 @@ class HealthConnectManager(private val context: Context) {
         startTime: Instant,
         endTime: Instant,
         lastSync: Instant?,
-        downsampleMinutes: Int
+        downsampleMinutes: Int,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<HeartRateData> {
         val request = ReadRecordsRequest(recordType = HeartRateRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
         val samples = response.flatMap { record ->
             val metadata = record.toRecordMetadata(startZoneOffset = record.startZoneOffset, endZoneOffset = record.endZoneOffset)
-            record.samples
-                .filter { lastSync == null || it.time >= lastSync }
-                .map { Triple(it.time, it.beatsPerMinute, metadata) }
+            record.samples.map { Triple(it.time, it.beatsPerMinute, metadata) }
         }
 
         if (downsampleMinutes <= 0) {
-            return samples.map { (time, bpm, metadata) ->
+            return samples.filter { changed.keeps(lastSync, it.first, it.third.id) }.map { (time, bpm, metadata) ->
                 HeartRateData(bpm = bpm, time = time, metadata = metadata)
             }
         }
 
         val bucketSeconds = downsampleMinutes.toLong() * 60L
-        return samples
+        return bucketItems(
+            items = samples,
+            bucketOf = { it.first.epochSecond / bucketSeconds },
+            isNew = { lastSync == null || it.first >= lastSync },
+            isChanged = { it.third.id in changed.ids },
+        )
             .groupBy { it.first.epochSecond / bucketSeconds }
             .toSortedMap()
             .map { (bucketIndex, bucketSamples) ->
@@ -1160,23 +1258,28 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?,
         resolutionMinutes: Int,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<HeartRateVariabilityData> {
         val request = ReadRecordsRequest(
             recordType = HeartRateVariabilityRmssdRecord::class,
             timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
         )
         val samples = readAllRecords(request)
-            .filter { lastSync == null || it.time >= lastSync }
             .map { Triple(it.time, it.heartRateVariabilityMillis, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
 
         if (resolutionMinutes <= 0) {
-            return samples.map { (time, value, metadata) ->
+            return samples.filter { changed.keeps(lastSync, it.first, it.third.id) }.map { (time, value, metadata) ->
                 HeartRateVariabilityData(rmssdMillis = value, time = time, metadata = metadata)
             }
         }
 
         val bucketSeconds = resolutionMinutes.toLong() * 60L
-        return samples
+        return bucketItems(
+            items = samples,
+            bucketOf = { it.first.epochSecond / bucketSeconds },
+            isNew = { lastSync == null || it.first >= lastSync },
+            isChanged = { it.third.id in changed.ids },
+        )
             .groupBy { it.first.epochSecond / bucketSeconds }
             .toSortedMap()
             .map { (bucketIndex, bucketSamples) ->
@@ -1196,11 +1299,12 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?,
         resolutionMinutes: Int,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<DistanceData> {
         return when {
-            resolutionMinutes < 0 -> readDailyDistanceData(startTime, endTime, lastSync)
-            resolutionMinutes == 0 -> readRawDistanceData(startTime, endTime, lastSync)
-            else -> readBucketedDistanceData(startTime, endTime, lastSync, resolutionMinutes)
+            resolutionMinutes < 0 -> readDailyDistanceData(startTime, endTime, lastSync, changed)
+            resolutionMinutes == 0 -> readRawDistanceData(startTime, endTime, lastSync, changed)
+            else -> readBucketedDistanceData(startTime, endTime, lastSync, resolutionMinutes, changed)
         }
     }
 
@@ -1208,13 +1312,14 @@ class HealthConnectManager(private val context: Context) {
         startTime: Instant,
         endTime: Instant,
         lastSync: Instant?,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<DistanceData> {
         val request = ReadRecordsRequest(
             recordType = DistanceRecord::class,
             timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
         )
         return readAllRecords(request)
-            .filter { lastSync == null || it.endTime >= lastSync }
+            .filter { changed.keeps(lastSync, it.endTime, it.metadata.id) }
             .filter { it.distance.inMeters > 0.0 }
             .map { DistanceData(it.distance.inMeters, it.startTime, it.endTime, it.toRecordMetadata(startZoneOffset = it.startZoneOffset, endZoneOffset = it.endZoneOffset)) }
     }
@@ -1224,9 +1329,15 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?,
         bucketMinutes: Int,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<DistanceData> {
         val bucketSeconds = bucketMinutes.toLong() * 60L
-        return readRawDistanceData(startTime, endTime, lastSync)
+        return bucketItems(
+            items = readRawDistanceData(startTime, endTime, null),
+            bucketOf = { it.startTime.epochSecond / bucketSeconds },
+            isNew = { lastSync == null || it.endTime >= lastSync },
+            isChanged = { it.metadata?.id in changed.ids },
+        )
             .groupBy { it.startTime.epochSecond / bucketSeconds }
             .toSortedMap()
             .map { (bucketIndex, records) ->
@@ -1243,6 +1354,7 @@ class HealthConnectManager(private val context: Context) {
         startTime: Instant,
         endTime: Instant,
         lastSync: Instant?,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<DistanceData> {
         // Aggregate distance per calendar day (same pattern as steps).
         // If the aggregate returns null (e.g., Google Health/Fit data after the Fitbit rebrand),
@@ -1258,7 +1370,7 @@ class HealthConnectManager(private val context: Context) {
             val queryEnd = if (dayEnd.isAfter(endTime)) endTime else dayEnd
 
             if (!queryStart.isBefore(queryEnd)) continue
-            if (lastSync != null && queryEnd.isBefore(lastSync)) continue
+            if (lastSync != null && queryEnd.isBefore(lastSync) && !changed.touches(queryStart, queryEnd)) continue
 
             val aggregateRequest = AggregateRequest(
                 metrics = setOf(DistanceRecord.DISTANCE_TOTAL),
@@ -1296,11 +1408,12 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?,
         resolutionMinutes: Int,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<ActiveCaloriesData> {
         return when {
-            resolutionMinutes < 0 -> readDailyActiveCaloriesData(startTime, endTime, lastSync)
-            resolutionMinutes == 0 -> readRawActiveCaloriesData(startTime, endTime, lastSync)
-            else -> readBucketedActiveCaloriesData(startTime, endTime, lastSync, resolutionMinutes)
+            resolutionMinutes < 0 -> readDailyActiveCaloriesData(startTime, endTime, lastSync, changed)
+            resolutionMinutes == 0 -> readRawActiveCaloriesData(startTime, endTime, lastSync, changed)
+            else -> readBucketedActiveCaloriesData(startTime, endTime, lastSync, resolutionMinutes, changed)
         }
     }
 
@@ -1308,13 +1421,14 @@ class HealthConnectManager(private val context: Context) {
         startTime: Instant,
         endTime: Instant,
         lastSync: Instant?,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<ActiveCaloriesData> {
         val request = ReadRecordsRequest(
             recordType = ActiveCaloriesBurnedRecord::class,
             timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
         )
         return readAllRecords(request)
-            .filter { lastSync == null || it.endTime >= lastSync }
+            .filter { changed.keeps(lastSync, it.endTime, it.metadata.id) }
             .filter { it.energy.inKilocalories > 0.0 }
             .map { ActiveCaloriesData(it.energy.inKilocalories, it.startTime, it.endTime, it.toRecordMetadata(startZoneOffset = it.startZoneOffset, endZoneOffset = it.endZoneOffset)) }
     }
@@ -1324,9 +1438,15 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?,
         bucketMinutes: Int,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<ActiveCaloriesData> {
         val bucketSeconds = bucketMinutes.toLong() * 60L
-        return readRawActiveCaloriesData(startTime, endTime, lastSync)
+        return bucketItems(
+            items = readRawActiveCaloriesData(startTime, endTime, null),
+            bucketOf = { it.startTime.epochSecond / bucketSeconds },
+            isNew = { lastSync == null || it.endTime >= lastSync },
+            isChanged = { it.metadata?.id in changed.ids },
+        )
             .groupBy { it.startTime.epochSecond / bucketSeconds }
             .toSortedMap()
             .map { (bucketIndex, records) ->
@@ -1343,6 +1463,7 @@ class HealthConnectManager(private val context: Context) {
         startTime: Instant,
         endTime: Instant,
         lastSync: Instant?,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<ActiveCaloriesData> {
         // Aggregate active calories per calendar day (same pattern as steps/distance)
         val zone = ZoneId.systemDefault()
@@ -1356,7 +1477,7 @@ class HealthConnectManager(private val context: Context) {
             val queryEnd = if (dayEnd.isAfter(endTime)) endTime else dayEnd
 
             if (!queryStart.isBefore(queryEnd)) continue
-            if (lastSync != null && queryEnd.isBefore(lastSync)) continue
+            if (lastSync != null && queryEnd.isBefore(lastSync) && !changed.touches(queryStart, queryEnd)) continue
 
             val aggregateRequest = AggregateRequest(
                 metrics = setOf(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL),
@@ -1394,11 +1515,12 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?,
         resolutionMinutes: Int,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<TotalCaloriesData> {
         return when {
-            resolutionMinutes < 0 -> readDailyTotalCaloriesData(startTime, endTime, lastSync)
-            resolutionMinutes == 0 -> readRawTotalCaloriesData(startTime, endTime, lastSync)
-            else -> readBucketedTotalCaloriesData(startTime, endTime, lastSync, resolutionMinutes)
+            resolutionMinutes < 0 -> readDailyTotalCaloriesData(startTime, endTime, lastSync, changed)
+            resolutionMinutes == 0 -> readRawTotalCaloriesData(startTime, endTime, lastSync, changed)
+            else -> readBucketedTotalCaloriesData(startTime, endTime, lastSync, resolutionMinutes, changed)
         }
     }
 
@@ -1406,13 +1528,14 @@ class HealthConnectManager(private val context: Context) {
         startTime: Instant,
         endTime: Instant,
         lastSync: Instant?,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<TotalCaloriesData> {
         val request = ReadRecordsRequest(
             recordType = TotalCaloriesBurnedRecord::class,
             timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
         )
         return readAllRecords(request)
-            .filter { lastSync == null || it.endTime >= lastSync }
+            .filter { changed.keeps(lastSync, it.endTime, it.metadata.id) }
             .map { TotalCaloriesData(it.energy.inKilocalories, it.startTime, it.endTime, it.toRecordMetadata(startZoneOffset = it.startZoneOffset, endZoneOffset = it.endZoneOffset)) }
     }
 
@@ -1421,9 +1544,15 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?,
         bucketMinutes: Int,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<TotalCaloriesData> {
         val bucketSeconds = bucketMinutes.toLong() * 60L
-        return readRawTotalCaloriesData(startTime, endTime, lastSync)
+        return bucketItems(
+            items = readRawTotalCaloriesData(startTime, endTime, null),
+            bucketOf = { it.startTime.epochSecond / bucketSeconds },
+            isNew = { lastSync == null || it.endTime >= lastSync },
+            isChanged = { it.metadata?.id in changed.ids },
+        )
             .groupBy { it.startTime.epochSecond / bucketSeconds }
             .toSortedMap()
             .map { (bucketIndex, records) ->
@@ -1440,6 +1569,7 @@ class HealthConnectManager(private val context: Context) {
         startTime: Instant,
         endTime: Instant,
         lastSync: Instant?,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<TotalCaloriesData> {
         val zone = ZoneId.systemDefault()
         val result = mutableListOf<TotalCaloriesData>()
@@ -1451,7 +1581,7 @@ class HealthConnectManager(private val context: Context) {
             val queryEnd = if (dayEnd.isAfter(endTime)) endTime else dayEnd
 
             if (!queryStart.isBefore(queryEnd)) continue
-            if (lastSync != null && queryEnd.isBefore(lastSync)) continue
+            if (lastSync != null && queryEnd.isBefore(lastSync) && !changed.touches(queryStart, queryEnd)) continue
 
             val dayCalories = readRawTotalCaloriesData(queryStart, queryEnd, null)
                 .sumOf { it.calories }
@@ -1470,31 +1600,31 @@ class HealthConnectManager(private val context: Context) {
         return result
     }
 
-    private suspend fun readWeightData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<WeightData> {
+    private suspend fun readWeightData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<WeightData> {
         val request = ReadRecordsRequest(recordType = WeightRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
-        return response.filter { lastSync == null || it.time >= lastSync }
+        return response.filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { WeightData(it.weight.inKilograms, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
-    private suspend fun readHeightData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<HeightData> {
+    private suspend fun readHeightData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<HeightData> {
         val request = ReadRecordsRequest(recordType = HeightRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
-        return response.filter { lastSync == null || it.time >= lastSync }
+        return response.filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { HeightData(it.height.inMeters, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
-    private suspend fun readBloodPressureData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BloodPressureData> {
+    private suspend fun readBloodPressureData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<BloodPressureData> {
         val request = ReadRecordsRequest(recordType = BloodPressureRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
-        return response.filter { lastSync == null || it.time >= lastSync }
+        return response.filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { BloodPressureData(it.systolic.inMillimetersOfMercury, it.diastolic.inMillimetersOfMercury, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
-    private suspend fun readBloodGlucoseData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BloodGlucoseData> {
+    private suspend fun readBloodGlucoseData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<BloodGlucoseData> {
         val request = ReadRecordsRequest(recordType = BloodGlucoseRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
-        return response.filter { lastSync == null || it.time >= lastSync }
+        return response.filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { BloodGlucoseData(it.level.inMillimolesPerLiter, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
@@ -1503,23 +1633,28 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?,
         resolutionMinutes: Int = RESOLUTION_FULL,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<OxygenSaturationData> {
         val request = ReadRecordsRequest(
             recordType = OxygenSaturationRecord::class,
             timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
         )
         val samples = readAllRecords(request)
-            .filter { lastSync == null || it.time >= lastSync }
             .map { Triple(it.time, it.percentage.value, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
 
         if (resolutionMinutes <= 0) {
-            return samples.map { (time, value, metadata) ->
+            return samples.filter { changed.keeps(lastSync, it.first, it.third.id) }.map { (time, value, metadata) ->
                 OxygenSaturationData(percentage = value, time = time, metadata = metadata)
             }
         }
 
         val bucketSeconds = resolutionMinutes.toLong() * 60L
-        return samples
+        return bucketItems(
+            items = samples,
+            bucketOf = { it.first.epochSecond / bucketSeconds },
+            isNew = { lastSync == null || it.first >= lastSync },
+            isChanged = { it.third.id in changed.ids },
+        )
             .groupBy { it.first.epochSecond / bucketSeconds }
             .toSortedMap()
             .map { (bucketIndex, bucketSamples) ->
@@ -1534,10 +1669,10 @@ class HealthConnectManager(private val context: Context) {
             }
     }
 
-    private suspend fun readBodyTemperatureData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BodyTemperatureData> {
+    private suspend fun readBodyTemperatureData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<BodyTemperatureData> {
         val request = ReadRecordsRequest(recordType = BodyTemperatureRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
-        return response.filter { lastSync == null || it.time >= lastSync }
+        return response.filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { BodyTemperatureData(it.temperature.inCelsius, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
@@ -1546,6 +1681,7 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?,
         resolutionMinutes: Int = RESOLUTION_FULL,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<SkinTemperatureData> {
         val request = ReadRecordsRequest(
             recordType = SkinTemperatureRecord::class,
@@ -1553,7 +1689,6 @@ class HealthConnectManager(private val context: Context) {
         )
         val samples = readAllRecords(request).flatMap { record ->
             record.deltas
-                .filter { lastSync == null || it.time >= lastSync }
                 .map { delta ->
                     SkinTemperatureData(
                         time = delta.time,
@@ -1566,11 +1701,16 @@ class HealthConnectManager(private val context: Context) {
         }
 
         if (resolutionMinutes <= 0) {
-            return samples
+            return samples.filter { changed.keeps(lastSync, it.time, it.metadata?.id) }
         }
 
         val bucketSeconds = resolutionMinutes.toLong() * 60L
-        return samples
+        return bucketItems(
+            items = samples,
+            bucketOf = { it.time.epochSecond / bucketSeconds },
+            isNew = { lastSync == null || it.time >= lastSync },
+            isChanged = { it.metadata?.id in changed.ids },
+        )
             .groupBy { it.time.epochSecond / bucketSeconds }
             .toSortedMap()
             .map { (bucketIndex, bucketSamples) ->
@@ -1593,23 +1733,28 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?,
         resolutionMinutes: Int = RESOLUTION_FULL,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<RespiratoryRateData> {
         val request = ReadRecordsRequest(
             recordType = RespiratoryRateRecord::class,
             timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
         )
         val samples = readAllRecords(request)
-            .filter { lastSync == null || it.time >= lastSync }
             .map { Triple(it.time, it.rate, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
 
         if (resolutionMinutes <= 0) {
-            return samples.map { (time, value, metadata) ->
+            return samples.filter { changed.keeps(lastSync, it.first, it.third.id) }.map { (time, value, metadata) ->
                 RespiratoryRateData(rate = value, time = time, metadata = metadata)
             }
         }
 
         val bucketSeconds = resolutionMinutes.toLong() * 60L
-        return samples
+        return bucketItems(
+            items = samples,
+            bucketOf = { it.first.epochSecond / bucketSeconds },
+            isNew = { lastSync == null || it.first >= lastSync },
+            isChanged = { it.third.id in changed.ids },
+        )
             .groupBy { it.first.epochSecond / bucketSeconds }
             .toSortedMap()
             .map { (bucketIndex, bucketSamples) ->
@@ -1624,10 +1769,10 @@ class HealthConnectManager(private val context: Context) {
             }
     }
 
-    private suspend fun readRestingHeartRateData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<RestingHeartRateData> {
+    private suspend fun readRestingHeartRateData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<RestingHeartRateData> {
         val request = ReadRecordsRequest(recordType = RestingHeartRateRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
-        return response.filter { lastSync == null || it.time >= lastSync }
+        return response.filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { RestingHeartRateData(it.beatsPerMinute, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
@@ -1636,11 +1781,12 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?,
         includeDistance: Boolean,
-        includeSteps: Boolean
+        includeSteps: Boolean,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<ExerciseData> {
         val request = ReadRecordsRequest(recordType = ExerciseSessionRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
-        return response.filter { lastSync == null || it.endTime >= lastSync }
+        return response.filter { changed.keeps(lastSync, it.endTime, it.metadata.id) }
             .map {
                 val duration = Duration.between(it.startTime, it.endTime)
                 // Guard against zero/negative-duration sessions (seen from some watch
@@ -1743,11 +1889,12 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?,
         resolutionMinutes: Int = RESOLUTION_FULL,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<HydrationData> {
         return when {
-            resolutionMinutes < 0 -> readDailyHydrationData(startTime, endTime, lastSync)
-            resolutionMinutes == 0 -> readRawHydrationData(startTime, endTime, lastSync)
-            else -> readBucketedHydrationData(startTime, endTime, lastSync, resolutionMinutes)
+            resolutionMinutes < 0 -> readDailyHydrationData(startTime, endTime, lastSync, changed)
+            resolutionMinutes == 0 -> readRawHydrationData(startTime, endTime, lastSync, changed)
+            else -> readBucketedHydrationData(startTime, endTime, lastSync, resolutionMinutes, changed)
         }
     }
 
@@ -1755,13 +1902,14 @@ class HealthConnectManager(private val context: Context) {
         startTime: Instant,
         endTime: Instant,
         lastSync: Instant?,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<HydrationData> {
         val request = ReadRecordsRequest(
             recordType = HydrationRecord::class,
             timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
         )
         return readAllRecords(request)
-            .filter { lastSync == null || it.endTime >= lastSync }
+            .filter { changed.keeps(lastSync, it.endTime, it.metadata.id) }
             .map { HydrationData(it.volume.inLiters, it.startTime, it.endTime, it.toRecordMetadata(startZoneOffset = it.startZoneOffset, endZoneOffset = it.endZoneOffset)) }
     }
 
@@ -1770,9 +1918,15 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?,
         bucketMinutes: Int,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<HydrationData> {
         val bucketSeconds = bucketMinutes.toLong() * 60L
-        return readRawHydrationData(startTime, endTime, lastSync)
+        return bucketItems(
+            items = readRawHydrationData(startTime, endTime, null),
+            bucketOf = { it.startTime.epochSecond / bucketSeconds },
+            isNew = { lastSync == null || it.endTime >= lastSync },
+            isChanged = { it.metadata?.id in changed.ids },
+        )
             .groupBy { it.startTime.epochSecond / bucketSeconds }
             .toSortedMap()
             .map { (bucketIndex, records) ->
@@ -1789,6 +1943,7 @@ class HealthConnectManager(private val context: Context) {
         startTime: Instant,
         endTime: Instant,
         lastSync: Instant?,
+        changed: ChangedRecords = ChangedRecords.NONE,
     ): List<HydrationData> {
         val zone = ZoneId.systemDefault()
         val result = mutableListOf<HydrationData>()
@@ -1800,7 +1955,7 @@ class HealthConnectManager(private val context: Context) {
             val queryEnd = if (dayEnd.isAfter(endTime)) endTime else dayEnd
 
             if (!queryStart.isBefore(queryEnd)) continue
-            if (lastSync != null && queryEnd.isBefore(lastSync)) continue
+            if (lastSync != null && queryEnd.isBefore(lastSync) && !changed.touches(queryStart, queryEnd)) continue
 
             val dayLiters = readRawHydrationData(queryStart, queryEnd, null).sumOf { it.liters }
             if (dayLiters > 0.0) {
@@ -1816,11 +1971,12 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?,
         resolutionMinutes: Int = RESOLUTION_FULL,
-    ): List<NutritionData> {
+        changed: ChangedRecords = ChangedRecords.NONE,
+        ): List<NutritionData> {
         return when {
-            resolutionMinutes < 0 -> readDailyNutritionData(startTime, endTime, lastSync)
-            resolutionMinutes == 0 -> readRawNutritionData(startTime, endTime, lastSync)
-            else -> readBucketedNutritionData(startTime, endTime, lastSync, resolutionMinutes)
+            resolutionMinutes < 0 -> readDailyNutritionData(startTime, endTime, lastSync, changed)
+            resolutionMinutes == 0 -> readRawNutritionData(startTime, endTime, lastSync, changed)
+            else -> readBucketedNutritionData(startTime, endTime, lastSync, resolutionMinutes, changed)
         }
     }
 
@@ -1828,13 +1984,14 @@ class HealthConnectManager(private val context: Context) {
         startTime: Instant,
         endTime: Instant,
         lastSync: Instant?,
-    ): List<NutritionData> {
+        changed: ChangedRecords = ChangedRecords.NONE,
+        ): List<NutritionData> {
         val request = ReadRecordsRequest(
             recordType = NutritionRecord::class,
             timeRangeFilter = TimeRangeFilter.between(startTime, endTime),
         )
         return readAllRecords(request)
-            .filter { lastSync == null || it.endTime >= lastSync }
+            .filter { changed.keeps(lastSync, it.endTime, it.metadata.id) }
             .map {
                 NutritionData(
                     calories = it.energy?.inKilocalories,
@@ -1872,9 +2029,15 @@ class HealthConnectManager(private val context: Context) {
         endTime: Instant,
         lastSync: Instant?,
         bucketMinutes: Int,
-    ): List<NutritionData> {
+        changed: ChangedRecords = ChangedRecords.NONE,
+        ): List<NutritionData> {
         val bucketSeconds = bucketMinutes.toLong() * 60L
-        return readRawNutritionData(startTime, endTime, lastSync)
+        return bucketItems(
+            items = readRawNutritionData(startTime, endTime, null),
+            bucketOf = { it.startTime.epochSecond / bucketSeconds },
+            isNew = { lastSync == null || it.endTime >= lastSync },
+            isChanged = { it.metadata?.id in changed.ids },
+        )
             .groupBy { it.startTime.epochSecond / bucketSeconds }
             .toSortedMap()
             .map { (bucketIndex, records) ->
@@ -1888,7 +2051,8 @@ class HealthConnectManager(private val context: Context) {
         startTime: Instant,
         endTime: Instant,
         lastSync: Instant?,
-    ): List<NutritionData> {
+        changed: ChangedRecords = ChangedRecords.NONE,
+        ): List<NutritionData> {
         val zone = ZoneId.systemDefault()
         val result = mutableListOf<NutritionData>()
 
@@ -1899,7 +2063,7 @@ class HealthConnectManager(private val context: Context) {
             val queryEnd = if (dayEnd.isAfter(endTime)) endTime else dayEnd
 
             if (!queryStart.isBefore(queryEnd)) continue
-            if (lastSync != null && queryEnd.isBefore(lastSync)) continue
+            if (lastSync != null && queryEnd.isBefore(lastSync) && !changed.touches(queryStart, queryEnd)) continue
 
             val dayRecords = readRawNutritionData(queryStart, queryEnd, null)
             if (dayRecords.isNotEmpty()) {
@@ -1910,94 +2074,94 @@ class HealthConnectManager(private val context: Context) {
         return result
     }
 
-    private suspend fun readBasalMetabolicRateData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BasalMetabolicRateData> {
+    private suspend fun readBasalMetabolicRateData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<BasalMetabolicRateData> {
         val request = ReadRecordsRequest(recordType = BasalMetabolicRateRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
-        return response.filter { lastSync == null || it.time >= lastSync }
+        return response.filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { BasalMetabolicRateData(it.basalMetabolicRate.inWatts, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
-    private suspend fun readBodyFatData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BodyFatData> {
+    private suspend fun readBodyFatData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<BodyFatData> {
         val request = ReadRecordsRequest(recordType = BodyFatRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
-        return response.filter { lastSync == null || it.time >= lastSync }
+        return response.filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { BodyFatData(it.percentage.value, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
-    private suspend fun readLeanBodyMassData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<LeanBodyMassData> {
+    private suspend fun readLeanBodyMassData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<LeanBodyMassData> {
         val request = ReadRecordsRequest(recordType = LeanBodyMassRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
-        return response.filter { lastSync == null || it.time >= lastSync }
+        return response.filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { LeanBodyMassData(it.mass.inKilograms, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
-    private suspend fun readBodyWaterMassData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BodyWaterMassData> {
+    private suspend fun readBodyWaterMassData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<BodyWaterMassData> {
         val request = ReadRecordsRequest(recordType = BodyWaterMassRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
-        return response.filter { lastSync == null || it.time >= lastSync }
+        return response.filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { BodyWaterMassData(it.mass.inKilograms, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
-    private suspend fun readVo2MaxData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<Vo2MaxData> {
+    private suspend fun readVo2MaxData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<Vo2MaxData> {
         val request = ReadRecordsRequest(recordType = Vo2MaxRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
-        return response.filter { lastSync == null || it.time >= lastSync }
+        return response.filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { Vo2MaxData(it.vo2MillilitersPerMinuteKilogram, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
-    private suspend fun readBoneMassData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BoneMassData> {
+    private suspend fun readBoneMassData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<BoneMassData> {
         val request = ReadRecordsRequest(recordType = BoneMassRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
-        return response.filter { lastSync == null || it.time >= lastSync }
+        return response.filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { BoneMassData(it.mass.inKilograms, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
-    private suspend fun readMenstruationFlowData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<MenstruationFlowData> {
+    private suspend fun readMenstruationFlowData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<MenstruationFlowData> {
         val request = ReadRecordsRequest(recordType = MenstruationFlowRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         return readAllRecords(request)
-            .filter { lastSync == null || it.time >= lastSync }
+            .filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { MenstruationFlowData(it.flow, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
-    private suspend fun readMenstruationPeriodData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<MenstruationPeriodData> {
+    private suspend fun readMenstruationPeriodData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<MenstruationPeriodData> {
         val request = ReadRecordsRequest(recordType = MenstruationPeriodRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         return readAllRecords(request)
-            .filter { lastSync == null || it.endTime >= lastSync }
+            .filter { changed.keeps(lastSync, it.endTime, it.metadata.id) }
             .map { MenstruationPeriodData(it.startTime, it.endTime, it.toRecordMetadata(startZoneOffset = it.startZoneOffset, endZoneOffset = it.endZoneOffset)) }
     }
 
-    private suspend fun readIntermenstrualBleedingData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<IntermenstrualBleedingData> {
+    private suspend fun readIntermenstrualBleedingData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<IntermenstrualBleedingData> {
         val request = ReadRecordsRequest(recordType = IntermenstrualBleedingRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         return readAllRecords(request)
-            .filter { lastSync == null || it.time >= lastSync }
+            .filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { IntermenstrualBleedingData(it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
-    private suspend fun readOvulationTestData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<OvulationTestData> {
+    private suspend fun readOvulationTestData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<OvulationTestData> {
         val request = ReadRecordsRequest(recordType = OvulationTestRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         return readAllRecords(request)
-            .filter { lastSync == null || it.time >= lastSync }
+            .filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { OvulationTestData(it.result, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
-    private suspend fun readCervicalMucusData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<CervicalMucusData> {
+    private suspend fun readCervicalMucusData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<CervicalMucusData> {
         val request = ReadRecordsRequest(recordType = CervicalMucusRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         return readAllRecords(request)
-            .filter { lastSync == null || it.time >= lastSync }
+            .filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { CervicalMucusData(it.appearance, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
-    private suspend fun readSexualActivityData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<SexualActivityData> {
+    private suspend fun readSexualActivityData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<SexualActivityData> {
         val request = ReadRecordsRequest(recordType = SexualActivityRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         return readAllRecords(request)
-            .filter { lastSync == null || it.time >= lastSync }
+            .filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { SexualActivityData(it.protectionUsed, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 
-    private suspend fun readBasalBodyTemperatureData(startTime: Instant, endTime: Instant, lastSync: Instant?): List<BasalBodyTemperatureData> {
+    private suspend fun readBasalBodyTemperatureData(startTime: Instant, endTime: Instant, lastSync: Instant?, changed: ChangedRecords = ChangedRecords.NONE): List<BasalBodyTemperatureData> {
         val request = ReadRecordsRequest(recordType = BasalBodyTemperatureRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         return readAllRecords(request)
-            .filter { lastSync == null || it.time >= lastSync }
+            .filter { changed.keeps(lastSync, it.time, it.metadata.id) }
             .map { BasalBodyTemperatureData(it.temperature.inCelsius, it.measurementLocation, it.time, it.toRecordMetadata(zoneOffset = it.zoneOffset)) }
     }
 

@@ -7,7 +7,7 @@ plugins {
 
 val appVersionMajor = 1
 val appVersionMinor = 9
-val appVersionPatch = 22
+val appVersionPatch = 23
 val appVersionCode = (appVersionMajor * 10000) + (appVersionMinor * 100) + appVersionPatch
 val appVersionName = "$appVersionMajor.$appVersionMinor.$appVersionPatch"
 
@@ -21,6 +21,7 @@ android {
         targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersionName
+        manifestPlaceholders["appLabel"] = "@string/app_name"
 
         androidResources {
             localeFilters += listOf("en", "ta", "fr", "de", "es", "pt", "zh", "ja", "ko", "it")
@@ -60,6 +61,12 @@ android {
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("release")
+        }
+        // Own package id, so a dev build installs next to the release app.
+        getByName("debug") {
+            applicationIdSuffix = ".debug"
+            // Short, so the launcher does not cut it.
+            manifestPlaceholders["appLabel"] = "HC Debug"
         }
         // Debug-signed, minified build for R8 smoke tests (issue #77).
         // Run: ./gradlew :app:connectedFossMinifyAndroidTest
