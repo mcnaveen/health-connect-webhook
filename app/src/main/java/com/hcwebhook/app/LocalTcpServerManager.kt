@@ -520,11 +520,7 @@ object LocalHttpServerManager {
             405 -> "Method Not Allowed"
             else -> "Internal Server Error"
         }
-        val versionedBody = if (body.startsWith("{") && body.endsWith("}")) {
-            val inner = body.drop(1).dropLast(1)
-            if (inner.isNotEmpty()) """{"app_version":"${BuildConfig.VERSION_NAME}",$inner}"""
-            else """{"app_version":"${BuildConfig.VERSION_NAME}"}"""
-        } else body
+        val versionedBody = withAppVersion(body, BuildConfig.VERSION_NAME)
         val bodyBytes = versionedBody.toByteArray(Charsets.UTF_8)
         writer.write("HTTP/1.1 $statusCode $statusText\r\n")
         writer.write("Content-Type: application/json; charset=utf-8\r\n")
@@ -536,4 +532,14 @@ object LocalHttpServerManager {
         writer.write(versionedBody)
         writer.flush()
     }
+}
+
+/**
+ * [body] with `app_version` first, when it is a JSON object without one. A sync payload already
+ * carries `app_version`, and a second key would make the JSON invalid for strict parsers.
+ */
+internal fun withAppVersion(body: String, version: String): String {
+    if (!body.startsWith("{") || !body.endsWith("}") || "\"app_version\"" in body) return body
+    val inner = body.drop(1).dropLast(1)
+    return if (inner.isNotEmpty()) """{"app_version":"$version",$inner}""" else """{"app_version":"$version"}"""
 }
