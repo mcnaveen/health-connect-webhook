@@ -22,6 +22,8 @@ The app may attach **custom headers** per webhook URL as configured in the app. 
 
 Successful delivery is any HTTP **2xx** response. Failed requests are retried briefly (a few attempts with backoff); if all attempts fail, the next manual, interval, or scheduled sync can try again with the same incremental rules.
 
+With more than one webhook, the sync counts as successful when at least one webhook gets the data. A webhook that failed keeps its payloads on the device and gets them first, in order, at the start of the next sync, with `syncType` `outbox` in the webhook log. The app keeps up to 16 MB of waiting payloads per webhook and drops the oldest past that. A webhook that changes between JSON and gRPC drops its waiting payloads.
+
 ## gRPC delivery (Protobuf)
 
 | Property | Value |

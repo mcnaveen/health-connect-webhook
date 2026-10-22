@@ -3,6 +3,7 @@ package com.hcwebhook.app
 import android.content.Context
 import android.content.pm.PackageManager
 import android.util.Log
+import com.hcwebhook.app.proto.v1.HealthPayload
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -14,6 +15,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
+import java.io.File
 import java.time.Instant
 
 /** Emit a record's Health Connect provenance as a nested "metadata" object. */
@@ -48,6 +50,7 @@ class SyncManager(private val context: Context) {
 
     private val preferencesManager = PreferencesManager(context)
     private val healthConnectManager = HealthConnectManager(context)
+    private val outbox = WebhookOutbox(File(context.filesDir, "webhook_outbox"))
 
     suspend fun getRealtimeJsonPayload(
         timeRangeDays: Int? = null,
@@ -114,6 +117,10 @@ class SyncManager(private val context: Context) {
             if (enabledWebhookConfigs.isEmpty() && !localTcpEnabled) {
                 return@withContext Result.failure(Exception("No enabled webhook URLs configured and local TCP server is disabled"))
             }
+
+            // Payloads a webhook missed in earlier syncs go out first, so it gets them in order.
+            outbox.keepOnly(webhookConfigs.map { it.url })
+            val outboxClear = enabledWebhookConfigs.associateWith { drainOutbox(it) }
 
             val enabledTypes = preferencesManager.getEnabledDataTypes()
             if (enabledTypes.isEmpty()) {
@@ -255,6 +262,8 @@ class SyncManager(private val context: Context) {
                 val dispatcher = NotificationDispatcher()
                 val globalNotifs = preferencesManager.getNotificationConfigs()
                 val aggregatedNotifs = mutableMapOf<NotificationConfig, MutableList<String>>()
+                // Payloads each webhook did not get in this sync.
+                val missed = mutableMapOf<WebhookConfig, List<HealthData>>()
 
                 for (config in enabledWebhookConfigs) {
                     val filteredData = if (config.dataTypeFilter != null) {
@@ -274,10 +283,19 @@ class SyncManager(private val context: Context) {
                         Log.i(TAG, "Sending $totalRecords items to ${config.url} in ${chunks.size} payloads")
                     }
                     var result: Result<Unit> = Result.success(Unit)
-                    for (chunk in chunks) {
-                        val json = if (chunks.size == 1 && config.dataTypeFilter == null) fullPayload else null
-                        result = deliver(config, chunk, json)
-                        if (result.isFailure) break
+                    if (outboxClear[config] == false) {
+                        // Older payloads still wait for this webhook; new ones queue behind them.
+                        result = Result.failure(Exception("Earlier payloads for ${config.url} are still waiting"))
+                        missed[config] = chunks
+                    } else {
+                        for ((index, chunk) in chunks.withIndex()) {
+                            val json = if (chunks.size == 1 && config.dataTypeFilter == null) fullPayload else null
+                            result = deliver(config, chunk, json)
+                            if (result.isFailure) {
+                                missed[config] = chunks.drop(index)
+                                break
+                            }
+                        }
                     }
                     
                     val notifConfigs = config.notificationConfigIds.mapNotNull { id -> 
@@ -317,6 +335,9 @@ class SyncManager(private val context: Context) {
                 if (!atLeastOneSuccess) {
                     return@withContext Result.failure(lastFailure ?: Exception("Failed to post to webhooks"))
                 }
+                // The sync moves its timestamps and tokens now, so a webhook that failed would never
+                // get this data. Keep its payloads for the next sync.
+                missed.forEach { (config, chunks) -> queueForLater(config, chunks) }
             }
 
             // Update last sync timestamps
@@ -342,6 +363,64 @@ class SyncManager(private val context: Context) {
                 )
             )
         }
+    }
+
+    /**
+     * Sends [config]'s waiting payloads, oldest first, and returns true when none are left. Stops
+     * at the first failure, so the payloads keep their order.
+     */
+    private suspend fun drainOutbox(config: WebhookConfig): Boolean {
+        for (item in outbox.items(config.url)) {
+            if (item.format != config.deliveryFormat) {
+                // The webhook changed its format, so the stored payload no longer fits it.
+                Log.w(TAG, "Dropping a waiting ${item.format} payload for ${config.url}, now ${config.deliveryFormat}")
+                outbox.remove(item)
+                continue
+            }
+            val bytes = outbox.read(item)
+            val result = when (item.format) {
+                WebhookDeliveryFormat.JSON -> {
+                    val json = bytes.toString(Charsets.UTF_8)
+                    WebhookManager(
+                        webhookConfigs = listOf(config),
+                        context = context,
+                        dataType = "all",
+                        recordCount = item.itemCount,
+                        syncType = OUTBOX_SYNC_TYPE,
+                        payload = json
+                    ).postData(json)
+                }
+                WebhookDeliveryFormat.GRPC -> GrpcWebhookClient.deliver(
+                    config = config,
+                    payload = HealthPayload.parseFrom(bytes),
+                    context = context,
+                    dataType = "all",
+                    recordCount = item.itemCount,
+                    syncType = OUTBOX_SYNC_TYPE
+                )
+            }
+            if (result.isFailure) return false
+            outbox.remove(item)
+        }
+        return true
+    }
+
+    /** Stores [chunks] for [config] in the outbox, in the webhook's own format. */
+    private fun queueForLater(config: WebhookConfig, chunks: List<HealthData>) {
+        for (chunk in chunks) {
+            val bytes = try {
+                when (config.deliveryFormat) {
+                    WebhookDeliveryFormat.JSON -> buildJsonPayload(chunk).toByteArray(Charsets.UTF_8)
+                    WebhookDeliveryFormat.GRPC -> ProtobufPayloadBuilder.build(chunk, appVersionName).toByteArray()
+                }
+            } catch (oom: OutOfMemoryError) {
+                Log.w(TAG, "Out of memory while storing a payload for ${config.url}", oom)
+                return
+            }
+            val dropped = outbox.add(config.url, config.deliveryFormat, bytes, chunk.itemCount())
+            if (dropped > 0) Log.w(TAG, "Outbox for ${config.url} is full; dropped the $dropped oldest payloads")
+        }
+        Log.i(TAG, "Kept ${chunks.size} payloads for ${config.url} until the next sync")
     }
 
     /** Store the next Changes tokens only after a sync succeeds, so failed syncs read the changes again. */
@@ -1109,6 +1188,8 @@ class SyncManager(private val context: Context) {
          * exceed this and OOMs mid-tier devices while building JsonObject trees.
          */
         private const val MAX_ITEMS_PER_PAYLOAD = 25_000
+        /** syncType of the webhook log entries of outbox payloads. */
+        private const val OUTBOX_SYNC_TYPE = "outbox"
         private const val TAG = "SyncManager"
     }
 
