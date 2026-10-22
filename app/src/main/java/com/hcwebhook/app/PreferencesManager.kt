@@ -517,6 +517,7 @@ class PreferencesManager(context: Context) {
             heartRateDownsampleMinutes = getHeartRateDownsampleMinutes(),
             stepsResolutionMinutes = getStepsResolutionMinutes(),
             dataTypeResolutions = getDataTypeResolutions().mapKeys { it.key.name },
+            timestampStyle = getTimestampStyle().name,
         )
     }
 
@@ -545,6 +546,7 @@ class PreferencesManager(context: Context) {
             setHeartRateDownsampleMinutes(export.heartRateDownsampleMinutes)
             setStepsResolutionMinutes(export.stepsResolutionMinutes)
         }
+        TimestampStyle.entries.firstOrNull { it.name == export.timestampStyle }?.let(::setTimestampStyle)
     }
 
     fun getLocalFeedback(): List<LocalFeedbackEntry> {

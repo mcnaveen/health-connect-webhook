@@ -48,15 +48,33 @@ data class TypeChanges(
     val nextToken: String?,
 )
 
-internal fun Map<HealthDataType, TypeChanges>.hasChangedRecords(): Boolean =
-    values.any { it.changed.ids.isNotEmpty() || it.changed.spans.isNotEmpty() }
+/** Deleted records of all types. */
+internal fun Map<HealthDataType, TypeChanges>.deletedRecords(): List<DeletedRecord> =
+    flatMap { (type, changes) -> changes.deletedIds.map { DeletedRecord(type, it) } }
+
+/** One page of a type's changes feed: the ids it reported as written and as deleted. */
+data class ChangesPage(
+    val upserted: Set<String>,
+    val deleted: List<String>,
+)
 
 /**
- * Same changes without the changed records. Deletions and next tokens stay, so the
- * tokens still move past the changes that were dropped.
+ * The deletions of a changes feed that still stand, from its [pages] in read order.
+ *
+ * Health Connect derives a record id from the source app and its client record id. A source
+ * that deletes a record and writes it again with the same client record id (Fitbit does this
+ * often) gets the same id back, and the feed reports that id as deleted and as written. A
+ * page lists its writes before its deletions whatever the real order was, and gives a write
+ * as the record is when the page is read, so a deleted record gives no write. A deletion
+ * therefore stands only when no page from its own page on reports the same id as written.
  */
-internal fun Map<HealthDataType, TypeChanges>.withoutChangedRecords(): Map<HealthDataType, TypeChanges> =
-    mapValues { (_, changes) -> changes.copy(changed = ChangedRecords.NONE) }
+internal fun standingDeletions(pages: List<ChangesPage>): List<String> {
+    val lastWrittenPage = HashMap<String, Int>()
+    pages.forEachIndexed { index, page -> page.upserted.forEach { lastWrittenPage[it] = index } }
+    return pages.flatMapIndexed { index, page ->
+        page.deleted.filter { id -> (lastWrittenPage[id] ?: -1) < index }
+    }.distinct()
+}
 
 /**
  * True when the normal incremental read drops a changed record: it starts before the read

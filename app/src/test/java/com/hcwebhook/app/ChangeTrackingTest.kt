@@ -100,23 +100,6 @@ class ChangeTrackingTest {
     }
 
     @Test
-    fun withoutChangedRecords_keepsDeletionsAndTokens() {
-        val t = at("2026-05-01T10:00:00Z")
-        val changes = mapOf(
-            HealthDataType.HEART_RATE to TypeChanges(ChangedRecords(setOf("hr"), listOf(t to t)), listOf("gone"), "token-2"),
-            HealthDataType.WEIGHT to TypeChanges(ChangedRecords.NONE, emptyList(), "token-9"),
-        )
-        assertTrue(changes.hasChangedRecords())
-
-        val dropped = changes.withoutChangedRecords()
-
-        assertFalse(dropped.hasChangedRecords())
-        assertEquals(listOf("gone"), dropped.getValue(HealthDataType.HEART_RATE).deletedIds)
-        assertEquals("token-2", dropped.getValue(HealthDataType.HEART_RATE).nextToken)
-        assertEquals("token-9", dropped.getValue(HealthDataType.WEIGHT).nextToken)
-    }
-
-    @Test
     fun bucketItems_rebuildsOnlyBucketsWithChangedItems() {
         data class Item(val bucket: Long, val isNew: Boolean, val id: String)
         val items = listOf(
@@ -129,5 +112,44 @@ class ChangeTrackingTest {
         val kept = bucketItems(items, { it.bucket }, { it.isNew }, { it.id == "edited" })
 
         assertEquals(listOf("a", "edited", "c"), kept.map { it.id })
+    }
+
+    @Test
+    fun standingDeletions_dropsRecordsWrittenAgainWithTheSameId() {
+        val pages = listOf(
+            ChangesPage(upserted = setOf("rewritten-later"), deleted = listOf("gone", "rewritten-same-page", "rewritten-later", "deleted-after-write")),
+            ChangesPage(upserted = setOf("rewritten-same-page", "rewritten-later"), deleted = emptyList()),
+            ChangesPage(upserted = emptySet(), deleted = listOf("gone", "deleted-after-write")),
+        )
+
+        // "deleted-after-write" was written on no page; "gone" is reported twice but sent once.
+        assertEquals(listOf("gone", "deleted-after-write"), standingDeletions(pages))
+    }
+
+    @Test
+    fun standingDeletions_keepsDeletionAfterAnEarlierWrite() {
+        val pages = listOf(
+            ChangesPage(upserted = setOf("a"), deleted = emptyList()),
+            ChangesPage(upserted = emptySet(), deleted = listOf("a")),
+        )
+
+        assertEquals(listOf("a"), standingDeletions(pages))
+    }
+
+    @Test
+    fun deletedRecords_listsEveryType() {
+        val changes = mapOf(
+            HealthDataType.HEART_RATE to TypeChanges(ChangedRecords.NONE, listOf("a", "b"), "hr-next"),
+            HealthDataType.STEPS to TypeChanges(ChangedRecords.NONE, listOf("c"), "steps-next"),
+        )
+
+        assertEquals(
+            listOf(
+                DeletedRecord(HealthDataType.HEART_RATE, "a"),
+                DeletedRecord(HealthDataType.HEART_RATE, "b"),
+                DeletedRecord(HealthDataType.STEPS, "c"),
+            ),
+            changes.deletedRecords(),
+        )
     }
 }

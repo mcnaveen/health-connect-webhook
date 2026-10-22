@@ -134,7 +134,7 @@ class SyncManager(private val context: Context) {
             // Incremental sync also asks the Health Connect Changes API what changed since the
             // last sync: edits and late writes that the lastSync filter drops, and deletions.
             val readEnd = end ?: Instant.now()
-            var typeChanges = if (!hasExplicitRange) {
+            val typeChanges = if (!hasExplicitRange) {
                 healthConnectManager.readChanges(
                     types = enabledTypes,
                     tokens = enabledTypes.associateWith { preferencesManager.getChangesToken(it) },
@@ -146,41 +146,21 @@ class SyncManager(private val context: Context) {
             }
 
             // Read health data
-            suspend fun readData(changes: Map<HealthDataType, TypeChanges>): Result<HealthData> =
-                healthConnectManager.readHealthData(
-                    enabledTypes = enabledTypes,
-                    lastSyncTimestamps = lastSyncTimestamps,
-                    timeRangeDays = timeRangeDays,
-                    start = start,
-                    end = readEnd,
-                    dataTypeResolutions = preferencesManager.getDataTypeResolutions(),
-                    changes = changes.mapValues { it.value.changed },
-                ).map { data ->
-                    data.copy(
-                        deleted = changes.flatMap { (type, typeChange) ->
-                            typeChange.deletedIds.map { DeletedRecord(type, it) }
-                        },
-                    )
-                }
-
-            var healthDataResult = readData(typeChanges)
+            val healthDataResult = healthConnectManager.readHealthData(
+                enabledTypes = enabledTypes,
+                lastSyncTimestamps = lastSyncTimestamps,
+                timeRangeDays = timeRangeDays,
+                start = start,
+                end = readEnd,
+                dataTypeResolutions = preferencesManager.getDataTypeResolutions(),
+                changes = typeChanges.mapValues { it.value.changed },
+            )
             if (healthDataResult.isFailure) {
                 return@withContext Result.failure(healthDataResult.exceptionOrNull() ?: Exception("Failed to read health data"))
             }
-            var healthData = healthDataResult.getOrThrow()
-
-            // A big late write (e.g. weeks of heart rate from a watch) can make the changed
-            // records too large to send. The tokens move on only after a successful sync, so
-            // every sync would fail again. Drop the changed records once and send the rest.
-            if (countHealthData(healthData) > MAX_RECORDS_PER_PAYLOAD && typeChanges.hasChangedRecords()) {
-                Log.w(TAG, "Payload too large with changed records; sending without them")
-                typeChanges = typeChanges.withoutChangedRecords()
-                healthDataResult = readData(typeChanges)
-                if (healthDataResult.isFailure) {
-                    return@withContext Result.failure(healthDataResult.exceptionOrNull() ?: Exception("Failed to read health data"))
-                }
-                healthData = healthDataResult.getOrThrow()
-            }
+            val healthData = healthDataResult.getOrThrow()
+                .copy(deleted = typeChanges.deletedRecords())
+                .withoutDeletionsOfPresentRecords()
 
             // Check if there's any new data
             if (isHealthDataEmpty(healthData)) {
@@ -190,29 +170,79 @@ class SyncManager(private val context: Context) {
                 return@withContext Result.success(SyncResult.NoData)
             }
 
-            val recordCount = countHealthData(healthData)
-            if (recordCount > MAX_RECORDS_PER_PAYLOAD) {
-                return@withContext Result.failure(
-                    Exception(
-                        "Payload too large ($recordCount records). " +
-                            "Raise sample resolution (e.g. heart rate 1 min) or sync a shorter range."
-                    )
-                )
-            }
+            val itemsText = describeItems(healthData)
 
-            // Build full payload (also used by local TCP server)
-            val fullPayload = try {
-                buildJsonPayload(healthData)
-            } catch (oom: OutOfMemoryError) {
-                return@withContext Result.failure(
-                    Exception(
-                        "Out of memory while building JSON ($recordCount records). " +
-                            "Raise sample resolution or sync a shorter range.",
-                        oom
+            // Build full payload (also used by local TCP server). Data too large for one payload
+            // is sent in parts, and each part is built on its own, so the full JSON of a big
+            // backlog never has to fit in memory. The local server then gets the last part.
+            val fullPayload = if (healthData.itemCount() <= MAX_ITEMS_PER_PAYLOAD) {
+                try {
+                    buildJsonPayload(healthData)
+                } catch (oom: OutOfMemoryError) {
+                    return@withContext Result.failure(
+                        Exception(
+                            "Out of memory while building JSON ($itemsText). " +
+                                "Raise sample resolution or sync a shorter range.",
+                            oom
+                        )
                     )
-                )
+                }
+            } else {
+                null
             }
-            LocalHttpServerManager.publishPayload(fullPayload)
+            val latestPayload = fullPayload ?: try {
+                buildJsonPayload(healthData.chunked(MAX_ITEMS_PER_PAYLOAD).last())
+            } catch (_: OutOfMemoryError) {
+                null
+            }
+            latestPayload?.let(LocalHttpServerManager::publishPayload)
+
+            /** Posts one payload to one webhook. [json] is the payload when it is already built. */
+            suspend fun deliver(config: WebhookConfig, data: HealthData, json: String?): Result<Unit> {
+                val itemCount = data.itemCount()
+                return when (config.deliveryFormat) {
+                    WebhookDeliveryFormat.JSON -> {
+                        val payload = try {
+                            json ?: buildJsonPayload(data)
+                        } catch (oom: OutOfMemoryError) {
+                            return Result.failure(
+                                Exception("Out of memory while building JSON for ${config.url}. Raise sample resolution.", oom)
+                            )
+                        }
+                        WebhookManager(
+                            webhookConfigs = listOf(config),
+                            context = context,
+                            dataType = "all",
+                            recordCount = itemCount,
+                            syncType = syncType,
+                            payload = payload
+                        ).postData(payload)
+                    }
+                    WebhookDeliveryFormat.GRPC -> {
+                        val grpcPayload = try {
+                            ProtobufPayloadBuilder.build(data, appVersionName)
+                        } catch (oom: OutOfMemoryError) {
+                            return Result.failure(
+                                Exception("Out of memory while building protobuf for ${config.url}. Raise sample resolution.", oom)
+                            )
+                        }
+                        val logJson = try {
+                            json ?: buildJsonPayload(data)
+                        } catch (_: OutOfMemoryError) {
+                            null
+                        }
+                        GrpcWebhookClient.deliver(
+                            config = config,
+                            payload = grpcPayload,
+                            context = context,
+                            dataType = "all",
+                            recordCount = itemCount,
+                            syncType = syncType,
+                            logPayload = logJson
+                        )
+                    }
+                }
+            }
 
             // Post to each enabled webhook with optional per-webhook data type filtering
             if (enabledWebhookConfigs.isNotEmpty()) {
@@ -232,54 +262,20 @@ class SyncManager(private val context: Context) {
                     }
                     if (isHealthDataEmpty(filteredData)) continue
                     atLeastOneAttempted = true
-                    val totalRecords = countHealthData(filteredData)
+                    val totalRecords = filteredData.itemCount()
 
-                    val result = when (config.deliveryFormat) {
-                        WebhookDeliveryFormat.JSON -> {
-                            val payload = try {
-                                if (config.dataTypeFilter != null) buildJsonPayload(filteredData) else fullPayload
-                            } catch (oom: OutOfMemoryError) {
-                                lastFailure = Exception(
-                                    "Out of memory while building JSON for ${config.url}. Raise sample resolution.",
-                                    oom
-                                )
-                                continue
-                            }
-                            val manager = WebhookManager(
-                                webhookConfigs = listOf(config),
-                                context = context,
-                                dataType = "all",
-                                recordCount = totalRecords,
-                                syncType = syncType,
-                                payload = payload
-                            )
-                            manager.postData(payload)
-                        }
-                        WebhookDeliveryFormat.GRPC -> {
-                            val grpcPayload = try {
-                                ProtobufPayloadBuilder.build(filteredData, appVersionName)
-                            } catch (oom: OutOfMemoryError) {
-                                lastFailure = Exception(
-                                    "Out of memory while building protobuf for ${config.url}. Raise sample resolution.",
-                                    oom
-                                )
-                                continue
-                            }
-                            val logJson = try {
-                                if (config.dataTypeFilter != null) buildJsonPayload(filteredData) else fullPayload
-                            } catch (_: OutOfMemoryError) {
-                                null
-                            }
-                            GrpcWebhookClient.deliver(
-                                config = config,
-                                payload = grpcPayload,
-                                context = context,
-                                dataType = "all",
-                                recordCount = totalRecords,
-                                syncType = syncType,
-                                logPayload = logJson
-                            )
-                        }
+                    // Data too large for one request goes out as several payloads, so a big
+                    // backlog cannot fail every sync. A failed part stops this webhook; the next
+                    // sync sends all parts again, and a receiver upserts by id or time.
+                    val chunks = filteredData.chunked(MAX_ITEMS_PER_PAYLOAD)
+                    if (chunks.size > 1) {
+                        Log.i(TAG, "Sending $totalRecords items to ${config.url} in ${chunks.size} payloads")
+                    }
+                    var result: Result<Unit> = Result.success(Unit)
+                    for (chunk in chunks) {
+                        val json = if (chunks.size == 1 && config.dataTypeFilter == null) fullPayload else null
+                        result = deliver(config, chunk, json)
+                        if (result.isFailure) break
                     }
                     
                     val notifConfigs = config.notificationConfigIds.mapNotNull { id -> 
@@ -403,8 +399,13 @@ class SyncManager(private val context: Context) {
                 data.menstruationFlow.size + data.menstruationPeriod.size +
                 data.intermenstrualBleeding.size + data.ovulationTest.size +
                 data.cervicalMucus.size + data.sexualActivity.size + data.basalBodyTemperature.size +
-                data.mindfulness.size +
-                data.deleted.size
+                data.mindfulness.size
+    }
+
+    /** "N records" or "N records, M deleted", for messages. */
+    private fun describeItems(data: HealthData): String {
+        val records = "${countHealthData(data)} records"
+        return if (data.deleted.isEmpty()) records else "$records, ${data.deleted.size} deleted"
     }
 
     private fun isHealthDataEmpty(data: HealthData): Boolean {
@@ -1104,7 +1105,7 @@ class SyncManager(private val context: Context) {
          * Soft cap before JSON encode. Full-resolution heart rate over 48h can
          * exceed this and OOMs mid-tier devices while building JsonObject trees.
          */
-        private const val MAX_RECORDS_PER_PAYLOAD = 25_000
+        private const val MAX_ITEMS_PER_PAYLOAD = 25_000
         private const val TAG = "SyncManager"
     }
 

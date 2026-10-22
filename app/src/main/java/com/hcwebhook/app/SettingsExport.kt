@@ -20,4 +20,6 @@ data class SettingsExport(
     val heartRateDownsampleMinutes: Int = 0,
     val stepsResolutionMinutes: Int = -1,
     val dataTypeResolutions: Map<String, Int> = emptyMap(),
+    /** Null in older backups; import then keeps the current style. */
+    val timestampStyle: String? = null,
 )

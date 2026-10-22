@@ -1078,9 +1078,10 @@ class HealthConnectManager(private val context: Context) {
     /**
      * Reads what changed in Health Connect for each type since its stored Changes token.
      * Changed records are kept only when the normal `time >= lastSync` read misses them
-     * (see [ChangedRecords]). A type with no token gets a new token and no changes. When a
-     * read fails, or the token expired, the type gets no changes and a new token, so one bad
-     * type cannot block the sync.
+     * (see [ChangedRecords]), and deletions only when they still stand (see
+     * [standingDeletions]). A type with no token gets a new token and no changes. An expired
+     * token gets a new token. When a read fails, the type gets no changes and keeps its token,
+     * so one bad type cannot block the sync and the next sync reads the same changes again.
      */
     suspend fun readChanges(
         types: Set<HealthDataType>,
@@ -1105,7 +1106,7 @@ class HealthConnectManager(private val context: Context) {
             if (token == null) return TypeChanges(none, emptyList(), newChangesToken(type))
             val ids = mutableSetOf<String>()
             val spans = mutableListOf<Pair<Instant, Instant>>()
-            val deletedIds = mutableListOf<String>()
+            val pages = mutableListOf<ChangesPage>()
             var nextToken: String = token
             do {
                 val current = nextToken
@@ -1114,26 +1115,30 @@ class HealthConnectManager(private val context: Context) {
                     Log.w(TAG, "${type.name}: changes token expired, starting a new one")
                     return TypeChanges(none, emptyList(), newChangesToken(type))
                 }
+                val upserted = mutableSetOf<String>()
+                val deleted = mutableListOf<String>()
                 for (change in response.changes) {
                     when (change) {
                         is UpsertionChange -> {
+                            upserted.add(change.record.metadata.id)
                             val span = recordSpan(change.record) ?: continue
                             if (isMissedByIncrementalRead(span, lastSync, windowStart)) {
                                 ids.add(change.record.metadata.id)
                                 spans.add(span)
                             }
                         }
-                        is DeletionChange -> deletedIds.add(change.recordId)
+                        is DeletionChange -> deleted.add(change.recordId)
                     }
                 }
+                pages.add(ChangesPage(upserted, deleted))
                 nextToken = response.nextChangesToken
             } while (response.hasMore)
-            TypeChanges(ChangedRecords(ids, spans), deletedIds.distinct(), nextToken)
+            TypeChanges(ChangedRecords(ids, spans), standingDeletions(pages), nextToken)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "${type.name}: could not read changes, starting a new token", e)
-            TypeChanges(none, emptyList(), null)
+            Log.w(TAG, "${type.name}: could not read changes, keeping the token", e)
+            TypeChanges(none, emptyList(), token)
         }
     }
 

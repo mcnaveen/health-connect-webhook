@@ -83,6 +83,8 @@ Use it to backfill history in chunks, e.g. `GET /?start=2026-07-01&end=2026-07-1
 
 Returns the **last published** JSON string from memory — whatever was last stored by a successful `GET /` or a background webhook sync.
 
+When a sync is too large for one payload and is sent in parts, `/latest` holds the last part.
+
 **200** — cached payload, or `{"status":"no_data"}` if nothing was ever published in this process.
 
 ---

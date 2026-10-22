@@ -176,6 +176,9 @@ Limits:
 - The first sync after an upgrade starts tracking. Changes before it are not sent.
 - Changes older than 30 days can be lost: Health Connect expires the tracking token, and the app then starts a new one.
 - One sync reads at most 31 old days per type for changes.
+- A deletion is sent only when the record is still gone. Some apps (such as Fitbit) delete a record and write it again with the same client record id, which gives the same `id`; the app does not send a deletion for such a record.
+- When the read is too large for one request (more than 25,000 records and deletions), the sync sends it as several payloads with the same schema, each with a part of the lists. A webhook counts as reached only when all its parts arrive. If a part fails, the next sync sends all parts again, so upsert by `id` (or by type and time for aggregates).
+- When the app cannot read the changes of a type, it keeps the tracking token and reads the same changes again on the next sync.
 - Explicit ranges (manual time range, local HTTP) read the full window and do not use change tracking.
 
 ### Record metadata
