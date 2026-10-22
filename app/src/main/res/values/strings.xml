@@ -164,13 +164,13 @@
     <string name="webhooks_toast_invalid_url">Please enter a valid HTTP/HTTPS URL</string>
     <string name="webhooks_toast_invalid_target">Enter a valid HTTP URL or gRPC target (host:port)</string>
     <string name="webhooks_delivery_section">Delivery format</string>
-    <string name="webhooks_delivery_json">JSON (HTTP POST)</string>
-    <string name="webhooks_delivery_grpc">Protobuf / gRPC</string>
+    <string name="webhooks_delivery_json" translatable="false">JSON (HTTP POST)</string>
+    <string name="webhooks_delivery_grpc" translatable="false">Protobuf / gRPC</string>
     <string name="webhooks_delivery_grpc_hint">Target: host:port, https://host, or http://host:port. Server must implement HealthWebhook.Deliver and return ok=true.</string>
     <string name="webhooks_delivery_share_proto">Share schema (.proto)</string>
     <string name="webhooks_delivery_share_proto_title">Share protobuf schema</string>
     <string name="webhooks_delivery_share_proto_failed">Could not share schema: %1$s</string>
-    <string name="webhooks_delivery_format_label">%1$s</string>
+    <string name="webhooks_delivery_format_label" translatable="false">%1$s</string>
     <string name="webhooks_url_label_json">Webhook URL</string>
     <string name="webhooks_url_label_grpc">gRPC target</string>
     <string name="webhooks_headers_manage_title">Manage Headers</string>
@@ -359,10 +359,10 @@
     <string name="logs_filter_success">Success</string>
     <string name="logs_filter_error">Error</string>
     <string name="logs_filter_delivery">Delivery</string>
-    <string name="logs_filter_json">JSON</string>
-    <string name="logs_filter_grpc">gRPC</string>
-    <string name="logs_delivery_json">JSON</string>
-    <string name="logs_delivery_grpc">gRPC</string>
+    <string name="logs_filter_json" translatable="false">JSON</string>
+    <string name="logs_filter_grpc" translatable="false">gRPC</string>
+    <string name="logs_delivery_json" translatable="false">JSON</string>
+    <string name="logs_delivery_grpc" translatable="false">gRPC</string>
     <string name="logs_limit_label">Show %1$d</string>
     <string name="logs_response_time">%1$d ms</string>
     <string name="logs_sync_manual">Manual</string>

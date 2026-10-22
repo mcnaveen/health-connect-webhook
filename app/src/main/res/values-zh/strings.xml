@@ -402,4 +402,13 @@
     <string name="sync_service_channel_desc">后台同步健康数据时短暂显示</string>
     <string name="sync_service_notification_title">正在同步健康数据…</string>
     <string name="sync_service_notification_text">正在将数据发送到您配置的 Webhook</string>
+    <string name="webhooks_toast_invalid_target">请输入有效的 HTTP URL 或 gRPC 目标 (host:port)</string>
+    <string name="webhooks_delivery_section">发送格式</string>
+    <string name="webhooks_delivery_grpc_hint">目标：host:port、https://host 或 http://host:port。服务器必须实现 HealthWebhook.Deliver 并返回 ok=true。</string>
+    <string name="webhooks_delivery_share_proto">分享架构 (.proto)</string>
+    <string name="webhooks_delivery_share_proto_title">分享 Protobuf 架构</string>
+    <string name="webhooks_delivery_share_proto_failed">无法分享架构：%1$s</string>
+    <string name="webhooks_url_label_json">Webhook URL</string>
+    <string name="webhooks_url_label_grpc">gRPC 目标</string>
+    <string name="logs_filter_delivery">发送</string>
 </resources>

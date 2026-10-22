@@ -402,4 +402,13 @@
     <string name="sync_service_channel_desc">バックグラウンドで健康データを同期中に短時間表示されます</string>
     <string name="sync_service_notification_title">健康データを同期中…</string>
     <string name="sync_service_notification_text">設定したウェブフックにデータを送信中</string>
+    <string name="webhooks_toast_invalid_target">有効な HTTP URL または gRPC ターゲット (host:port) を入力してください</string>
+    <string name="webhooks_delivery_section">送信形式</string>
+    <string name="webhooks_delivery_grpc_hint">ターゲット: host:port、https://host、または http://host:port。サーバーは HealthWebhook.Deliver を実装し、ok=true を返す必要があります。</string>
+    <string name="webhooks_delivery_share_proto">スキーマを共有 (.proto)</string>
+    <string name="webhooks_delivery_share_proto_title">Protobuf スキーマを共有</string>
+    <string name="webhooks_delivery_share_proto_failed">スキーマを共有できませんでした: %1$s</string>
+    <string name="webhooks_url_label_json">Webhook URL</string>
+    <string name="webhooks_url_label_grpc">gRPC ターゲット</string>
+    <string name="logs_filter_delivery">送信</string>
 </resources>

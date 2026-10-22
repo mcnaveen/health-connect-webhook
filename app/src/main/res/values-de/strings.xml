@@ -402,4 +402,13 @@
     <string name="sync_service_channel_desc">Wird kurz während der Synchronisierung von Gesundheitsdaten im Hintergrund angezeigt</string>
     <string name="sync_service_notification_title">Gesundheitsdaten werden synchronisiert…</string>
     <string name="sync_service_notification_text">Daten werden an Ihre konfigurierten Webhooks gesendet</string>
+    <string name="webhooks_toast_invalid_target">Gib eine gültige HTTP-URL oder ein gRPC-Ziel (host:port) ein</string>
+    <string name="webhooks_delivery_section">Übertragungsformat</string>
+    <string name="webhooks_delivery_grpc_hint">Ziel: host:port, https://host oder http://host:port. Der Server muss HealthWebhook.Deliver bereitstellen und ok=true zurückgeben.</string>
+    <string name="webhooks_delivery_share_proto">Schema teilen (.proto)</string>
+    <string name="webhooks_delivery_share_proto_title">Protobuf-Schema teilen</string>
+    <string name="webhooks_delivery_share_proto_failed">Schema konnte nicht geteilt werden: %1$s</string>
+    <string name="webhooks_url_label_json">Webhook-URL</string>
+    <string name="webhooks_url_label_grpc">gRPC-Ziel</string>
+    <string name="logs_filter_delivery">Übertragung</string>
 </resources>

@@ -402,4 +402,13 @@
     <string name="sync_service_channel_desc">பின்னணியில் ஜீவன தரவுகளை ஒத்திசைக்கும்போது சுருக்கமாக காட்டப்படுகிறது</string>
     <string name="sync_service_notification_title">ஜீவன தரவுகளை ஒத்திசைக்கிறது…</string>
     <string name="sync_service_notification_text">உங்கள் கூற்றப்பட்ட webhooksக்கு தரவுகளை அனுப்புகிறது</string>
+    <string name="webhooks_toast_invalid_target">சரியான HTTP URL அல்லது gRPC இலக்கை (host:port) உள்ளிடவும்</string>
+    <string name="webhooks_delivery_section">அனுப்பும் வடிவம்</string>
+    <string name="webhooks_delivery_grpc_hint">இலக்கு: host:port, https://host அல்லது http://host:port. சர்வர் HealthWebhook.Deliver ஐ செயல்படுத்தி ok=true என்று திருப்ப வேண்டும்.</string>
+    <string name="webhooks_delivery_share_proto">ஸ்கீமாவைப் பகிர் (.proto)</string>
+    <string name="webhooks_delivery_share_proto_title">Protobuf ஸ்கீமாவைப் பகிர்</string>
+    <string name="webhooks_delivery_share_proto_failed">ஸ்கீமாவைப் பகிர முடியவில்லை: %1$s</string>
+    <string name="webhooks_url_label_json">Webhook URL</string>
+    <string name="webhooks_url_label_grpc">gRPC இலக்கு</string>
+    <string name="logs_filter_delivery">அனுப்புதல்</string>
 </resources>

@@ -402,4 +402,13 @@
     <string name="sync_service_channel_desc">백그라운드에서 건강 데이터를 동기화하는 동안 잊시 표시됨</string>
     <string name="sync_service_notification_title">건강 데이터 동기화 중…</string>
     <string name="sync_service_notification_text">설정된 웹훅에 데이터 전송 중</string>
+    <string name="webhooks_toast_invalid_target">유효한 HTTP URL 또는 gRPC 대상(host:port)을 입력하세요</string>
+    <string name="webhooks_delivery_section">전송 형식</string>
+    <string name="webhooks_delivery_grpc_hint">대상: host:port, https://host 또는 http://host:port. 서버는 HealthWebhook.Deliver를 구현하고 ok=true를 반환해야 합니다.</string>
+    <string name="webhooks_delivery_share_proto">스키마 공유 (.proto)</string>
+    <string name="webhooks_delivery_share_proto_title">Protobuf 스키마 공유</string>
+    <string name="webhooks_delivery_share_proto_failed">스키마를 공유할 수 없습니다: %1$s</string>
+    <string name="webhooks_url_label_json">Webhook URL</string>
+    <string name="webhooks_url_label_grpc">gRPC 대상</string>
+    <string name="logs_filter_delivery">전송</string>
 </resources>
