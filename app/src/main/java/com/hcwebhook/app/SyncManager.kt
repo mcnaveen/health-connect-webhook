@@ -153,7 +153,9 @@ class SyncManager(private val context: Context) {
                 start = start,
                 end = readEnd,
                 dataTypeResolutions = preferencesManager.getDataTypeResolutions(),
-                changes = typeChanges.mapValues { it.value.changed },
+                changes = typeChanges.mapValues { (type, changes) ->
+                    changes.changed.copy(sentAtLastSync = preferencesManager.getLastSyncBoundaryIds(type))
+                },
             )
             if (healthDataResult.isFailure) {
                 return@withContext Result.failure(healthDataResult.exceptionOrNull() ?: Exception("Failed to read health data"))
@@ -451,152 +453,153 @@ class SyncManager(private val context: Context) {
         moveTimestamps: Boolean,
     ) {
         val now = Instant.now()
-        fun setTimestamp(type: HealthDataType, timestamp: Long) {
-            if (moveTimestamps) preferencesManager.setLastSyncTimestamp(type, timestamp)
+        /**
+         * Moves [type]'s timestamp to the newest of [items] (time, record id) and stores the ids
+         * sent at that millisecond. With [clamp], future times are skipped (see [clampedMaxEndMs]).
+         */
+        fun mark(type: HealthDataType, items: List<Pair<Instant, String?>>, clamp: Boolean) {
+            if (!moveTimestamps) return
+            val timestamp = if (clamp) {
+                clampedMaxEndMs(items.asSequence().map { it.first }, now) ?: return
+            } else {
+                items.maxOf { it.first }.toEpochMilli()
+            }
+            val boundaryIds = items.filter { it.first.toEpochMilli() == timestamp }.mapNotNullTo(HashSet()) { it.second }
+            preferencesManager.setLastSyncTimestamp(type, timestamp, boundaryIds)
         }
         if (data.steps.isNotEmpty()) {
-            clampedMaxEndMs(data.steps.asSequence().map { it.endTime }, now)
-                ?.let { setTimestamp(HealthDataType.STEPS, it) }
+            mark(HealthDataType.STEPS, data.steps.map { it.endTime to it.metadata?.id }, clamp = true)
             syncCounts[HealthDataType.STEPS] = data.steps.size
         }
         if (data.sleep.isNotEmpty()) {
-            clampedMaxEndMs(data.sleep.asSequence().map { it.sessionEndTime }, now)
-                ?.let { setTimestamp(HealthDataType.SLEEP, it) }
+            mark(HealthDataType.SLEEP, data.sleep.map { it.sessionEndTime to it.metadata?.id }, clamp = true)
             syncCounts[HealthDataType.SLEEP] = data.sleep.size
         }
         if (data.heartRate.isNotEmpty()) {
-            setTimestamp(HealthDataType.HEART_RATE, data.heartRate.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.HEART_RATE, data.heartRate.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.HEART_RATE] = data.heartRate.size
         }
         if (data.heartRateVariability.isNotEmpty()) {
-            setTimestamp(HealthDataType.HEART_RATE_VARIABILITY, data.heartRateVariability.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.HEART_RATE_VARIABILITY, data.heartRateVariability.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.HEART_RATE_VARIABILITY] = data.heartRateVariability.size
         }
         if (data.distance.isNotEmpty()) {
-            clampedMaxEndMs(data.distance.asSequence().map { it.endTime }, now)
-                ?.let { setTimestamp(HealthDataType.DISTANCE, it) }
+            mark(HealthDataType.DISTANCE, data.distance.map { it.endTime to it.metadata?.id }, clamp = true)
             syncCounts[HealthDataType.DISTANCE] = data.distance.size
         }
         if (data.activeCalories.isNotEmpty()) {
-            clampedMaxEndMs(data.activeCalories.asSequence().map { it.endTime }, now)
-                ?.let { setTimestamp(HealthDataType.ACTIVE_CALORIES, it) }
+            mark(HealthDataType.ACTIVE_CALORIES, data.activeCalories.map { it.endTime to it.metadata?.id }, clamp = true)
             syncCounts[HealthDataType.ACTIVE_CALORIES] = data.activeCalories.size
         }
         if (data.totalCalories.isNotEmpty()) {
             // Clamp to now() so a future-dated endTime (e.g., daily projection
             // from Google Health ending at local midnight) cannot advance the
             // cursor past wall-clock time and starve subsequent closed records.
-            clampedMaxEndMs(data.totalCalories.asSequence().map { it.endTime }, now)
-                ?.let { setTimestamp(HealthDataType.TOTAL_CALORIES, it) }
+            mark(HealthDataType.TOTAL_CALORIES, data.totalCalories.map { it.endTime to it.metadata?.id }, clamp = true)
             syncCounts[HealthDataType.TOTAL_CALORIES] = data.totalCalories.size
         }
         if (data.weight.isNotEmpty()) {
-            setTimestamp(HealthDataType.WEIGHT, data.weight.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.WEIGHT, data.weight.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.WEIGHT] = data.weight.size
         }
         if (data.height.isNotEmpty()) {
-            setTimestamp(HealthDataType.HEIGHT, data.height.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.HEIGHT, data.height.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.HEIGHT] = data.height.size
         }
         if (data.bloodPressure.isNotEmpty()) {
-            setTimestamp(HealthDataType.BLOOD_PRESSURE, data.bloodPressure.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.BLOOD_PRESSURE, data.bloodPressure.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.BLOOD_PRESSURE] = data.bloodPressure.size
         }
         if (data.bloodGlucose.isNotEmpty()) {
-            setTimestamp(HealthDataType.BLOOD_GLUCOSE, data.bloodGlucose.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.BLOOD_GLUCOSE, data.bloodGlucose.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.BLOOD_GLUCOSE] = data.bloodGlucose.size
         }
         if (data.oxygenSaturation.isNotEmpty()) {
-            setTimestamp(HealthDataType.OXYGEN_SATURATION, data.oxygenSaturation.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.OXYGEN_SATURATION, data.oxygenSaturation.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.OXYGEN_SATURATION] = data.oxygenSaturation.size
         }
         if (data.bodyTemperature.isNotEmpty()) {
-            setTimestamp(HealthDataType.BODY_TEMPERATURE, data.bodyTemperature.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.BODY_TEMPERATURE, data.bodyTemperature.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.BODY_TEMPERATURE] = data.bodyTemperature.size
         }
         if (data.skinTemperature.isNotEmpty()) {
-            setTimestamp(HealthDataType.SKIN_TEMPERATURE, data.skinTemperature.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.SKIN_TEMPERATURE, data.skinTemperature.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.SKIN_TEMPERATURE] = data.skinTemperature.size
         }
         if (data.respiratoryRate.isNotEmpty()) {
-            setTimestamp(HealthDataType.RESPIRATORY_RATE, data.respiratoryRate.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.RESPIRATORY_RATE, data.respiratoryRate.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.RESPIRATORY_RATE] = data.respiratoryRate.size
         }
         if (data.restingHeartRate.isNotEmpty()) {
-            setTimestamp(HealthDataType.RESTING_HEART_RATE, data.restingHeartRate.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.RESTING_HEART_RATE, data.restingHeartRate.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.RESTING_HEART_RATE] = data.restingHeartRate.size
         }
         if (data.exercise.isNotEmpty()) {
-            clampedMaxEndMs(data.exercise.asSequence().map { it.endTime }, now)
-                ?.let { setTimestamp(HealthDataType.EXERCISE, it) }
+            mark(HealthDataType.EXERCISE, data.exercise.map { it.endTime to it.metadata?.id }, clamp = true)
             syncCounts[HealthDataType.EXERCISE] = data.exercise.size
         }
         if (data.hydration.isNotEmpty()) {
-            clampedMaxEndMs(data.hydration.asSequence().map { it.endTime }, now)
-                ?.let { setTimestamp(HealthDataType.HYDRATION, it) }
+            mark(HealthDataType.HYDRATION, data.hydration.map { it.endTime to it.metadata?.id }, clamp = true)
             syncCounts[HealthDataType.HYDRATION] = data.hydration.size
         }
         if (data.nutrition.isNotEmpty()) {
-            clampedMaxEndMs(data.nutrition.asSequence().map { it.endTime }, now)
-                ?.let { setTimestamp(HealthDataType.NUTRITION, it) }
+            mark(HealthDataType.NUTRITION, data.nutrition.map { it.endTime to it.metadata?.id }, clamp = true)
             syncCounts[HealthDataType.NUTRITION] = data.nutrition.size
         }
         if (data.basalMetabolicRate.isNotEmpty()) {
-            setTimestamp(HealthDataType.BASAL_METABOLIC_RATE, data.basalMetabolicRate.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.BASAL_METABOLIC_RATE, data.basalMetabolicRate.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.BASAL_METABOLIC_RATE] = data.basalMetabolicRate.size
         }
         if (data.bodyFat.isNotEmpty()) {
-            setTimestamp(HealthDataType.BODY_FAT, data.bodyFat.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.BODY_FAT, data.bodyFat.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.BODY_FAT] = data.bodyFat.size
         }
         if (data.leanBodyMass.isNotEmpty()) {
-            setTimestamp(HealthDataType.LEAN_BODY_MASS, data.leanBodyMass.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.LEAN_BODY_MASS, data.leanBodyMass.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.LEAN_BODY_MASS] = data.leanBodyMass.size
         }
         if (data.bodyWaterMass.isNotEmpty()) {
-            setTimestamp(HealthDataType.BODY_WATER_MASS, data.bodyWaterMass.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.BODY_WATER_MASS, data.bodyWaterMass.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.BODY_WATER_MASS] = data.bodyWaterMass.size
         }
         if (data.vo2Max.isNotEmpty()) {
-            setTimestamp(HealthDataType.VO2_MAX, data.vo2Max.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.VO2_MAX, data.vo2Max.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.VO2_MAX] = data.vo2Max.size
         }
         if (data.boneMass.isNotEmpty()) {
-            setTimestamp(HealthDataType.BONE_MASS, data.boneMass.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.BONE_MASS, data.boneMass.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.BONE_MASS] = data.boneMass.size
         }
         if (data.menstruationFlow.isNotEmpty()) {
-            setTimestamp(HealthDataType.MENSTRUATION_FLOW, data.menstruationFlow.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.MENSTRUATION_FLOW, data.menstruationFlow.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.MENSTRUATION_FLOW] = data.menstruationFlow.size
         }
         if (data.menstruationPeriod.isNotEmpty()) {
-            clampedMaxEndMs(data.menstruationPeriod.asSequence().map { it.endTime }, now)
-                ?.let { setTimestamp(HealthDataType.MENSTRUATION_PERIOD, it) }
+            mark(HealthDataType.MENSTRUATION_PERIOD, data.menstruationPeriod.map { it.endTime to it.metadata?.id }, clamp = true)
             syncCounts[HealthDataType.MENSTRUATION_PERIOD] = data.menstruationPeriod.size
         }
         if (data.intermenstrualBleeding.isNotEmpty()) {
-            setTimestamp(HealthDataType.INTERMENSTRUAL_BLEEDING, data.intermenstrualBleeding.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.INTERMENSTRUAL_BLEEDING, data.intermenstrualBleeding.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.INTERMENSTRUAL_BLEEDING] = data.intermenstrualBleeding.size
         }
         if (data.ovulationTest.isNotEmpty()) {
-            setTimestamp(HealthDataType.OVULATION_TEST, data.ovulationTest.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.OVULATION_TEST, data.ovulationTest.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.OVULATION_TEST] = data.ovulationTest.size
         }
         if (data.cervicalMucus.isNotEmpty()) {
-            setTimestamp(HealthDataType.CERVICAL_MUCUS, data.cervicalMucus.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.CERVICAL_MUCUS, data.cervicalMucus.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.CERVICAL_MUCUS] = data.cervicalMucus.size
         }
         if (data.sexualActivity.isNotEmpty()) {
-            setTimestamp(HealthDataType.SEXUAL_ACTIVITY, data.sexualActivity.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.SEXUAL_ACTIVITY, data.sexualActivity.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.SEXUAL_ACTIVITY] = data.sexualActivity.size
         }
         if (data.basalBodyTemperature.isNotEmpty()) {
-            setTimestamp(HealthDataType.BASAL_BODY_TEMPERATURE, data.basalBodyTemperature.maxOf { it.time }.toEpochMilli())
+            mark(HealthDataType.BASAL_BODY_TEMPERATURE, data.basalBodyTemperature.map { it.time to it.metadata?.id }, clamp = false)
             syncCounts[HealthDataType.BASAL_BODY_TEMPERATURE] = data.basalBodyTemperature.size
         }
         if (data.mindfulness.isNotEmpty()) {
-            clampedMaxEndMs(data.mindfulness.asSequence().map { it.endTime }, now)
-                ?.let { setTimestamp(HealthDataType.MINDFULNESS, it) }
+            mark(HealthDataType.MINDFULNESS, data.mindfulness.map { it.endTime to it.metadata?.id }, clamp = true)
             syncCounts[HealthDataType.MINDFULNESS] = data.mindfulness.size
         }
     }

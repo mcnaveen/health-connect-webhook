@@ -17,6 +17,7 @@ class PreferencesManager(context: Context) {
     companion object {
         private const val PREFS_NAME = "hc_webhook_prefs"
         private const val KEY_LAST_SYNC_TS_PREFIX = "last_sync_ts_"
+        private const val KEY_LAST_SYNC_IDS_PREFIX = "last_sync_ids_"
         private const val KEY_CHANGES_TOKEN_PREFIX = "changes_token_"
         private const val KEY_LAST_STEPS_SYNC_TS = "last_steps_sync_ts"
         private const val KEY_LAST_SLEEP_SYNC_TS = "last_sleep_sync_ts"
@@ -153,9 +154,20 @@ class PreferencesManager(context: Context) {
         return if (timestamp == -1L) null else timestamp
     }
 
-    fun setLastSyncTimestamp(type: HealthDataType, timestamp: Long) {
-        prefs.edit().putLong(KEY_LAST_SYNC_TS_PREFIX + type.name, timestamp).apply()
+    /**
+     * Stores [type]'s last sync timestamp and the ids of the records sent at that exact
+     * millisecond, so the next sync does not send them again (see [ChangedRecords.keeps]).
+     */
+    fun setLastSyncTimestamp(type: HealthDataType, timestamp: Long, boundaryIds: Set<String> = emptySet()) {
+        prefs.edit()
+            .putLong(KEY_LAST_SYNC_TS_PREFIX + type.name, timestamp)
+            .putStringSet(KEY_LAST_SYNC_IDS_PREFIX + type.name, boundaryIds)
+            .apply()
     }
+
+    /** Ids of the records sent at [type]'s last sync timestamp. */
+    fun getLastSyncBoundaryIds(type: HealthDataType): Set<String> =
+        prefs.getStringSet(KEY_LAST_SYNC_IDS_PREFIX + type.name, null)?.toSet().orEmpty()
 
     /** Health Connect Changes API token for this type, used to find edited and deleted records. */
     fun getChangesToken(type: HealthDataType): String? =

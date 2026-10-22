@@ -26,10 +26,17 @@ data class DeletedRecord(
 data class ChangedRecords(
     val ids: Set<String> = emptySet(),
     val spans: List<Pair<Instant, Instant>> = emptyList(),
+    /**
+     * Ids of the records the last sync sent at the millisecond of lastSync. lastSync is the
+     * time of the newest sent record, so without this list `time >= lastSync` sends that
+     * record again on every sync.
+     */
+    val sentAtLastSync: Set<String> = emptySet(),
 ) {
     /** True when the record is new since [lastSync] or is a changed record. */
     fun keeps(lastSync: Instant?, time: Instant, id: String?): Boolean =
-        lastSync == null || time >= lastSync || id in ids
+        lastSync == null || id in ids ||
+            (time >= lastSync && !(id in sentAtLastSync && time.toEpochMilli() == lastSync.toEpochMilli()))
 
     /** True when a changed record overlaps [start, end). */
     fun touches(start: Instant, end: Instant): Boolean =
@@ -78,10 +85,11 @@ internal fun standingDeletions(pages: List<ChangesPage>): List<String> {
 
 /**
  * True when the normal incremental read drops a changed record: it starts before the read
- * window, or it ends before [lastSync] (the read keeps only `time >= lastSync`).
+ * window, or it ends before [lastSync] or in its millisecond (the read keeps only
+ * `time >= lastSync`, and skips the records the last sync sent at that millisecond).
  */
 internal fun isMissedByIncrementalRead(span: Pair<Instant, Instant>, lastSync: Instant?, windowStart: Instant): Boolean =
-    span.first.isBefore(windowStart) || (lastSync != null && span.second.isBefore(lastSync))
+    span.first.isBefore(windowStart) || (lastSync != null && span.second.isBefore(lastSync.plusMillis(1)))
 
 /**
  * (start, end) of a record; an instant record has start == end. Health Connect's

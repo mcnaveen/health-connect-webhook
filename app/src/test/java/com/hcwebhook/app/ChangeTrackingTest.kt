@@ -24,6 +24,21 @@ class ChangeTrackingTest {
     }
 
     @Test
+    fun keeps_skipsOnlyRecordsSentAtLastSyncMillisecond() {
+        val lastSync = at("2026-05-09T12:00:00Z")
+        val inLastSyncMs = lastSync.plusNanos(152_563)
+        val changed = ChangedRecords(sentAtLastSync = setOf("sent"))
+
+        assertFalse(changed.keeps(lastSync, lastSync, "sent"))
+        assertFalse(changed.keeps(lastSync, inLastSyncMs, "sent"))
+        // A different record at the same instant is new.
+        assertTrue(changed.keeps(lastSync, lastSync, "other"))
+        assertTrue(changed.keeps(lastSync, lastSync.plusMillis(1), "sent"))
+        // An edit of the sent record comes in as a changed id.
+        assertTrue(changed.copy(ids = setOf("sent")).keeps(lastSync, lastSync, "sent"))
+    }
+
+    @Test
     fun touches_spanOverlapsHalfOpenWindow() {
         val instant = at("2026-05-09T10:00:00Z")
         val changed = ChangedRecords(spans = listOf(instant to instant))
@@ -44,6 +59,9 @@ class ChangeTrackingTest {
         // New record after lastSync: the normal read gets it.
         val fresh = at("2026-05-09T13:00:00Z") to at("2026-05-09T13:30:00Z")
         assertFalse(isMissedByIncrementalRead(fresh, lastSync, windowStart))
+        // Record that ends in the millisecond of lastSync: the next read skips it if it was sent.
+        val boundary = at("2026-05-09T08:00:00Z") to lastSync.plusNanos(400_000)
+        assertTrue(isMissedByIncrementalRead(boundary, lastSync, windowStart))
         // Record before the window: missed even without a lastSync.
         val old = at("2026-05-01T08:00:00Z") to at("2026-05-01T09:00:00Z")
         assertTrue(isMissedByIncrementalRead(old, null, windowStart))
