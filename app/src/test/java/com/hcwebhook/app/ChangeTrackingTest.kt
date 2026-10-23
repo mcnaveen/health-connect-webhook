@@ -118,6 +118,21 @@ class ChangeTrackingTest {
     }
 
     @Test
+    fun bucketItems_sendsWholeBucketWhenPartIsNew() {
+        data class Item(val bucket: Long, val isNew: Boolean, val id: String)
+        // 10:00-11:00 bucket: the first half was sent before, the second half is new.
+        val items = listOf(
+            Item(10, false, "first-half"),
+            Item(10, true, "second-half"),
+            Item(9, false, "older-hour"),
+        )
+
+        val kept = bucketItems(items, { it.bucket }, { it.isNew }, { false })
+
+        assertEquals(listOf("first-half", "second-half"), kept.map { it.id })
+    }
+
+    @Test
     fun bucketItems_rebuildsOnlyBucketsWithChangedItems() {
         data class Item(val bucket: Long, val isNew: Boolean, val id: String)
         val items = listOf(

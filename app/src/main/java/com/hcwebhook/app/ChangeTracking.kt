@@ -175,9 +175,10 @@ private fun dayWindow(first: LocalDate, last: LocalDate, zone: ZoneId, windowEnd
 }
 
 /**
- * Items to bucket in an incremental read. A bucket that holds a changed item is rebuilt
- * from all its items, because the total sent before is now wrong. Other buckets keep only
- * items that are new since the last sync, as before.
+ * Items to bucket in an incremental read: all items of each bucket that holds a new or a
+ * changed item. A receiver replaces a bucket by its start time, so a bucket built from only
+ * its new items (e.g. the second half of an hour of steps) would replace the full value with
+ * a part of it. Buckets without new or changed items are not sent again.
  */
 internal fun <T> bucketItems(
     items: List<T>,
@@ -185,6 +186,6 @@ internal fun <T> bucketItems(
     isNew: (T) -> Boolean,
     isChanged: (T) -> Boolean,
 ): List<T> {
-    val changedBuckets = items.filter(isChanged).map(bucketOf).toSet()
-    return items.filter { isNew(it) || bucketOf(it) in changedBuckets }
+    val touchedBuckets = items.filter { isNew(it) || isChanged(it) }.mapTo(HashSet(), bucketOf)
+    return items.filter { bucketOf(it) in touchedBuckets }
 }
