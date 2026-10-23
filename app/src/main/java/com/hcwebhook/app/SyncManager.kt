@@ -71,6 +71,7 @@ class SyncManager(private val context: Context) {
                 start = start,
                 end = end,
                 dataTypeResolutions = preferencesManager.getDataTypeResolutions(),
+                dedupBuckets = preferencesManager.isBucketDedup(),
             )
             if (healthDataResult.isFailure) {
                 return@withContext Result.failure(
@@ -160,6 +161,7 @@ class SyncManager(private val context: Context) {
                 start = start,
                 end = readEnd,
                 dataTypeResolutions = preferencesManager.getDataTypeResolutions(),
+                dedupBuckets = preferencesManager.isBucketDedup(),
                 changes = typeChanges.mapValues { (type, changes) ->
                     changes.changed.copy(sentAtLastSync = preferencesManager.getLastSyncBoundaryIds(type))
                 },

@@ -878,6 +878,9 @@ private fun ResolutionChipRow(
     options: List<Pair<Int, String>>,
     selected: Int,
     onSelect: (Int) -> Unit,
+    /** Shown when non-null and a time bucket is selected: the "count apps once" switch. */
+    bucketDedup: Boolean? = null,
+    onBucketDedupChange: (Boolean) -> Unit = {},
 ) {
     Column(
         modifier = Modifier
@@ -911,6 +914,27 @@ private fun ResolutionChipRow(
                 )
             }
         }
+        if (bucketDedup != null && selected > 0) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                    Text(
+                        text = stringResource(R.string.config_bucket_dedup_title),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    Text(
+                        text = stringResource(R.string.config_bucket_dedup_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    )
+                }
+                Switch(checked = bucketDedup, onCheckedChange = onBucketDedupChange)
+            }
+        }
     }
 }
 
@@ -927,6 +951,7 @@ fun DataTypesBottomSheet(
     val context = LocalContext.current
     val preferencesManager = remember { PreferencesManager(context) }
     var resolutions by remember { mutableStateOf(preferencesManager.getDataTypeResolutions()) }
+    var bucketDedup by remember { mutableStateOf(preferencesManager.isBucketDedup()) }
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -1001,6 +1026,11 @@ fun DataTypesBottomSheet(
                                     onSelect = {
                                         resolutions = resolutions + (dataType to it)
                                         preferencesManager.setDataTypeResolution(dataType, it)
+                                    },
+                                    bucketDedup = bucketDedup.takeIf { dataType.supportsBucketDedup },
+                                    onBucketDedupChange = {
+                                        bucketDedup = it
+                                        preferencesManager.setBucketDedup(it)
                                     },
                                 )
                             }

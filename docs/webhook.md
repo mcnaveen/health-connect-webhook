@@ -164,6 +164,7 @@ The default sync uses the Health Connect Changes API to find what changed since 
   - **Daily** resolution: the full-day total of each day that holds a changed record.
 
   Upsert aggregates by type and `start_time` / `time`, so a resent bucket or day replaces the old value.
+- **N-minute steps, distance and active calories** can come from the Health Connect aggregate (Data Types → resolution → **Count overlapping apps once**). It is on for new installs and off for installs from before 1.9.28. With it on, data that several apps write (for example a phone app and a watch app) is counted once, by the app priority in Health Connect, so the buckets of a day add up to the daily total. A record that crosses several buckets is spread over them. If the top app writes one record per day, its total is spread evenly over the hours; put a finer source first in Health Connect → Data and access → Steps → Data sources and priority. With it off, a bucket is the sum of the raw records that start in it, from all apps.
 - **Deleted records.** The `deleted` array lists one object per record:
 
   | Field | Type | Description |

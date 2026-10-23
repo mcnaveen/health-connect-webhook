@@ -174,6 +174,40 @@ private fun dayWindow(first: LocalDate, last: LocalDate, zone: ZoneId, windowEnd
     return first.atStartOfDay(zone).toInstant() to minOf(end, windowEnd)
 }
 
+/** Indices of the N-minute buckets that [start, end) covers; an instant covers its own bucket. */
+internal fun bucketsCovering(start: Instant, end: Instant, bucketSeconds: Long): LongRange {
+    val last = if (end.isAfter(start)) end.minusNanos(1) else start
+    return (start.epochSecond / bucketSeconds)..(last.epochSecond / bucketSeconds)
+}
+
+/**
+ * Buckets to send with Health Connect totals: each bucket that a new or a changed item covers.
+ * A long record counts in every bucket it crosses, because the aggregate spreads it over them.
+ */
+internal fun <T> touchedBuckets(
+    items: List<T>,
+    bucketSeconds: Long,
+    spanOf: (T) -> Pair<Instant, Instant>,
+    isNew: (T) -> Boolean,
+    isChanged: (T) -> Boolean,
+): Set<Long> =
+    items.filter { isNew(it) || isChanged(it) }
+        .flatMapTo(HashSet()) { item -> spanOf(item).let { (start, end) -> bucketsCovering(start, end, bucketSeconds) } }
+
+/**
+ * The range from the first to the last of [buckets], in parts of at most [maxPerChunk]. One
+ * aggregate request per part: Health Connect picks the app for each period by priority within
+ * a request, so short separate requests would not add up to the daily total.
+ */
+internal fun bucketChunks(buckets: Collection<Long>, maxPerChunk: Int): List<LongRange> {
+    require(maxPerChunk > 0) { "maxPerChunk must be positive" }
+    if (buckets.isEmpty()) return emptyList()
+    val last = buckets.max()
+    return generateSequence(buckets.min()) { start -> (start + maxPerChunk).takeIf { it <= last } }
+        .map { start -> start..minOf(start + maxPerChunk - 1, last) }
+        .toList()
+}
+
 /**
  * Items to bucket in an incremental read: all items of each bucket that holds a new or a
  * changed item. A receiver replaces a bucket by its start time, so a bucket built from only

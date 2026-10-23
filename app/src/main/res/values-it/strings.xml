@@ -411,4 +411,6 @@
     <string name="webhooks_url_label_json">URL del webhook</string>
     <string name="webhooks_url_label_grpc">Destinazione gRPC</string>
     <string name="logs_filter_delivery">Invio</string>
+    <string name="config_bucket_dedup_title">Conta una sola volta le app che si sovrappongono</string>
+    <string name="config_bucket_dedup_hint">Usa la priorità delle app in Health Connect, come i totali giornalieri. Se la tua app principale scrive un dato al giorno, il suo totale viene distribuito in modo uniforme sulle ore.</string>
 </resources>

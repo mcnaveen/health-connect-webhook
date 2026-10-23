@@ -411,4 +411,6 @@
     <string name="webhooks_url_label_json">Webhook URL</string>
     <string name="webhooks_url_label_grpc">gRPC 目标</string>
     <string name="logs_filter_delivery">发送</string>
+    <string name="config_bucket_dedup_title">重叠的应用只计算一次</string>
+    <string name="config_bucket_dedup_hint">与每日总计一样，使用 Health Connect 中的应用优先级。如果最优先的应用每天只写入一条记录，其总数会平均分配到各个小时。</string>
 </resources>

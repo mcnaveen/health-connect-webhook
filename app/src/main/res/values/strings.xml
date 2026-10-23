@@ -430,6 +430,8 @@
     <string name="sync_service_channel_desc">Shown briefly while syncing health data in the background</string>
     <string name="sync_service_notification_title">Syncing health data…</string>
     <string name="sync_service_notification_text">Sending data to your configured webhooks</string>
+    <string name="config_bucket_dedup_title">Count overlapping apps once</string>
+    <string name="config_bucket_dedup_hint">Uses the app priority in Health Connect, like daily totals. If your top app writes one record per day, its total is spread evenly over the hours.</string>
 </resources>
 
 

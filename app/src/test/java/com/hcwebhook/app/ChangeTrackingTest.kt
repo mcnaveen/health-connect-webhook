@@ -118,6 +118,39 @@ class ChangeTrackingTest {
     }
 
     @Test
+    fun bucketsCovering_includesEveryCrossedBucket() {
+        val hour = 3600L
+        // 10:50 to 11:05 crosses into the 11:00 bucket.
+        assertEquals(10L..11L, bucketsCovering(Instant.ofEpochSecond(10 * hour + 3000), Instant.ofEpochSecond(11 * hour + 300), hour))
+        // An end on the bucket boundary stays in the bucket before it.
+        assertEquals(10L..10L, bucketsCovering(Instant.ofEpochSecond(10 * hour), Instant.ofEpochSecond(11 * hour), hour))
+        // An instant covers its own bucket.
+        assertEquals(10L..10L, bucketsCovering(Instant.ofEpochSecond(10 * hour + 5), Instant.ofEpochSecond(10 * hour + 5), hour))
+    }
+
+    @Test
+    fun touchedBuckets_onlyFromNewOrChangedItems() {
+        data class Item(val start: Long, val end: Long, val isNew: Boolean, val id: String)
+        val hour = 3600L
+        val items = listOf(
+            Item(9 * hour, 9 * hour + 600, false, "old"),
+            Item(10 * hour + 3000, 11 * hour + 300, true, "new"),
+            Item(12 * hour, 12 * hour + 60, false, "edited"),
+        )
+
+        val touched = touchedBuckets(items, hour, { Instant.ofEpochSecond(it.start) to Instant.ofEpochSecond(it.end) }, { it.isNew }, { it.id == "edited" })
+
+        assertEquals(setOf(10L, 11L, 12L), touched)
+    }
+
+    @Test
+    fun bucketChunks_coversSpanInParts() {
+        assertEquals(listOf(3L..7L), bucketChunks(listOf(7, 3, 5), maxPerChunk = 10))
+        assertEquals(listOf(1L..2L, 3L..4L, 5L..5L), bucketChunks(listOf(1, 5), maxPerChunk = 2))
+        assertEquals(emptyList<LongRange>(), bucketChunks(emptyList(), maxPerChunk = 5))
+    }
+
+    @Test
     fun bucketItems_sendsWholeBucketWhenPartIsNew() {
         data class Item(val bucket: Long, val isNew: Boolean, val id: String)
         // 10:00-11:00 bucket: the first half was sent before, the second half is new.

@@ -18,6 +18,7 @@ class PreferencesManager(context: Context) {
         private const val PREFS_NAME = "hc_webhook_prefs"
         private const val KEY_LAST_SYNC_TS_PREFIX = "last_sync_ts_"
         private const val KEY_LAST_SYNC_IDS_PREFIX = "last_sync_ids_"
+        private const val KEY_BUCKET_DEDUP = "bucket_dedup"
         private const val KEY_CHANGES_TOKEN_PREFIX = "changes_token_"
         private const val KEY_LAST_STEPS_SYNC_TS = "last_steps_sync_ts"
         private const val KEY_LAST_SLEEP_SYNC_TS = "last_sleep_sync_ts"
@@ -351,6 +352,24 @@ class PreferencesManager(context: Context) {
 
     fun payloadTime(): PayloadTime = PayloadTime(getTimestampStyle())
 
+    /**
+     * Stores the bucket total setting on the first launch with it. Existing installs keep the
+     * raw sum so their hourly values do not change; new installs count overlapping apps once.
+     * Call this before onboarding can mark the install as seen.
+     */
+    fun initBucketDedup() {
+        if (prefs.contains(KEY_BUCKET_DEDUP)) return
+        val isExistingUser = hasSeenOnboarding() || prefs.contains(KEY_WEBHOOK_CONFIGS)
+        setBucketDedup(!isExistingUser)
+    }
+
+    /** N-minute steps, distance and active calories from the Health Connect aggregate. */
+    fun isBucketDedup(): Boolean = prefs.getBoolean(KEY_BUCKET_DEDUP, false)
+
+    fun setBucketDedup(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_BUCKET_DEDUP, enabled).apply()
+    }
+
     fun setHasSeenOnboarding() {
         prefs.edit().putBoolean(KEY_HAS_SEEN_ONBOARDING, true).apply()
     }
@@ -530,6 +549,7 @@ class PreferencesManager(context: Context) {
             stepsResolutionMinutes = getStepsResolutionMinutes(),
             dataTypeResolutions = getDataTypeResolutions().mapKeys { it.key.name },
             timestampStyle = getTimestampStyle().name,
+            bucketDedup = isBucketDedup(),
         )
     }
 
@@ -559,6 +579,7 @@ class PreferencesManager(context: Context) {
             setStepsResolutionMinutes(export.stepsResolutionMinutes)
         }
         TimestampStyle.entries.firstOrNull { it.name == export.timestampStyle }?.let(::setTimestampStyle)
+        export.bucketDedup?.let(::setBucketDedup)
     }
 
     fun getLocalFeedback(): List<LocalFeedbackEntry> {

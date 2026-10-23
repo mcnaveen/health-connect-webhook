@@ -20,5 +20,13 @@ class SettingsExportTest {
         val export = Json.decodeFromString<SettingsExport>("""{"appVersion":1,"syncIntervalMinutes":720}""")
 
         assertNull(export.timestampStyle)
+        assertNull(export.bucketDedup)
+    }
+
+    @Test
+    fun bucketDedup_survivesRoundTrip() {
+        val json = Json.encodeToString(SettingsExport(bucketDedup = true))
+
+        assertEquals(true, Json.decodeFromString<SettingsExport>(json).bucketDedup)
     }
 }

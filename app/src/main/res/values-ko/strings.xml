@@ -411,4 +411,6 @@
     <string name="webhooks_url_label_json">Webhook URL</string>
     <string name="webhooks_url_label_grpc">gRPC 대상</string>
     <string name="logs_filter_delivery">전송</string>
+    <string name="config_bucket_dedup_title">겹치는 앱은 한 번만 계산</string>
+    <string name="config_bucket_dedup_hint">일일 합계처럼 Health Connect의 앱 우선순위를 사용합니다. 최우선 앱이 하루에 기록 하나만 쓰면 그 합계가 시간별로 고르게 나뉩니다.</string>
 </resources>

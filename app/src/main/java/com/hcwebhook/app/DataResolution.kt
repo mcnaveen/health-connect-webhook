@@ -51,6 +51,10 @@ val HealthDataType.defaultResolutionMinutes: Int
         null -> RESOLUTION_FULL
     }
 
+/** Types whose N-minute buckets can come from the Health Connect aggregate (see PreferencesManager.isBucketDedup). */
+val HealthDataType.supportsBucketDedup: Boolean
+    get() = this == HealthDataType.STEPS || this == HealthDataType.DISTANCE || this == HealthDataType.ACTIVE_CALORIES
+
 val HealthDataType.supportsResolution: Boolean
     get() = resolutionFamily != null
 

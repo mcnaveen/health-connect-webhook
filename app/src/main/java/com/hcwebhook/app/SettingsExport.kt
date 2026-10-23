@@ -22,4 +22,6 @@ data class SettingsExport(
     val dataTypeResolutions: Map<String, Int> = emptyMap(),
     /** Null in older backups; import then keeps the current style. */
     val timestampStyle: String? = null,
+    /** Null in older backups; import then keeps the current setting. */
+    val bucketDedup: Boolean? = null,
 )

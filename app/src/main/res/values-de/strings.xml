@@ -411,4 +411,6 @@
     <string name="webhooks_url_label_json">Webhook-URL</string>
     <string name="webhooks_url_label_grpc">gRPC-Ziel</string>
     <string name="logs_filter_delivery">Übertragung</string>
+    <string name="config_bucket_dedup_title">Überlappende Apps nur einmal zählen</string>
+    <string name="config_bucket_dedup_hint">Nutzt die App-Priorität in Health Connect, wie bei Tagessummen. Schreibt deine oberste App einen Eintrag pro Tag, wird ihre Summe gleichmäßig auf die Stunden verteilt.</string>
 </resources>

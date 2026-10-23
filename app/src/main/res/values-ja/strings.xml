@@ -411,4 +411,6 @@
     <string name="webhooks_url_label_json">Webhook URL</string>
     <string name="webhooks_url_label_grpc">gRPC ターゲット</string>
     <string name="logs_filter_delivery">送信</string>
+    <string name="config_bucket_dedup_title">重複するアプリを一度だけ数える</string>
+    <string name="config_bucket_dedup_hint">日ごとの合計と同じく、Health Connect のアプリの優先順位を使います。最優先のアプリが 1 日 1 件のレコードを書く場合、その合計は各時間に均等に配分されます。</string>
 </resources>

@@ -411,4 +411,6 @@
     <string name="webhooks_url_label_json">Webhook URL</string>
     <string name="webhooks_url_label_grpc">gRPC இலக்கு</string>
     <string name="logs_filter_delivery">அனுப்புதல்</string>
+    <string name="config_bucket_dedup_title">ஒன்றுக்கொன்று மேலெழும் ஆப்களை ஒருமுறை மட்டும் எண்ணு</string>
+    <string name="config_bucket_dedup_hint">தினசரி மொத்தங்களைப் போல Health Connect இல் உள்ள ஆப் முன்னுரிமையைப் பயன்படுத்துகிறது. உங்கள் முதல் ஆப் நாளுக்கு ஒரு பதிவை எழுதினால், அதன் மொத்தம் மணிநேரங்களுக்கு சமமாகப் பிரிக்கப்படும்.</string>
 </resources>

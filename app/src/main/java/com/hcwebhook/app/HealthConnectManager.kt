@@ -15,6 +15,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import androidx.health.connect.client.records.*
 import androidx.health.connect.client.records.metadata.Metadata
+import androidx.health.connect.client.aggregate.AggregateMetric
+import androidx.health.connect.client.request.AggregateGroupByDurationRequest
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ChangesTokenRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
@@ -560,6 +562,8 @@ class HealthConnectManager(private val context: Context) {
         end: Instant? = null,
         dataTypeResolutions: Map<HealthDataType, Int> = emptyMap(),
         changes: Map<HealthDataType, ChangedRecords> = emptyMap(),
+        /** N-minute steps, distance and active calories from the Health Connect aggregate (see [aggregatedBuckets]). */
+        dedupBuckets: Boolean = false,
     ): Result<HealthData> {
         return try {
             val endTime = end ?: Instant.now()
@@ -601,7 +605,7 @@ class HealthConnectManager(private val context: Context) {
             }
 
             val stepsData = if (HealthDataType.STEPS in enabledTypes)
-                attributed(HealthDataType.STEPS) { withChangedDays(HealthDataType.STEPS) { s, e -> readStepsData(s, e, lastSyncTimestamps[HealthDataType.STEPS], resolution(HealthDataType.STEPS), changed(HealthDataType.STEPS)) } } else emptyList()
+                attributed(HealthDataType.STEPS) { withChangedDays(HealthDataType.STEPS) { s, e -> readStepsData(s, e, lastSyncTimestamps[HealthDataType.STEPS], resolution(HealthDataType.STEPS), changed(HealthDataType.STEPS), dedupBuckets) } } else emptyList()
             val sleepData = if (HealthDataType.SLEEP in enabledTypes)
                 attributed(HealthDataType.SLEEP) { withChangedDays(HealthDataType.SLEEP) { s, e -> readSleepData(s, e, lastSyncTimestamps[HealthDataType.SLEEP], resolution(HealthDataType.SLEEP), changed(HealthDataType.SLEEP)) } } else emptyList()
             val heartRateData = if (HealthDataType.HEART_RATE in enabledTypes)
@@ -609,9 +613,9 @@ class HealthConnectManager(private val context: Context) {
             val heartRateVariabilityData = if (HealthDataType.HEART_RATE_VARIABILITY in enabledTypes)
                 attributed(HealthDataType.HEART_RATE_VARIABILITY) { withChangedDays(HealthDataType.HEART_RATE_VARIABILITY) { s, e -> readHeartRateVariabilityData(s, e, lastSyncTimestamps[HealthDataType.HEART_RATE_VARIABILITY], resolution(HealthDataType.HEART_RATE_VARIABILITY), changed(HealthDataType.HEART_RATE_VARIABILITY)) } } else emptyList()
             val distanceData = if (HealthDataType.DISTANCE in enabledTypes)
-                attributed(HealthDataType.DISTANCE) { withChangedDays(HealthDataType.DISTANCE) { s, e -> readDistanceData(s, e, lastSyncTimestamps[HealthDataType.DISTANCE], resolution(HealthDataType.DISTANCE), changed(HealthDataType.DISTANCE)) } } else emptyList()
+                attributed(HealthDataType.DISTANCE) { withChangedDays(HealthDataType.DISTANCE) { s, e -> readDistanceData(s, e, lastSyncTimestamps[HealthDataType.DISTANCE], resolution(HealthDataType.DISTANCE), changed(HealthDataType.DISTANCE), dedupBuckets) } } else emptyList()
             val activeCaloriesData = if (HealthDataType.ACTIVE_CALORIES in enabledTypes)
-                attributed(HealthDataType.ACTIVE_CALORIES) { withChangedDays(HealthDataType.ACTIVE_CALORIES) { s, e -> readActiveCaloriesData(s, e, lastSyncTimestamps[HealthDataType.ACTIVE_CALORIES], resolution(HealthDataType.ACTIVE_CALORIES), changed(HealthDataType.ACTIVE_CALORIES)) } } else emptyList()
+                attributed(HealthDataType.ACTIVE_CALORIES) { withChangedDays(HealthDataType.ACTIVE_CALORIES) { s, e -> readActiveCaloriesData(s, e, lastSyncTimestamps[HealthDataType.ACTIVE_CALORIES], resolution(HealthDataType.ACTIVE_CALORIES), changed(HealthDataType.ACTIVE_CALORIES), dedupBuckets) } } else emptyList()
             val totalCaloriesData = if (HealthDataType.TOTAL_CALORIES in enabledTypes)
                 attributed(HealthDataType.TOTAL_CALORIES) { withChangedDays(HealthDataType.TOTAL_CALORIES) { s, e -> readTotalCaloriesData(s, e, lastSyncTimestamps[HealthDataType.TOTAL_CALORIES], resolution(HealthDataType.TOTAL_CALORIES), changed(HealthDataType.TOTAL_CALORIES)) } } else emptyList()
             val weightData = if (HealthDataType.WEIGHT in enabledTypes)
@@ -1153,11 +1157,12 @@ class HealthConnectManager(private val context: Context) {
         lastSync: Instant?,
         resolutionMinutes: Int,
         changed: ChangedRecords = ChangedRecords.NONE,
+        dedup: Boolean = false,
     ): List<StepsData> {
         return when {
             resolutionMinutes < 0 -> readDailyStepsData(startTime, endTime, lastSync, changed)
             resolutionMinutes == 0 -> readRawStepsData(startTime, endTime, lastSync, changed)
-            else -> readBucketedStepsData(startTime, endTime, lastSync, resolutionMinutes, changed)
+            else -> readBucketedStepsData(startTime, endTime, lastSync, resolutionMinutes, changed, dedup)
         }
     }
 
@@ -1184,6 +1189,7 @@ class HealthConnectManager(private val context: Context) {
         lastSync: Instant?,
         bucketMinutes: Int,
         changed: ChangedRecords = ChangedRecords.NONE,
+        dedup: Boolean = false,
     ): List<StepsData> {
         // Group raw step intervals into fixed time buckets (keyed by start time)
         // and sum their counts, emitting one StepsData per bucket.
@@ -1193,6 +1199,15 @@ class HealthConnectManager(private val context: Context) {
         )
         val bucketSeconds = bucketMinutes.toLong() * 60L
         val records = readAllRecords(request).filter { it.count > 0 }
+        if (dedup) {
+            aggregatedBuckets(records, bucketSeconds, startTime, endTime, lastSync, changed, StepsRecord.COUNT_TOTAL, { it.startTime to it.endTime }, { it.metadata.id })
+                ?.let { totals ->
+                    return totals.filterValues { it > 0 }.map { (bucketIndex, count) ->
+                        val bucketStart = Instant.ofEpochSecond(bucketIndex * bucketSeconds)
+                        StepsData(count = count, startTime = bucketStart, endTime = bucketStart.plusSeconds(bucketSeconds))
+                    }
+                }
+        }
         return bucketItems(
             items = records,
             bucketOf = { it.startTime.epochSecond / bucketSeconds },
@@ -1399,11 +1414,12 @@ class HealthConnectManager(private val context: Context) {
         lastSync: Instant?,
         resolutionMinutes: Int,
         changed: ChangedRecords = ChangedRecords.NONE,
+        dedup: Boolean = false,
     ): List<DistanceData> {
         return when {
             resolutionMinutes < 0 -> readDailyDistanceData(startTime, endTime, lastSync, changed)
             resolutionMinutes == 0 -> readRawDistanceData(startTime, endTime, lastSync, changed)
-            else -> readBucketedDistanceData(startTime, endTime, lastSync, resolutionMinutes, changed)
+            else -> readBucketedDistanceData(startTime, endTime, lastSync, resolutionMinutes, changed, dedup)
         }
     }
 
@@ -1429,10 +1445,21 @@ class HealthConnectManager(private val context: Context) {
         lastSync: Instant?,
         bucketMinutes: Int,
         changed: ChangedRecords = ChangedRecords.NONE,
+        dedup: Boolean = false,
     ): List<DistanceData> {
         val bucketSeconds = bucketMinutes.toLong() * 60L
+        val records = readRawDistanceData(startTime, endTime, null)
+        if (dedup) {
+            aggregatedBuckets(records, bucketSeconds, startTime, endTime, lastSync, changed, DistanceRecord.DISTANCE_TOTAL, { it.startTime to it.endTime }, { it.metadata?.id })
+                ?.let { totals ->
+                    return totals.mapValues { it.value.inMeters }.filterValues { it > 0.0 }.map { (bucketIndex, meters) ->
+                        val bucketStart = Instant.ofEpochSecond(bucketIndex * bucketSeconds)
+                        DistanceData(meters = meters, startTime = bucketStart, endTime = bucketStart.plusSeconds(bucketSeconds))
+                    }
+                }
+        }
         return bucketItems(
-            items = readRawDistanceData(startTime, endTime, null),
+            items = records,
             bucketOf = { it.startTime.epochSecond / bucketSeconds },
             isNew = { lastSync == null || it.endTime >= lastSync },
             isChanged = { it.metadata?.id in changed.ids },
@@ -1508,11 +1535,12 @@ class HealthConnectManager(private val context: Context) {
         lastSync: Instant?,
         resolutionMinutes: Int,
         changed: ChangedRecords = ChangedRecords.NONE,
+        dedup: Boolean = false,
     ): List<ActiveCaloriesData> {
         return when {
             resolutionMinutes < 0 -> readDailyActiveCaloriesData(startTime, endTime, lastSync, changed)
             resolutionMinutes == 0 -> readRawActiveCaloriesData(startTime, endTime, lastSync, changed)
-            else -> readBucketedActiveCaloriesData(startTime, endTime, lastSync, resolutionMinutes, changed)
+            else -> readBucketedActiveCaloriesData(startTime, endTime, lastSync, resolutionMinutes, changed, dedup)
         }
     }
 
@@ -1538,10 +1566,21 @@ class HealthConnectManager(private val context: Context) {
         lastSync: Instant?,
         bucketMinutes: Int,
         changed: ChangedRecords = ChangedRecords.NONE,
+        dedup: Boolean = false,
     ): List<ActiveCaloriesData> {
         val bucketSeconds = bucketMinutes.toLong() * 60L
+        val records = readRawActiveCaloriesData(startTime, endTime, null)
+        if (dedup) {
+            aggregatedBuckets(records, bucketSeconds, startTime, endTime, lastSync, changed, ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL, { it.startTime to it.endTime }, { it.metadata?.id })
+                ?.let { totals ->
+                    return totals.mapValues { it.value.inKilocalories }.filterValues { it > 0.0 }.map { (bucketIndex, calories) ->
+                        val bucketStart = Instant.ofEpochSecond(bucketIndex * bucketSeconds)
+                        ActiveCaloriesData(calories = calories, startTime = bucketStart, endTime = bucketStart.plusSeconds(bucketSeconds))
+                    }
+                }
+        }
         return bucketItems(
-            items = readRawActiveCaloriesData(startTime, endTime, null),
+            items = records,
             bucketOf = { it.startTime.epochSecond / bucketSeconds },
             isNew = { lastSync == null || it.endTime >= lastSync },
             isChanged = { it.metadata?.id in changed.ids },
@@ -2415,6 +2454,51 @@ class HealthConnectManager(private val context: Context) {
     private suspend fun aggregateRL(request: AggregateRequest) =
         withHealthConnectRetry { healthConnectClient.aggregate(request) }
 
+    /**
+     * N-minute totals of [metric] from the Health Connect aggregate, for each bucket that a new
+     * or a changed record covers. When several apps write the same steps, distance or calories,
+     * the aggregate counts them once (by the app priority in Health Connect), as daily mode does;
+     * a sum of the raw records counts them once per app. Returns null when the aggregate has no
+     * value at all, so the caller falls back to the raw sum, as daily mode does.
+     */
+    private suspend fun <R, T : Any> aggregatedBuckets(
+        records: List<R>,
+        bucketSeconds: Long,
+        windowStart: Instant,
+        windowEnd: Instant,
+        lastSync: Instant?,
+        changed: ChangedRecords,
+        metric: AggregateMetric<T>,
+        spanOf: (R) -> Pair<Instant, Instant>,
+        idOf: (R) -> String?,
+    ): Map<Long, T>? {
+        val touched = touchedBuckets(
+            items = records,
+            bucketSeconds = bucketSeconds,
+            // Only the part inside the read window, so a long record cannot add thousands of buckets.
+            spanOf = { record -> spanOf(record).let { (start, end) -> maxOf(start, windowStart) to minOf(end, windowEnd) } },
+            isNew = { lastSync == null || spanOf(it).second >= lastSync },
+            isChanged = { idOf(it) in changed.ids },
+        )
+        if (touched.isEmpty()) return emptyMap()
+        val totals = HashMap<Long, T>()
+        for (chunk in bucketChunks(touched, MAX_BUCKETS_PER_AGGREGATE)) {
+            val start = Instant.ofEpochSecond(chunk.first * bucketSeconds)
+            val end = minOf(Instant.ofEpochSecond((chunk.last + 1) * bucketSeconds), windowEnd)
+            if (!start.isBefore(end)) continue
+            val request = AggregateGroupByDurationRequest(
+                metrics = setOf(metric),
+                timeRangeFilter = TimeRangeFilter.between(start, end),
+                timeRangeSlicer = Duration.ofSeconds(bucketSeconds),
+            )
+            for (group in withHealthConnectRetry { healthConnectClient.aggregateGroupByDuration(request) }) {
+                val bucketIndex = group.startTime.epochSecond / bucketSeconds
+                if (bucketIndex in touched) group.result[metric]?.let { totals[bucketIndex] = it }
+            }
+        }
+        return totals.takeIf { it.isNotEmpty() }?.toSortedMap()
+    }
+
     fun isHealthConnectAvailable(): Boolean {
         return try {
             HealthConnectClient.getOrCreate(context)
@@ -2445,6 +2529,8 @@ class HealthConnectManager(private val context: Context) {
 
     companion object {
         private const val TAG = "HealthConnectManager"
+        /** Buckets per aggregateGroupByDuration request: a day of 1-minute buckets is 1440. */
+        private const val MAX_BUCKETS_PER_AGGREGATE = 1440
         private const val LOOKBACK_HOURS = 48L
 
         private const val RATE_LIMIT_MAX_ATTEMPTS = 4
