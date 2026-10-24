@@ -4,7 +4,6 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -1119,7 +1118,7 @@ private fun LogDetailSheet(
         }
         if (log.recordCount != null) DetailField("Records", "${log.recordCount}")
         if (!log.success && log.errorMessage != null) {
-            DetailField("Error", log.errorMessage, valueColor = MaterialTheme.colorScheme.error)
+            DetailField("Error", log.errorMessage.take(MAX_PAYLOAD_DISPLAY_CHARS), valueColor = MaterialTheme.colorScheme.error)
         }
 
         // Payload (gRPC stores a JSON view of the same data for readability)
@@ -1144,7 +1143,6 @@ private fun LogDetailSheet(
                         style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
                         modifier = Modifier
                             .padding(12.dp)
-                            .horizontalScroll(rememberScrollState())
                             .clearAndSetSemantics {
                                 contentDescription = "Payload, ${prettyPayload.length} characters"
                             }

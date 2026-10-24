@@ -24,12 +24,14 @@ class LocalHttpServerService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
+        runCatching { createNotificationChannel() }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> {
+                // startForegroundService() obliges a startForeground() call, even to stop.
+                runCatching { promoteToForeground(buildFallbackNotification()) }
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
                 return START_NOT_STICKY
@@ -39,6 +41,10 @@ class LocalHttpServerService : Service() {
                     val notification = buildNotification()
                     promoteToForeground(notification)
                 } catch (_: Exception) {
+                    // Must still call startForeground(), or Android kills the app with
+                    // ForegroundServiceDidNotStartInTimeException.
+                    runCatching { promoteToForeground(buildFallbackNotification()) }
+                    stopForeground(STOP_FOREGROUND_REMOVE)
                     stopSelf()
                     return START_NOT_STICKY
                 }
@@ -106,6 +112,13 @@ class LocalHttpServerService : Service() {
         val notificationManager = getSystemService(NotificationManager::class.java)
         notificationManager?.createNotificationChannel(channel)
     }
+
+    private fun buildFallbackNotification(): Notification =
+        NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(getString(R.string.local_http_server_notification_title))
+            .setOngoing(true)
+            .build()
 
     private fun buildNotification(): Notification {
         val port = PreferencesManager(this).getLocalTcpPort()
