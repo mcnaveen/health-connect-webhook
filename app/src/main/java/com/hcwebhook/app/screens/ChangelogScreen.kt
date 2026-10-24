@@ -16,23 +16,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.hcwebhook.app.BuildConfig
 import com.hcwebhook.app.R
-import com.hcwebhook.app.releases.GithubRelease
+import com.hcwebhook.app.releases.ReleaseNote
 import com.hcwebhook.app.releases.ReleaseArticle
-import com.hcwebhook.app.releases.ReleaseRepository
+import com.hcwebhook.app.releases.ReleaseNotes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChangelogScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val repository = remember { ReleaseRepository(context) }
-    var releases by remember { mutableStateOf<List<GithubRelease>>(emptyList()) }
-    var loading by remember { mutableStateOf(true) }
-
-    LaunchedEffect(Unit) {
-        loading = true
-        releases = repository.getReleases()
-        loading = false
-    }
+    val releases = remember { ReleaseNotes.load(context) }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
@@ -74,7 +66,6 @@ fun ChangelogScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(24.dp))
 
             when {
-                loading -> ChangelogLoadingSkeleton()
                 releases.isEmpty() -> Text(
                     text = stringResource(R.string.changelog_empty),
                     style = MaterialTheme.typography.bodyMedium,
@@ -89,8 +80,7 @@ fun ChangelogScreen(onBack: () -> Unit) {
                                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                             )
                         }
-                        val isInstalled = release.tagName.removePrefix("v") == currentVersion ||
-                            release.tagName == currentVersion
+                        val isInstalled = release.version == currentVersion
                         if (isInstalled) {
                             Row(
                                 modifier = Modifier.padding(bottom = 8.dp),
@@ -115,53 +105,6 @@ fun ChangelogScreen(onBack: () -> Unit) {
                 }
             }
             Spacer(modifier = Modifier.height(80.dp))
-        }
-    }
-}
-
-@Composable
-private fun ChangelogLoadingSkeleton() {
-    Column(verticalArrangement = Arrangement.spacedBy(28.dp)) {
-        repeat(3) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .width(72.dp)
-                            .height(24.dp)
-                            .then(Modifier),
-                    ) {
-                        Surface(
-                            modifier = Modifier.fillMaxSize(),
-                            shape = MaterialTheme.shapes.small,
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                        ) {}
-                    }
-                    Box(
-                        modifier = Modifier
-                            .width(96.dp)
-                            .height(16.dp),
-                    ) {
-                        Surface(
-                            modifier = Modifier.fillMaxSize(),
-                            shape = MaterialTheme.shapes.small,
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                        ) {}
-                    }
-                }
-                repeat(3) {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth(if (it == 2) 0.65f else 1f)
-                            .height(12.dp),
-                        shape = MaterialTheme.shapes.small,
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                    ) {}
-                }
-            }
         }
     }
 }

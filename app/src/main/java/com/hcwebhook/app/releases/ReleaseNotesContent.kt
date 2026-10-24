@@ -22,14 +22,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import java.time.Instant
-import java.time.ZoneId
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
 fun ReleaseArticle(
-    release: GithubRelease,
+    release: ReleaseNote,
     modifier: Modifier = Modifier,
 ) {
     val lines = ReleaseNotesFormatter.parseBody(release.body)
@@ -39,24 +38,16 @@ fun ReleaseArticle(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = release.tagName,
+                text = release.version,
                 style = MaterialTheme.typography.labelMedium,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.primary,
             )
             Text(
-                text = formatReleaseDate(release.publishedAt),
+                text = formatReleaseDate(release.date),
                 style = MaterialTheme.typography.labelSmall,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        if (release.name.isNotBlank() && release.name != release.tagName) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = release.name,
-                style = MaterialTheme.typography.titleSmall,
-                fontFamily = FontFamily.Monospace,
             )
         }
         if (lines.isNotEmpty()) {
@@ -201,9 +192,7 @@ private val INLINE_MARKUP = Regex("""`([^`]+)`|\*\*(.+?)\*\*""")
 
 private fun formatReleaseDate(iso: String): String {
     return try {
-        val instant = Instant.parse(iso)
-        val formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault())
-        formatter.format(instant.atZone(ZoneId.systemDefault()))
+        DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault()).format(LocalDate.parse(iso))
     } catch (_: Exception) {
         iso.take(10)
     }

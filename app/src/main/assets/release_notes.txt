@@ -1,0 +1,187 @@
+=== 1.9.29 2026-10-23
+- App lock with your device screen lock.
+- Home screen widgets: Sync now, status, activity and Today.
+- Quick Settings tile and Tasker sync broadcast.
+- MCP server and one Integrations screen.
+- New look and a full-screen What to sync.
+
+=== 1.9.28 2026-10-23
+- Count overlapping apps once in minute buckets.
+
+=== 1.9.27 2026-10-23
+- Minute and hour buckets keep their full value.
+
+=== 1.9.26 2026-10-22
+- Default sync no longer gets stuck on "Payload too large".
+- The newest record is no longer sent again on every sync.
+- Settings backups include the payload timestamp style.
+- The local HTTP server sends `app_version` once.
+
+=== 1.9.25 2026-10-20
+- More nutrients on nutrition records.
+
+=== 1.9.24 2026-10-18
+- Mindfulness (Health Connect Wellness category).
+- Payload timestamps setting.
+- Meal type on nutrition records.
+- Date range for the local HTTP server.
+
+=== 1.9.23 2026-10-18
+- Edited records.
+- Late records.
+- Deleted records.
+- This also works for records older than the 48-hour sync window, up to 31 days per data type in one sync.
+
+=== 1.9.22 2026-09-27
+- 🐛 fix: harden log export, server bind, target sdk 36
+
+=== 1.9.21 2026-09-16
+- ✨ fix(sync): time range error attribution
+- ✨ fix(webhook): improve error handling and enable cleartext traffic for webhooks
+
+=== 1.9.20 2026-09-12
+- ✨ feat(webhook): enhance health data JSON structure with aliases
+- ✨ feat(protobuf): add R8 minification support and smoke tests
+
+=== 1.9.19 2026-09-09
+- 🐛 fix(http-server): label oldest daily bucket with real window start
+
+=== 1.9.18 2026-09-06
+- ✨ feat(webhook): implement gRPC delivery for health data
+
+=== 1.9.17 2026-08-28
+- 🐛 Fix Android 15 `ForegroundServiceDidNotStopInTimeException` by moving the local HTTP server to…
+- 🛡️ Add `onTimeout()` on sync and local HTTP foreground services so they stop cleanly when Android requests it
+- 🐛 Fix `OutOfMemoryError` during sync when building large JSON payloads
+- 🚧 Cap payloads at 25,000 records before JSON build and return a clear error instead of crashing
+
+=== 1.9.16 2026-08-26
+- 🐛 fix(sync): custom date range sync empty-day crash
+- ✨ feat(exercise): include session title in webhook payload
+- ✨ feat(health): add body water mass and computed BMI
+- 🐛 fix(sync): prevent duplicate scheduled sync alarms
+
+=== 1.9.15 2026-08-26
+- 🐛 fix(webhook): enhance error handling for HTTP redirects
+
+=== 1.9.14 2026-07-02
+- Add Disclaimer to onboarding
+
+=== 1.9.13 2026-07-01
+- feat(app): integrate feedback feature with FeedbackJar SDK
+- feat: add cycle tracking support (7 data types)
+- feat: add metadata to steps, distance, and active_calories records
+
+=== 1.9.12 2026-06-20
+- Add optional name/label field to WebhookConfig, shown as primary text in webhook list, editable in the sheet
+- Add duplicate webhook action in the edit sheet (creates disabled copy)
+- Add free-text search bar to webhook logs tab (filters by URL, error, data type)
+- Add configurable log retention (50/100/500) in the logs filter sheet
+
+=== 1.9.11 2026-06-18
+- feat: implement Foreground Service and battery optimization support to improve sync reliability
+- fix: retry + throttle Health Connect reads to survive rate limiting
+- refactor: name rate-limit constants and narrow inter-page throttle
+- feat: configurable resolution for steps and heart rate
+
+=== 1.9.10 2026-05-15
+- Bug Fix: What's new pulling wrong fallback due to cache
+
+=== 1.9.9 2026-05-15
+- Dashboard screen UI fix
+
+=== 1.9.8 2026-05-15
+- Dashboard to Display all the aggregated data
+- What's New Popup
+
+=== 1.9.7 2026-05-14
+- Make HTTP server return app version in response
+
+=== 1.9.6 2026-05-14
+- Enhance LocalHttpServerManager with request logging and log filtering
+- Enhance LocalHttpServerManager with request logging and log filtering
+
+=== 1.9.5 2026-05-14
+- Move Import/Export settings into a new screen
+- Add support for Push Notification - Success/Failure events
+- Bug Fixes
+
+=== 1.9.4 2026-05-13
+- Add webhook enable/disable toggle and per-webhook data type filtering
+- Logs: Response metrics, sync-type grouping, richer filtering and detail in LogsScreen.
+- Testing: Webhook test flow with MockPayloadBuilder and UI.
+- Local server: Bearer token auth, intents for direct settings navigation.
+
+=== 1.9.3 2026-05-12
+- Fixes and improvements.
+
+=== 1.9.2 2026-05-09
+- Fixes and improvements.
+
+=== 1.9.1 2026-05-08
+- Add skin temperature data support and update app version to 1.9.1
+- Add skin temperature data support and update app version to 1.9.1
+
+=== 1.9.0 2026-05-08
+- feat: local HTTP server functionality for real-time data access
+- feat: local HTTP server functionality for real-time data access
+
+=== 1.8.3 2026-05-08
+- fix: paginate readRecords across all Health Connect readers
+- Add adaptive icon with themed icon support
+- Add session movement metrics to exercise payloads
+- Add nutrition webhook fields
+
+=== 1.8.2 2026-04-23
+- Fixes and improvements.
+
+=== 1.8.1 2026-04-20
+- Add session distance to exercise webhook payload
+- Fix WorkManager constraints and transient retry behavior
+
+=== 1.8.0 2026-04-20
+- 🇬🇧 English (Default)
+- 🇮🇳 Tamil
+- 🇫🇷 French
+- 🇩🇪 German
+
+=== 1.7.1 2026-04-16
+- Fixes and improvements.
+
+=== 1.7.0 2026-04-16
+- Fixes and improvements.
+
+=== 1.6.1 2026-04-15
+- Fixes and improvements.
+
+=== 1.6.0 2026-04-12
+- refactor: remove auto-enable logic for data types
+
+=== 1.5.1 2026-04-01
+- Historical data sync
+
+=== 1.5 2026-03-31
+- Fixed an issue where manual syncing failed with a "Permission Required" error on Android 14+ by separating…
+- Added a dedicated Background Permission card that intuitively replaces the Sync Schedule options when…
+- Improved the Data Types selection bottom sheet to allow bulk toggling without individual modal…
+- Concluded investigation of empty sleep stages: verified as a known upstream bug in the OHealth / Health…
+
+=== 1.4 2026-03-31
+- Added missing permissions for Basal Metabolic Rate, Body Fat, Lean Body Mass, VO2 Max, and Bone Mass to…
+- Updated the Grant button (`ExtendedFloatingActionButton` in `ConfigurationScreen.kt`) to use proper…
+- Bumped app versionCode to 5 and versionName to 1.4.
+
+=== 1.3 2026-03-31
+- feat: Add time range selection for manual health data synchronization.
+- Fix manual sync permission checks
+
+=== 1.2-beta 2026-02-24
+- Option to export settings, webhooks as JSON and import it later
+- Confirmation for critical actions
+- feat: add Heart Rate Variability (RMSSD) support
+
+=== 1.1-beta 2026-02-16
+- Check if the Health Connect is already installed.
+
+=== 1.0-beta 2026-02-15
+- Fixes and improvements.
