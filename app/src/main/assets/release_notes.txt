@@ -1,3 +1,8 @@
+=== 1.9.30 2026-10-24
+- Fixed: What to sync closed the app when you scrolled down.
+- Zone offsets in the JSON metadata of each record.
+- What's New reads notes stored in the app, no web fetch.
+
 === 1.9.29 2026-10-23
 - App lock with your device screen lock.
 - Home screen widgets: Sync now, status, activity and Today.
