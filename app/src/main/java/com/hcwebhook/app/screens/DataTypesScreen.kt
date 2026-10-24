@@ -134,8 +134,8 @@ fun DataTypesScreen(
             DataCategory.entries.forEach { category ->
                 val types = HealthDataType.entries.filter { it.category == category }
                 if (types.isEmpty()) return@forEach
-                item(key = category.name) { SectionTitle(stringResource(category.titleResId), Modifier.padding(top = 12.dp)) }
-                itemsIndexed(types, key = { _, type -> type.name }) { index, type ->
+                item(key = "category_${category.name}") { SectionTitle(stringResource(category.titleResId), Modifier.padding(top = 12.dp)) }
+                itemsIndexed(types, key = { _, type -> "type_${type.name}" }) { index, type ->
                     val enabled = type in enabledDataTypes
                     val family = type.resolutionFamily
                     val selected = resolutions[type] ?: type.defaultResolutionMinutes

@@ -28,6 +28,10 @@ private fun JsonObjectBuilder.putRecordMetadata(meta: RecordMetadata, time: Payl
         meta.clientRecordId?.let { put("client_record_id", it) }
         if (meta.clientRecordVersion != 0L) put("client_record_version", meta.clientRecordVersion)
         meta.lastModifiedTime?.let { put("last_modified_time", time.format(it)) }
+        // UTC offsets in effect when the record was written; unaffected by the sync-time zone.
+        meta.zoneOffsetSeconds?.let { put("zone_offset_seconds", it) }
+        meta.startZoneOffsetSeconds?.let { put("start_zone_offset_seconds", it) }
+        meta.endZoneOffsetSeconds?.let { put("end_zone_offset_seconds", it) }
         if (meta.deviceManufacturer != null || meta.deviceModel != null || meta.deviceType != null) {
             putJsonObject("device") {
                 meta.deviceManufacturer?.let { put("manufacturer", it) }

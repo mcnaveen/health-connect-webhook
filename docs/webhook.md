@@ -197,6 +197,9 @@ Raw records carry a `metadata` object. N-minute heart rate, HRV, SpO₂, respira
 | `client_record_id` | string | Optional. Id that the source app gave the record. |
 | `client_record_version` | number | Optional. Version that the source app gave the record. |
 | `last_modified_time` | string | When Health Connect last changed the record. |
+| `zone_offset_seconds` | number | Optional. UTC offset in seconds when an instant record was written. |
+| `start_zone_offset_seconds` | number | Optional. UTC offset in seconds at the start of an interval record. |
+| `end_zone_offset_seconds` | number | Optional. UTC offset in seconds at the end of an interval record. |
 
 ---
 
