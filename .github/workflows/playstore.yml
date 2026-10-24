@@ -40,9 +40,21 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew bundlePlaystoreRelease
 
+      - name: Name the AAB
+        id: aab
+        run: |
+          dir=app/build/outputs/bundle/playstoreRelease
+          major=$(sed -n 's/^val appVersionMajor = //p' app/build.gradle.kts)
+          minor=$(sed -n 's/^val appVersionMinor = //p' app/build.gradle.kts)
+          patch=$(sed -n 's/^val appVersionPatch = //p' app/build.gradle.kts)
+          name="app-playstore-release-$major.$minor.$patch.aab"
+          mv "$dir"/*.aab "$dir/$name"
+          echo "path=$dir/$name" >> "$GITHUB_OUTPUT"
+
+      # archive: false uploads the bare .aab, not a zip. The artifact name is the file name.
       - name: Upload AAB Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
-          name: playstore-bundle
-          path: app/build/outputs/bundle/playstoreRelease/*.aab
+          path: ${{ steps.aab.outputs.path }}
+          archive: false
           retention-days: 7
