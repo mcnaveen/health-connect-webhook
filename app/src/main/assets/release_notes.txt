@@ -1,3 +1,10 @@
+=== 1.9.31 2026-10-24
+- Fixed: the app closed when Local HTTP started.
+- Fixed: the app closed on a log with a long payload.
+- Payload text in logs wraps to the screen width.
+- Newer Compose, fewer input and hover crashes.
+- Smaller app size.
+
 === 1.9.30 2026-10-24
 - Fixed: What to sync closed the app when you scrolled down.
 - Zone offsets in the JSON metadata of each record.

@@ -7,7 +7,7 @@ plugins {
 
 val appVersionMajor = 1
 val appVersionMinor = 9
-val appVersionPatch = 30
+val appVersionPatch = 31
 val appVersionCode = (appVersionMajor * 10000) + (appVersionMinor * 100) + appVersionPatch
 val appVersionName = "$appVersionMajor.$appVersionMinor.$appVersionPatch"
 
@@ -56,6 +56,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -74,6 +75,7 @@ android {
             initWith(getByName("debug"))
             matchingFallbacks += listOf("debug")
             isMinifyEnabled = true
+            isShrinkResources = true
             isDebuggable = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
