@@ -1333,11 +1333,37 @@ class HealthConnectManager(private val context: Context) {
         downsampleMinutes: Int,
         changed: ChangedRecords = ChangedRecords.NONE,
     ): List<HeartRateData> {
+        // Dense heart rate (a watch writing every few seconds) does not fit in memory as raw
+        // records for a whole day. Read it in slices and reduce each slice before the next one.
+        // Slice edges are bucket edges, so no bucket is split across two slices.
+        val bucketSeconds = if (downsampleMinutes > 0) downsampleMinutes.toLong() * 60L else 1L
+        val sliceSeconds = (HEART_RATE_SLICE_SECONDS / bucketSeconds).coerceAtLeast(1L) * bucketSeconds
+        val result = mutableListOf<HeartRateData>()
+        var sliceStart = startTime
+        while (sliceStart.isBefore(endTime)) {
+            val nextEdge = Instant.ofEpochSecond((sliceStart.epochSecond / sliceSeconds + 1) * sliceSeconds)
+            val sliceEnd = minOf(nextEdge, endTime)
+            result += readHeartRateSlice(sliceStart, sliceEnd, lastSync, downsampleMinutes, changed)
+            sliceStart = sliceEnd
+        }
+        return result
+    }
+
+    private suspend fun readHeartRateSlice(
+        startTime: Instant,
+        endTime: Instant,
+        lastSync: Instant?,
+        downsampleMinutes: Int,
+        changed: ChangedRecords,
+    ): List<HeartRateData> {
         val request = ReadRecordsRequest(recordType = HeartRateRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
+        // A series record can overlap two slices; keep only this slice's samples so none repeat.
         val samples = response.flatMap { record ->
             val metadata = record.toRecordMetadata(startZoneOffset = record.startZoneOffset, endZoneOffset = record.endZoneOffset)
-            record.samples.map { Triple(it.time, it.beatsPerMinute, metadata) }
+            record.samples
+                .filter { !it.time.isBefore(startTime) && it.time.isBefore(endTime) }
+                .map { Triple(it.time, it.beatsPerMinute, metadata) }
         }
 
         if (downsampleMinutes <= 0) {
@@ -2585,6 +2611,8 @@ class HealthConnectManager(private val context: Context) {
         private const val RATE_LIMIT_INITIAL_DELAY_MS = 1_000L
         private const val RATE_LIMIT_MAX_DELAY_MS = 8_000L
         private const val READ_PAGE_DELAY_MS = 120L
+        /** Heart rate is read 6 hours at a time, see [readHeartRateData]. */
+        private const val HEART_RATE_SLICE_SECONDS = 6L * 60 * 60
 
         /** Record types that commonly paginate and benefit from inter-page throttling. */
         private val PAGINATED_READ_THROTTLE_TYPES = setOf(
