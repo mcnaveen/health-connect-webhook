@@ -132,6 +132,10 @@
     <string name="action_ok">OK</string>
     <string name="action_cancel">Cancel</string>
     <string name="manual_sync_syncing">Syncing...</string>
+    <string name="manual_sync_progress_day">Day %1$d of %2$d</string>
+    <string name="manual_sync_progress_reading">Reading %1$s</string>
+    <string name="manual_sync_progress_sending">Sending part %1$d of %2$d</string>
+    <string name="manual_sync_failed_on_day">Stopped on day %1$d of %2$d (%3$s): %4$s. Earlier days were sent.</string>
     <string name="err_end_date_before_start">End date must be greater than or equal to start date.</string>
     <string name="err_end_date_future">End date cannot be in the future.</string>
     <string name="err_select_both_dates">Please select both start and end dates.</string>
