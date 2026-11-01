@@ -2418,7 +2418,16 @@ class HealthConnectManager(private val context: Context) {
             )
             val page = withHealthConnectRetry { healthConnectClient.readRecords(current) }
             all.addAll(page.records)
-            token = page.pageToken
+            // Some Health Connect versions (the APK on Android 13) end the last page with an
+            // empty token instead of null. Asking again with "" returns the first page again,
+            // forever, so an empty token means the end.
+            val next = page.pageToken?.takeIf { it.isNotEmpty() }
+            if (next != null && next == token) {
+                // Same safety net for a token that does not move on.
+                Log.w(TAG, "${request.recordType.simpleName}: page token did not advance, stopping")
+                break
+            }
+            token = next
         } while (token != null)
         return all
     }
