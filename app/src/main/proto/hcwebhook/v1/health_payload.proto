@@ -298,6 +298,9 @@ message ExerciseRecord {
   // Health Connect's ExerciseSessionRecord.laps / .segments; empty when the session has none.
   repeated ExerciseLap laps = 12;
   repeated ExerciseSegment segments = 13;
+  // Health Connect's heart-rate aggregate over the session, when heart rate is enabled.
+  optional int64 avg_heart_rate_bpm = 14;
+  optional int64 max_heart_rate_bpm = 15;
 }
 
 message ExerciseLap {
@@ -306,6 +309,14 @@ message ExerciseLap {
   // The lap's length as the recording app set it (Health Connect's ExerciseLap.length), e.g. a
   // 1 km auto-lap or a 25 m pool length: a label, not a measured distance. Unset when the app set none.
   optional double length_meters = 3;
+  // Measured over the lap's window, like the session's own fields.
+  optional double distance_meters = 4; // the actual distance covered in the lap
+  optional int64 steps = 5;
+  optional double avg_cadence_spm = 6;
+  optional double max_cadence_spm = 7;
+  optional double stride_length_m = 8;
+  optional int64 avg_heart_rate_bpm = 9;
+  optional int64 max_heart_rate_bpm = 10;
 }
 
 message ExerciseSegment {

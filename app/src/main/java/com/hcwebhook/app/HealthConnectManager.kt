@@ -16,6 +16,7 @@ import kotlinx.coroutines.delay
 import androidx.health.connect.client.records.*
 import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.aggregate.AggregateMetric
+import androidx.health.connect.client.aggregate.AggregationResult
 import androidx.health.connect.client.request.AggregateGroupByDurationRequest
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ChangesTokenRequest
@@ -374,6 +375,8 @@ data class ExerciseData(
     val maxCadenceSpm: Double? = null,
     val strideLengthMeters: Double? = null,
     val metadata: RecordMetadata? = null,
+    val avgHeartRateBpm: Long? = null,
+    val maxHeartRateBpm: Long? = null,
     val laps: List<ExerciseLapData> = emptyList(),
     val segments: List<ExerciseSegmentData> = emptyList()
 )
@@ -648,6 +651,7 @@ class HealthConnectManager(private val context: Context) {
                             HealthDataType.DISTANCE in enabledTypes,
                             HealthDataType.STEPS in enabledTypes,
                             changed(HealthDataType.EXERCISE),
+                            includeHeartRate = HealthDataType.HEART_RATE in enabledTypes,
                         )
                     }
                 } else emptyList()
@@ -1949,41 +1953,115 @@ class HealthConnectManager(private val context: Context) {
         includeDistance: Boolean,
         includeSteps: Boolean,
         changed: ChangedRecords = ChangedRecords.NONE,
+        includeHeartRate: Boolean = false,
     ): List<ExerciseData> {
         val request = ReadRecordsRequest(recordType = ExerciseSessionRecord::class, timeRangeFilter = TimeRangeFilter.between(startTime, endTime))
         val response = readAllRecords(request)
-        return response.filter { changed.keeps(lastSync, it.endTime, it.metadata.id) }
-            .map {
-                val duration = Duration.between(it.startTime, it.endTime)
-                // Guard against zero/negative-duration sessions (seen from some watch
-                // companion apps): Health Connect rejects a query whose range isn't
-                // strictly increasing, so skip the sub-aggregates rather than crash.
-                val hasPositiveDuration = it.startTime.isBefore(it.endTime)
-                val distanceMeters = if (includeDistance && hasPositiveDuration) readDistanceTotal(it.startTime, it.endTime) else null
-                val steps = if (includeSteps && hasPositiveDuration) readStepsTotal(it.startTime, it.endTime) else null
-                val cadenceMetrics = if (includeSteps && hasPositiveDuration) readStepsCadenceMetrics(it.startTime, it.endTime) else StepsCadenceMetrics()
-                ExerciseData(
-                    type = it.exerciseType.toString(),
-                    title = it.title?.takeIf { title -> title.isNotBlank() },
-                    startTime = it.startTime,
-                    endTime = it.endTime,
-                    duration = duration,
-                    distanceMeters = distanceMeters,
-                    steps = steps,
-                    avgCadenceSpm = cadenceMetrics.avg ?: deriveAverageCadenceSpm(steps, duration),
-                    maxCadenceSpm = cadenceMetrics.max,
-                    strideLengthMeters = deriveStrideLengthMeters(distanceMeters, steps),
-                    metadata = it.toRecordMetadata(startZoneOffset = it.startZoneOffset, endZoneOffset = it.endZoneOffset),
-                    laps = it.laps.map { lap -> lap.toLapData() },
-                    segments = it.segments.map { segment -> segment.toSegmentData() }
-                )
-            }
+        val sessions = response.filter { changed.keeps(lastSync, it.endTime, it.metadata.id) }
+        val metrics: Set<AggregateMetric<*>> = if (sessions.isEmpty()) emptySet() else exerciseMetrics(includeDistance, includeSteps, includeHeartRate)
+        return sessions.map { it.toExerciseData(metrics) }
     }
 
-    private data class StepsCadenceMetrics(
-        val avg: Double? = null,
-        val max: Double? = null
-    )
+    private suspend fun ExerciseSessionRecord.toExerciseData(metrics: Set<AggregateMetric<*>>): ExerciseData {
+        val stats = readExerciseStats(startTime, endTime, metrics)
+        return ExerciseData(
+            type = exerciseType.toString(),
+            title = title?.takeIf { it.isNotBlank() },
+            startTime = startTime,
+            endTime = endTime,
+            duration = Duration.between(startTime, endTime),
+            distanceMeters = stats.distanceMeters,
+            steps = stats.steps,
+            avgCadenceSpm = stats.avgCadenceSpm,
+            maxCadenceSpm = stats.maxCadenceSpm,
+            strideLengthMeters = stats.strideLengthMeters,
+            metadata = toRecordMetadata(startZoneOffset = startZoneOffset, endZoneOffset = endZoneOffset),
+            avgHeartRateBpm = stats.avgHeartRateBpm,
+            maxHeartRateBpm = stats.maxHeartRateBpm,
+            laps = measuredLaps(metrics),
+            segments = segments.sortedBy { it.startTime }.map { it.toSegmentData() }
+        )
+    }
+
+    /** Each lap, in order, with the session's measurements over its own window: one aggregate per lap. */
+    private suspend fun ExerciseSessionRecord.measuredLaps(metrics: Set<AggregateMetric<*>>): List<ExerciseLapData> =
+        laps.sortedBy { it.startTime }.map { it.toLapData(readExerciseStats(it.startTime, it.endTime, metrics)) }
+
+    /**
+     * The aggregate metrics measured over a session and over each of its laps: those of the
+     * enabled types the user has granted. Cadence goes with steps, as it always has.
+     */
+    private suspend fun exerciseMetrics(
+        includeDistance: Boolean,
+        includeSteps: Boolean,
+        includeHeartRate: Boolean,
+    ): Set<AggregateMetric<*>> {
+        if (!includeDistance && !includeSteps && !includeHeartRate) return emptySet()
+        val granted = try {
+            getGrantedPermissions()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            emptySet()
+        }
+        fun has(type: KClass<out Record>) = HealthPermission.getReadPermission(type) in granted
+        return buildSet {
+            if (includeDistance && has(DistanceRecord::class)) add(DistanceRecord.DISTANCE_TOTAL)
+            if (includeSteps && has(StepsRecord::class)) add(StepsRecord.COUNT_TOTAL)
+            if (includeSteps && has(StepsCadenceRecord::class)) {
+                add(StepsCadenceRecord.RATE_AVG)
+                add(StepsCadenceRecord.RATE_MAX)
+            }
+            if (includeHeartRate && has(HeartRateRecord::class)) {
+                add(HeartRateRecord.BPM_AVG)
+                add(HeartRateRecord.BPM_MAX)
+            }
+        }
+    }
+
+    /**
+     * Distance, steps, cadence, stride and heart rate over [startTime, endTime], in one aggregate.
+     * Zero/negative-duration windows (seen from some watch companion apps) are skipped: Health
+     * Connect rejects a query whose range isn't strictly increasing.
+     */
+    private suspend fun readExerciseStats(
+        startTime: Instant,
+        endTime: Instant,
+        metrics: Set<AggregateMetric<*>>,
+    ): ExerciseStats {
+        if (metrics.isEmpty() || !startTime.isBefore(endTime)) return ExerciseStats()
+        return aggregateOrNull(metrics, startTime, endTime)
+            ?.toExerciseStats(Duration.between(startTime, endTime))
+            ?: ExerciseStats()
+    }
+
+    /** The measurements are optional: a failed aggregate leaves them out, and the record is still sent. */
+    private suspend fun aggregateOrNull(
+        metrics: Set<AggregateMetric<*>>,
+        startTime: Instant,
+        endTime: Instant,
+    ): AggregationResult? = try {
+        aggregateRL(AggregateRequest(metrics = metrics, timeRangeFilter = TimeRangeFilter.between(startTime, endTime)))
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        null
+    }
+
+    private fun AggregationResult.toExerciseStats(duration: Duration): ExerciseStats {
+        val distanceMeters = this[DistanceRecord.DISTANCE_TOTAL]?.inMeters?.takeIf { it > 0.0 }
+        val steps = this[StepsRecord.COUNT_TOTAL]?.takeIf { it > 0L }
+        return ExerciseStats(
+            distanceMeters = distanceMeters,
+            steps = steps,
+            avgCadenceSpm = this[StepsCadenceRecord.RATE_AVG]?.takeIf { it > 0.0 }
+                ?: deriveAverageCadenceSpm(steps, duration),
+            maxCadenceSpm = this[StepsCadenceRecord.RATE_MAX]?.takeIf { it > 0.0 },
+            strideLengthMeters = deriveStrideLengthMeters(distanceMeters, steps),
+            avgHeartRateBpm = this[HeartRateRecord.BPM_AVG]?.takeIf { it > 0L },
+            maxHeartRateBpm = this[HeartRateRecord.BPM_MAX]?.takeIf { it > 0L },
+        )
+    }
 
     private suspend fun aggregateSteps(startTime: Instant, endTime: Instant): Long {
         val request = AggregateRequest(
@@ -2010,28 +2088,6 @@ class HealthConnectManager(private val context: Context) {
             ?.inKilocalories ?: 0.0
     }
 
-    private suspend fun readStepsTotal(startTime: Instant, endTime: Instant): Long? {
-        val steps = aggregateSteps(startTime, endTime)
-        return steps.takeIf { it > 0L }
-    }
-
-    private suspend fun readStepsCadenceMetrics(startTime: Instant, endTime: Instant): StepsCadenceMetrics {
-        return try {
-            val request = AggregateRequest(
-                metrics = setOf(StepsCadenceRecord.RATE_AVG, StepsCadenceRecord.RATE_MAX),
-                timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
-            )
-            val response = aggregateRL(request)
-            StepsCadenceMetrics(
-                avg = response[StepsCadenceRecord.RATE_AVG]?.takeIf { it > 0.0 },
-                max = response[StepsCadenceRecord.RATE_MAX]?.takeIf { it > 0.0 }
-            )
-        } catch (_: Exception) {
-            // Cadence is optional. Keep exercise sync working on providers that expose steps but not cadence.
-            StepsCadenceMetrics()
-        }
-    }
-
     private fun deriveAverageCadenceSpm(steps: Long?, duration: Duration): Double? {
         if (steps == null || steps <= 0L || duration.isZero || duration.isNegative) {
             return null
@@ -2045,11 +2101,6 @@ class HealthConnectManager(private val context: Context) {
             return null
         }
         return distanceMeters / steps.toDouble()
-    }
-
-    private suspend fun readDistanceTotal(startTime: Instant, endTime: Instant): Double? {
-        val distanceMeters = aggregateDistanceMeters(startTime, endTime)
-        return distanceMeters.takeIf { it > 0.0 }
     }
 
     private suspend fun readHydrationData(

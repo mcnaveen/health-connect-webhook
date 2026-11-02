@@ -264,6 +264,8 @@ object ProtobufPayloadBuilder {
             it.maxCadenceSpm?.let { c -> ex.setMaxCadenceSpm(c) }
             it.strideLengthMeters?.let { s -> ex.setStrideLengthM(s) }
             it.metadata?.let { meta -> ex.metadata = meta.toProto() }
+            it.avgHeartRateBpm?.let { b -> ex.setAvgHeartRateBpm(b) }
+            it.maxHeartRateBpm?.let { b -> ex.setMaxHeartRateBpm(b) }
             ex.addAllLaps(it.laps.map { lap -> lap.toProto() })
             ex.addAllSegments(it.segments.map { segment -> segment.toProto() })
             builder.addExercise(ex.build())
@@ -486,11 +488,18 @@ object ProtobufPayloadBuilder {
     }
 
     private fun ExerciseLapData.toProto(): ExerciseLap {
-        // Not in apply {}: the builder's own getters (lengthMeters, …) would shadow the lap's.
+        // Not in apply {}: the builder's own getters (lengthMeters, steps, …) would shadow the lap's.
         val lap = ExerciseLap.newBuilder()
             .setStartTime(startTime.toTimestamp())
             .setEndTime(endTime.toTimestamp())
         lengthMeters?.let(lap::setLengthMeters)
+        stats.distanceMeters?.let(lap::setDistanceMeters)
+        stats.steps?.let(lap::setSteps)
+        stats.avgCadenceSpm?.let(lap::setAvgCadenceSpm)
+        stats.maxCadenceSpm?.let(lap::setMaxCadenceSpm)
+        stats.strideLengthMeters?.let(lap::setStrideLengthM)
+        stats.avgHeartRateBpm?.let(lap::setAvgHeartRateBpm)
+        stats.maxHeartRateBpm?.let(lap::setMaxHeartRateBpm)
         return lap.build()
     }
 

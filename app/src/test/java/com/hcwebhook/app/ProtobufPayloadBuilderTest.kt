@@ -183,8 +183,16 @@ class ProtobufPayloadBuilderTest {
                     startTime = t,
                     endTime = t.plusSeconds(1800),
                     duration = java.time.Duration.ofSeconds(1800),
+                    avgHeartRateBpm = 150L,
+                    maxHeartRateBpm = 170L,
                     laps = listOf(
-                        ExerciseLapData(t, t.plusSeconds(300), lengthMeters = 1000.0),
+                        ExerciseLapData(
+                            t, t.plusSeconds(300), lengthMeters = 1000.0,
+                            stats = ExerciseStats(
+                                distanceMeters = 1012.0, steps = 900L, avgCadenceSpm = 180.0, maxCadenceSpm = 186.0,
+                                strideLengthMeters = 1.12, avgHeartRateBpm = 148L, maxHeartRateBpm = 161L
+                            )
+                        ),
                         ExerciseLapData(t.plusSeconds(300), t.plusSeconds(600))
                     ),
                     segments = listOf(ExerciseSegmentData(t, t.plusSeconds(1500), "46", 3))
@@ -201,6 +209,17 @@ class ProtobufPayloadBuilderTest {
         assertTrue(run.getLaps(0).hasLengthMeters())
         assertEquals(1000.0, run.getLaps(0).lengthMeters, 0.0)
         assertFalse(run.getLaps(1).hasLengthMeters())
+        assertEquals(1012.0, run.getLaps(0).distanceMeters, 0.0)
+        assertEquals(900L, run.getLaps(0).steps)
+        assertEquals(180.0, run.getLaps(0).avgCadenceSpm, 0.0)
+        assertEquals(186.0, run.getLaps(0).maxCadenceSpm, 0.0)
+        assertEquals(1.12, run.getLaps(0).strideLengthM, 0.0)
+        assertEquals(148L, run.getLaps(0).avgHeartRateBpm)
+        assertEquals(161L, run.getLaps(0).maxHeartRateBpm)
+        assertFalse(run.getLaps(1).hasAvgHeartRateBpm())
+        assertEquals(150L, run.avgHeartRateBpm)
+        assertEquals(170L, run.maxHeartRateBpm)
+        assertFalse(payload.getExercise(1).hasAvgHeartRateBpm())
         assertEquals(1, run.segmentsCount)
         assertEquals("46", run.getSegments(0).segmentType)
         assertEquals(3, run.getSegments(0).repetitions)

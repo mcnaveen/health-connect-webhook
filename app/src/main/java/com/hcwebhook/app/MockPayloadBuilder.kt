@@ -569,8 +569,23 @@ object MockPayloadBuilder {
                     maxCadenceSpm = 182.0,
                     strideLengthMeters = 1.2,
                     metadata = fitnessMeta,
+                    avgHeartRateBpm = 152L,
+                    maxHeartRateBpm = 171L,
                     laps = (0 until 5).map { km ->
-                        ExerciseLapData(t(8, km * 11L), t(8, km * 11L + 11), lengthMeters = 1000.0)
+                        ExerciseLapData(
+                            t(8, km * 11L),
+                            t(8, km * 11L + 11),
+                            lengthMeters = 1000.0,
+                            stats = ExerciseStats(
+                                distanceMeters = 1000.0 + km * 4,
+                                steps = 1870L - km * 10,
+                                avgCadenceSpm = 170.0 - km,
+                                maxCadenceSpm = 178.0,
+                                strideLengthMeters = 0.53,
+                                avgHeartRateBpm = 144L + km * 4,
+                                maxHeartRateBpm = 156L + km * 4
+                            )
+                        )
                     },
                     segments = listOf(
                         ExerciseSegmentData(t(8, 0), t(8, 55), segmentType = "46"),
