@@ -984,6 +984,7 @@ class SyncManager(private val context: Context) {
                         it.strideLengthMeters?.let { strideLengthMeters ->
                             put("stride_length_m", strideLengthMeters)
                         }
+                        putLapsAndSegments(it, time)
                         it.metadata?.let { meta -> putRecordMetadata(meta, time) }
                     }) }
                 }

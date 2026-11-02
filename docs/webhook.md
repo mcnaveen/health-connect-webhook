@@ -424,6 +424,28 @@ Health Connect can store multiple samples per interval; with Full resolution the
 | `avg_cadence_spm` | number | no | Average cadence (steps per minute). |
 | `max_cadence_spm` | number | no | Max cadence. |
 | `stride_length_m` | number | no | Stride length in meters. |
+| `laps` | array | no | The session's laps, in order; omitted when it has none. See below. |
+| `segments` | array | no | The session's segments (intervals, sets, pool lengths), in order; omitted when it has none. See below. |
+
+Each object in `laps`:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `start_time` | string | yes | Lap start. |
+| `end_time` | string | yes | Lap end. |
+| `length_meters` | number | no | The lap's length as the recording app set it (e.g. a 1 km auto-lap, a 25 m pool length) — a label, not a measured distance. Left out when the app set none. |
+
+Each object in `segments`:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `start_time` | string | yes | Segment start. |
+| `end_time` | string | yes | Segment end. |
+| `segment_type` | string | yes | Segment type from Health Connect (string form, like `type`). |
+| `repetitions` | number (integer) | yes | Repetitions in the segment; `0` when not counted. |
+
+Laps and segments come with the exercise session itself, so they need no extra permission. Heart rate, distance
+or pace per lap can be worked out from the `heart_rate` and `distance` records inside each lap's window.
 
 ### `hydration` — array of objects
 

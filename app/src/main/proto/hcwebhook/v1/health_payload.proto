@@ -295,6 +295,25 @@ message ExerciseRecord {
   optional double max_cadence_spm = 9;
   optional double stride_length_m = 10;
   optional RecordMetadata metadata = 11;
+  // Health Connect's ExerciseSessionRecord.laps / .segments; empty when the session has none.
+  repeated ExerciseLap laps = 12;
+  repeated ExerciseSegment segments = 13;
+}
+
+message ExerciseLap {
+  google.protobuf.Timestamp start_time = 1;
+  google.protobuf.Timestamp end_time = 2;
+  // The lap's length as the recording app set it (Health Connect's ExerciseLap.length), e.g. a
+  // 1 km auto-lap or a 25 m pool length: a label, not a measured distance. Unset when the app set none.
+  optional double length_meters = 3;
+}
+
+message ExerciseSegment {
+  google.protobuf.Timestamp start_time = 1;
+  google.protobuf.Timestamp end_time = 2;
+  // Health Connect's segment type, in string form like ExerciseRecord.type.
+  string segment_type = 3;
+  int32 repetitions = 4;
 }
 
 message HydrationRecord {

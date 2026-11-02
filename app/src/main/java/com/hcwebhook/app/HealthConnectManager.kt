@@ -373,7 +373,9 @@ data class ExerciseData(
     val avgCadenceSpm: Double? = null,
     val maxCadenceSpm: Double? = null,
     val strideLengthMeters: Double? = null,
-    val metadata: RecordMetadata? = null
+    val metadata: RecordMetadata? = null,
+    val laps: List<ExerciseLapData> = emptyList(),
+    val segments: List<ExerciseSegmentData> = emptyList()
 )
 
 data class HydrationData(
@@ -1971,7 +1973,9 @@ class HealthConnectManager(private val context: Context) {
                     avgCadenceSpm = cadenceMetrics.avg ?: deriveAverageCadenceSpm(steps, duration),
                     maxCadenceSpm = cadenceMetrics.max,
                     strideLengthMeters = deriveStrideLengthMeters(distanceMeters, steps),
-                    metadata = it.toRecordMetadata(startZoneOffset = it.startZoneOffset, endZoneOffset = it.endZoneOffset)
+                    metadata = it.toRecordMetadata(startZoneOffset = it.startZoneOffset, endZoneOffset = it.endZoneOffset),
+                    laps = it.laps.map { lap -> lap.toLapData() },
+                    segments = it.segments.map { segment -> segment.toSegmentData() }
                 )
             }
     }

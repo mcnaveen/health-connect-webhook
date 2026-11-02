@@ -245,6 +245,7 @@ object MockPayloadBuilder {
                             it.avgCadenceSpm?.let { c -> put("avg_cadence_spm", c) }
                             it.maxCadenceSpm?.let { c -> put("max_cadence_spm", c) }
                             it.strideLengthMeters?.let { s -> put("stride_length_m", s) }
+                            putLapsAndSegments(it, time)
                             it.metadata?.let { meta -> putMetadata(meta) }
                         })
                     }
@@ -567,7 +568,14 @@ object MockPayloadBuilder {
                     avgCadenceSpm = 170.0,
                     maxCadenceSpm = 182.0,
                     strideLengthMeters = 1.2,
-                    metadata = fitnessMeta
+                    metadata = fitnessMeta,
+                    laps = (0 until 5).map { km ->
+                        ExerciseLapData(t(8, km * 11L), t(8, km * 11L + 11), lengthMeters = 1000.0)
+                    },
+                    segments = listOf(
+                        ExerciseSegmentData(t(8, 0), t(8, 55), segmentType = "46"),
+                        ExerciseSegmentData(t(8, 55), t(9, 0), segmentType = "64")
+                    )
                 ),
                 ExerciseData(
                     type = "walking",
