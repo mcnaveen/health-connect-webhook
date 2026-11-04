@@ -1,3 +1,7 @@
+=== 1.9.32 2026-11-04
+- Fixed: sync did not end on Android 13 with the Health Connect app. It caused rate limit errors and crashes.
+- Heart rate is read in 6-hour parts, so a big day no longer fills the memory.
+
 === 1.9.31 2026-10-24
 - Fixed: the app closed when Local HTTP started.
 - Fixed: the app closed on a log with a long payload.
