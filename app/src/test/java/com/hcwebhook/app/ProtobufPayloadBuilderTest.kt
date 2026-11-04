@@ -174,6 +174,60 @@ class ProtobufPayloadBuilderTest {
     }
 
     @Test
+    fun build_exerciseCarriesLapsAndSegments() {
+        val t = Instant.parse("2026-11-02T06:00:00Z")
+        val data = emptyHealthData().copy(
+            exercise = listOf(
+                ExerciseData(
+                    type = "56",
+                    startTime = t,
+                    endTime = t.plusSeconds(1800),
+                    duration = java.time.Duration.ofSeconds(1800),
+                    avgHeartRateBpm = 150L,
+                    maxHeartRateBpm = 170L,
+                    laps = listOf(
+                        ExerciseLapData(
+                            t, t.plusSeconds(300), lengthMeters = 1000.0,
+                            stats = ExerciseStats(
+                                distanceMeters = 1012.0, steps = 900L, avgCadenceSpm = 180.0, maxCadenceSpm = 186.0,
+                                strideLengthMeters = 1.12, avgHeartRateBpm = 148L, maxHeartRateBpm = 161L
+                            )
+                        ),
+                        ExerciseLapData(t.plusSeconds(300), t.plusSeconds(600))
+                    ),
+                    segments = listOf(ExerciseSegmentData(t, t.plusSeconds(1500), "46", 3))
+                ),
+                ExerciseData(type = "79", startTime = t, endTime = t.plusSeconds(60), duration = java.time.Duration.ofSeconds(60))
+            )
+        )
+
+        val payload = ProtobufPayloadBuilder.build(data, "1.0.0", t)
+
+        val run = payload.getExercise(0)
+        assertEquals(2, run.lapsCount)
+        assertEquals(t.epochSecond + 300, run.getLaps(0).endTime.seconds)
+        assertTrue(run.getLaps(0).hasLengthMeters())
+        assertEquals(1000.0, run.getLaps(0).lengthMeters, 0.0)
+        assertFalse(run.getLaps(1).hasLengthMeters())
+        assertEquals(1012.0, run.getLaps(0).distanceMeters, 0.0)
+        assertEquals(900L, run.getLaps(0).steps)
+        assertEquals(180.0, run.getLaps(0).avgCadenceSpm, 0.0)
+        assertEquals(186.0, run.getLaps(0).maxCadenceSpm, 0.0)
+        assertEquals(1.12, run.getLaps(0).strideLengthM, 0.0)
+        assertEquals(148L, run.getLaps(0).avgHeartRateBpm)
+        assertEquals(161L, run.getLaps(0).maxHeartRateBpm)
+        assertFalse(run.getLaps(1).hasAvgHeartRateBpm())
+        assertEquals(150L, run.avgHeartRateBpm)
+        assertEquals(170L, run.maxHeartRateBpm)
+        assertFalse(payload.getExercise(1).hasAvgHeartRateBpm())
+        assertEquals(1, run.segmentsCount)
+        assertEquals("46", run.getSegments(0).segmentType)
+        assertEquals(3, run.getSegments(0).repetitions)
+        assertEquals(0, payload.getExercise(1).lapsCount)
+        assertEquals(0, payload.getExercise(1).segmentsCount)
+    }
+
+    @Test
     fun buildTestPayload_isRichLikeJsonMock() {
         val payload = ProtobufPayloadBuilder.buildTestPayload("1.2.3")
 
