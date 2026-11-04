@@ -41,9 +41,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
 import com.hcwebhook.app.HealthConnectManager
+import com.hcwebhook.app.HealthDataType
 import com.hcwebhook.app.PreferencesManager
 import com.hcwebhook.app.R
 import com.hcwebhook.app.SyncManager
+import com.hcwebhook.app.SyncProgress
 import com.hcwebhook.app.SyncResult
 import com.hcwebhook.app.WebhookConfig
 import com.hcwebhook.app.hourlyBars
@@ -255,55 +257,89 @@ fun SyncHero(
                             enabledWebhooks.filter { it.url == url }
                         }
 
-                        val result = if (timeRangeSelection == -1) {
-                            // Custom range: inclusive local calendar days
-                            // [startDate 00:00, endDate+1 00:00) in the device zone.
-                            val zone = ZoneId.systemDefault()
-                            val startInstant = startDate?.atStartOfDay(zone)?.toInstant()
-                            val endInstant = endDate?.plusDays(1)?.atStartOfDay(zone)?.toInstant()
-                            if (startInstant == null || endInstant == null) {
-                                syncMessage = context.getString(R.string.err_select_both_dates)
-                                isSyncing = false
-                                return@launch
+                        val zone = ZoneId.systemDefault()
+                        // The explicit range, or null for the default sync since the last sync.
+                        val range: Pair<Instant, Instant>? = when (timeRangeSelection) {
+                            null -> null
+                            -1 -> {
+                                // Custom range: inclusive local calendar days
+                                // [startDate 00:00, endDate+1 00:00) in the device zone.
+                                val startInstant = startDate?.atStartOfDay(zone)?.toInstant()
+                                val endInstant = endDate?.plusDays(1)?.atStartOfDay(zone)?.toInstant()
+                                if (startInstant == null || endInstant == null) {
+                                    syncMessage = context.getString(R.string.err_select_both_dates)
+                                    isSyncing = false
+                                    return@launch
+                                }
+                                if (!startInstant.isBefore(endInstant)) {
+                                    syncMessage = context.getString(R.string.err_end_date_before_start)
+                                    isSyncing = false
+                                    return@launch
+                                }
+                                startInstant to endInstant
                             }
-                            if (!startInstant.isBefore(endInstant)) {
-                                syncMessage = context.getString(R.string.err_end_date_before_start)
-                                isSyncing = false
-                                return@launch
+                            else -> {
+                                // The last N days.
+                                val now = Instant.now()
+                                now.minus((timeRangeSelection ?: 0).toLong(), java.time.temporal.ChronoUnit.DAYS) to now
                             }
-
-                            syncMessage = context.getString(R.string.manual_sync_progress, startDate.toString(), endDate.toString())
-                            syncManager.performSync(start = startInstant, end = endInstant, syncType = "manual", targetWebhooks = targetWebhooks)
-                        } else {
-                            // sync the last N days, or from the last sync
-                            syncManager.performSync(timeRangeSelection, syncType = "manual", targetWebhooks = targetWebhooks)
                         }
 
-                        when {
-                            result.isSuccess -> {
-                                val syncResult = result.getOrThrow()
-                                syncMessage = when (syncResult) {
-                                    is SyncResult.NoData -> context.getString(R.string.manual_sync_no_data)
-                                    is SyncResult.NoMatchingData -> context.getString(R.string.manual_sync_no_matching_data)
-                                    is SyncResult.Success -> {
-                                        val parts = syncResult.syncCounts.map { (type, count) ->
-                                            "$count ${context.getString(type.nameResId).lowercase()}"
-                                        }
-                                        if (parts.isEmpty()) context.getString(R.string.manual_sync_success_empty)
-                                        else context.getString(R.string.manual_sync_success_items, parts.joinToString(", "))
-                                    }
+                        // An explicit range is read and sent one calendar day at a time, so a long
+                        // range never has to fit in memory at once. Each day is sent before the
+                        // next one is read.
+                        val windows: List<Pair<Instant, Instant>?> = range?.let { (s, e) -> dayWindows(s, e, zone) } ?: listOf(null)
+                        SyncProgress.start(windows.size)
+
+                        val totals = linkedMapOf<HealthDataType, Int>()
+                        var anyData = false
+                        var anyNoMatching = false
+                        var failure: String? = null
+                        for ((index, window) in windows.withIndex()) {
+                            SyncProgress.window(index + 1)
+                            val result = if (window == null) {
+                                syncManager.performSync(syncType = "manual", targetWebhooks = targetWebhooks)
+                            } else {
+                                syncManager.performSync(start = window.first, end = window.second, syncType = "manual", targetWebhooks = targetWebhooks)
+                            }
+                            if (result.isFailure) {
+                                val reason = result.exceptionOrNull()?.message ?: "Unknown error"
+                                failure = if (window != null && windows.size > 1) {
+                                    val day = window.first.atZone(zone).toLocalDate().toString()
+                                    context.getString(R.string.manual_sync_failed_on_day, index + 1, windows.size, day, reason)
+                                } else {
+                                    context.getString(R.string.manual_sync_failed, reason)
                                 }
-                                onSyncCompleted()
+                                break
                             }
-                            result.isFailure -> {
-                                syncMessage = context.getString(R.string.manual_sync_failed, result.exceptionOrNull()?.message ?: "Unknown error")
+                            when (val syncResult = result.getOrThrow()) {
+                                is SyncResult.NoData -> Unit
+                                is SyncResult.NoMatchingData -> anyNoMatching = true
+                                is SyncResult.Success -> {
+                                    anyData = true
+                                    syncResult.syncCounts.forEach { (type, count) -> totals[type] = (totals[type] ?: 0) + count }
+                                }
                             }
+                        }
+
+                        if (anyData) onSyncCompleted()
+                        syncMessage = failure ?: when {
+                            anyData -> {
+                                val parts = totals.map { (type, count) ->
+                                    "$count ${context.getString(type.nameResId).lowercase()}"
+                                }
+                                if (parts.isEmpty()) context.getString(R.string.manual_sync_success_empty)
+                                else context.getString(R.string.manual_sync_success_items, parts.joinToString(", "))
+                            }
+                            anyNoMatching -> context.getString(R.string.manual_sync_no_matching_data)
+                            else -> context.getString(R.string.manual_sync_no_data)
                         }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
                         syncMessage = context.getString(R.string.manual_sync_failed, e.message)
                     } finally {
+                        SyncProgress.clear()
                         isSyncing = false
                     }
                 }
@@ -473,6 +509,39 @@ fun SyncHero(
                     Text(stringResource(R.string.manual_sync_btn))
                 }
             }
+            val progress by SyncProgress.state.collectAsState()
+            AnimatedVisibility(visible = isSyncing && progress != null, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+                // Keep the last state while the bar fades out.
+                val lastShown = remember { arrayOf(SyncProgress.State()) }
+                val shown = progress?.also { lastShown[0] = it } ?: lastShown[0]
+                val fraction by animateFloatAsState(shown.fraction, tween(300), label = "syncProgress")
+                val label = buildList {
+                    if (shown.windows > 1) add(stringResource(R.string.manual_sync_progress_day, shown.window, shown.windows))
+                    when (shown.phase) {
+                        SyncProgress.Phase.READING -> shown.type?.let {
+                            add(stringResource(R.string.manual_sync_progress_reading, stringResource(it.nameResId).lowercase()))
+                        }
+                        SyncProgress.Phase.SENDING ->
+                            add(stringResource(R.string.manual_sync_progress_sending, shown.part, shown.parts))
+                    }
+                }.joinToString(" · ")
+                Column(Modifier.padding(top = 12.dp)) {
+                    LinearProgressIndicator(
+                        progress = { fraction },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = colors.onPrimaryContainer,
+                        trackColor = colors.onPrimaryContainer.copy(alpha = 0.2f),
+                    )
+                    if (label.isNotEmpty()) {
+                        Text(
+                            label,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = colors.onPrimaryContainer.copy(alpha = 0.85f),
+                            modifier = Modifier.padding(top = 6.dp),
+                        )
+                    }
+                }
+            }
             AnimatedVisibility(visible = syncMessage != null, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
                 Text(
                     syncMessage.orEmpty(),
@@ -483,6 +552,22 @@ fun SyncHero(
             }
         }
     }
+}
+
+/**
+ * Splits [start, end) at local midnights: a partial first day, whole days, a partial last day.
+ * Daily totals stay per calendar day, as in a single read of the whole range.
+ */
+private fun dayWindows(start: Instant, end: Instant, zone: ZoneId): List<Pair<Instant, Instant>> {
+    val windows = mutableListOf<Pair<Instant, Instant>>()
+    var windowStart = start
+    while (windowStart.isBefore(end)) {
+        val nextMidnight = windowStart.atZone(zone).toLocalDate().plusDays(1).atStartOfDay(zone).toInstant()
+        val windowEnd = minOf(nextMidnight, end)
+        windows += windowStart to windowEnd
+        windowStart = windowEnd
+    }
+    return windows
 }
 
 /** Strong ease-out: starts fast, so the UI feels like it answers at once. */

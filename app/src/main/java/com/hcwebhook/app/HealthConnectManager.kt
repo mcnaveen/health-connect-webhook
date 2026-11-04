@@ -585,8 +585,10 @@ class HealthConnectManager(private val context: Context) {
             // Health Connect (and its underlying platform) throws generic, unattributed
             // IllegalArgumentExceptions (e.g. a time-range validation error) that are
             // otherwise indistinguishable across 30 record types once they reach the UI.
+            var typesRead = 0
             suspend fun <T> attributed(type: HealthDataType, block: suspend () -> List<T>): List<T> =
                 try {
+                    SyncProgress.reading(type, typesRead++, enabledTypes.size)
                     block()
                 } catch (e: CancellationException) {
                     throw e
