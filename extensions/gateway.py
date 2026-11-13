@@ -118,8 +118,8 @@ def build_handler(manager: PluginManager, api_key: str, max_body_bytes: int = MA
 def main() -> None:
     os.umask(0o077)
     key = os.environ.get("GATEWAY_API_KEY", "")
-    if len(key) < 24:
-        raise SystemExit("Set GATEWAY_API_KEY to a random secret of at least 24 characters")
+    if len(key) < 24 or key.startswith("REPLACE_WITH_"):
+        raise SystemExit("Set GATEWAY_API_KEY to a unique random secret of at least 24 characters")
     db_path = os.environ.get("GATEWAY_DB", ".data/summary.sqlite3")
     manager = PluginManager([SummaryPlugin(db_path)])
     host = os.environ.get("GATEWAY_HOST", "127.0.0.1")
