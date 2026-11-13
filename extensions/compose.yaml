@@ -1,0 +1,19 @@
+services:
+  hc-plugins:
+    build: .
+    restart: unless-stopped
+    environment:
+      GATEWAY_API_KEY: ${GATEWAY_API_KEY:?Set a long random GATEWAY_API_KEY in .env}
+      GATEWAY_HOST: 0.0.0.0
+      GATEWAY_PORT: "8788"
+      GATEWAY_DB: /data/summary.sqlite3
+    ports:
+      # Host loopback only; do not publish health data to the internet.
+      - "127.0.0.1:8788:8788"
+    volumes:
+      - summary-data:/data
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  summary-data:
