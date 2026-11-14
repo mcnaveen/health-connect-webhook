@@ -12,6 +12,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from hc_plugins.core import PluginManager
 from hc_plugins.plugins.summary import SummaryPlugin
+from hc_plugins.plugins.record_store import RecordStorePlugin
 
 MAX_BODY_BYTES_DEFAULT = 16 * 1024 * 1024
 METADATA_KEYS = {"timestamp", "app_version", "timezone"}
@@ -94,6 +95,14 @@ def build_handler(manager: PluginManager, api_key: str, max_body_bytes: int = MA
                 return self._reply(401, {"error": "Unauthorized"})
             if parsed.path == "/plugins":
                 return self._reply(200, {"plugins": manager.names()})
+            if parsed.path == "/storage/stats":
+                try:
+                    return self._reply(200, manager.get("record_store").stats())
+                except KeyError:
+                    return self._reply(404, {"error": "Record storage is disabled"})
+                except Exception as exc:
+                    logging.error("Storage stats unavailable (%s)", type(exc).__name__)
+                    return self._reply(503, {"error": "Stats unavailable"})
             if parsed.path == "/reports/daily":
                 day = parse_qs(parsed.query).get("day", [datetime.now(timezone.utc).date().isoformat()])[0]
                 try:
@@ -121,7 +130,12 @@ def main() -> None:
     if len(key) < 24 or key.startswith("REPLACE_WITH_"):
         raise SystemExit("Set GATEWAY_API_KEY to a unique random secret of at least 24 characters")
     db_path = os.environ.get("GATEWAY_DB", ".data/summary.sqlite3")
-    manager = PluginManager([SummaryPlugin(db_path)])
+    plugins = [SummaryPlugin(db_path)]
+    if os.environ.get("GATEWAY_ENABLE_RECORD_STORE", "0") == "1":
+        plugins.append(RecordStorePlugin(os.environ.get(
+            "GATEWAY_RECORD_DB", ".data/health_records.sqlite3"
+        )))
+    manager = PluginManager(plugins)
     host = os.environ.get("GATEWAY_HOST", "127.0.0.1")
     port = int(os.environ.get("GATEWAY_PORT", "8788"))
     max_bytes = int(os.environ.get("GATEWAY_MAX_BODY_BYTES", str(MAX_BODY_BYTES_DEFAULT)))

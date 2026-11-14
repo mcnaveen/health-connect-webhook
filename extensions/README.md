@@ -13,6 +13,24 @@ This experimental extension lives **outside the Android app**. It consumes the e
 
 **Reports count accepted records, NOT daily steps, calories, unique Health Connect records, or medical measurements.** A new sync with the same records and a different payload envelope can be counted again. Record-level deduplication, corrections and deletions require additional schema-aware plugins.
 
+## Optional historical record storage (OFF by default)
+
+The `record_store` plugin is **disabled by default**. It stores raw health measurements in a separate local SQLite file, `/data/health_records.sqlite3`, inside the existing Docker named volume (or `.data/health_records.sqlite3` without Docker). **This file is not encrypted at rest**. Do not upload it to GitHub, share it, or expose database files to any internet-accessible service. Configure encrypted device backups, access controls and a retention policy before long-term use. The existing summary-only database is unchanged.
+
+After reviewing the privacy implications, opt in by setting `GATEWAY_ENABLE_RECORD_STORE=1` in `extensions/.env` and recreating the gateway container (`docker compose up --build -d`). The existing API key and webhook configuration remain unchanged. The authenticated endpoint `GET /storage/stats` then provides **counts only**, not raw personal health data.
+
+Record semantics:
+- Stable `metadata.id` is the primary deduplication/upsert identity scoped by data type. A newer `last_modified_time` can replace an earlier version, while delayed older versions are ignored.
+- Records without stable IDs use aggregate time-bucket keys when detectable; otherwise a content fingerprint. Edits of unidentified records cannot always be matched. This is not yet a medically accurate canonical dataset.
+- Each `deleted` event has a `type` and an `id`; matching raw records are removed and an ID tombstone blocks stale retransmissions. **Even a later legitimate re-creation using the same ID is blocked** until an explicit reconciliation procedure is built.
+- Idempotency is enforced per batch digest and per record key. The table is updated transactionally per batch.
+- Existing 14,783 records previously summarized **cannot be recovered** from the summary DB. To ingest them into this optional plugin, an explicit Health Connect historical re-sync/backfill is required. Avoid large backfills before testing.
+- **Do not use the stored rows to calculate health totals yet**. Overlapping sources, aggregates, deletions of prior buckets, historical corrections and local-day boundaries require a source-aware consolidation plugin. This module is experimental and designed as a first-stage storage layer.
+
+### Disabling storage
+
+Set `GATEWAY_ENABLE_RECORD_STORE=0` and recreate the container. This prevents future writes but **does not erase the previously created database**. Plan deletion or backup explicitly. Never run `docker compose down -v` casually: it deletes the entire named volume, including the summary database.
+
 ## Quick start without Docker
 
 Requires Python 3.11+; no third-party dependencies. From this directory:

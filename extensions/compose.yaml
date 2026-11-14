@@ -7,6 +7,8 @@ services:
       GATEWAY_HOST: 0.0.0.0
       GATEWAY_PORT: "8788"
       GATEWAY_DB: /data/summary.sqlite3
+      GATEWAY_ENABLE_RECORD_STORE: ${GATEWAY_ENABLE_RECORD_STORE:-0}
+      GATEWAY_RECORD_DB: /data/health_records.sqlite3
     ports:
       # Host loopback only; do not publish health data to the internet.
       - "127.0.0.1:8788:8788"
