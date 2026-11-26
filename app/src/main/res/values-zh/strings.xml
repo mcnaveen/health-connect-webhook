@@ -495,4 +495,11 @@
     <string name="widget_sleep_value">%1$d 小时 %2$d 分钟</string>
     <string name="widget_weight_value">%1$.1f 公斤</string>
     <string name="widget_heart_value">%1$d 次/分</string>
+    <string name="webhooks_notify_mode_label">通知时机</string>
+    <string name="webhooks_notify_all">所有同步</string>
+    <string name="webhooks_notify_failures">仅失败</string>
+    <string name="webhooks_notify_recovery">失败 + 恢复</string>
+    <string name="webhooks_notify_all_hint">每次同步后通知。</string>
+    <string name="webhooks_notify_failures_hint">每次同步失败后通知。</string>
+    <string name="webhooks_notify_recovery_hint">同步失败时通知。恢复正常时再通知一次。</string>
 </resources>

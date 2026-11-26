@@ -268,6 +268,7 @@ class SyncManager(private val context: Context) {
 
                 val dispatcher = NotificationDispatcher()
                 val globalNotifs = preferencesManager.getNotificationConfigs()
+                val failingUrls = preferencesManager.getFailingWebhookUrls()
                 val aggregatedNotifs = mutableMapOf<NotificationConfig, MutableList<String>>()
                 // Payloads each webhook did not get in this sync.
                 val missed = mutableMapOf<WebhookConfig, List<HealthData>>()
@@ -309,15 +310,26 @@ class SyncManager(private val context: Context) {
                         globalNotifs.find { it.id == id } 
                     }
 
-                    if (result.isSuccess) {
+                    val wasFailing = config.url in failingUrls
+                    val msg: String? = if (result.isSuccess) {
                         atLeastOneSuccess = true
-                        val msg = "✅ ${config.url}: $totalRecords records"
-                        notifConfigs.forEach { nc ->
-                            aggregatedNotifs.getOrPut(nc) { mutableListOf() }.add(msg)
+                        when {
+                            config.notifyMode == WebhookNotifyMode.ALL -> "✅ ${config.url}: $totalRecords records"
+                            config.notifyMode == WebhookNotifyMode.FAILURE_AND_RECOVERY && wasFailing ->
+                                "$RECOVERED_MARK ${config.url}: recovered, $totalRecords records"
+                            else -> null
                         }
                     } else {
                         lastFailure = result.exceptionOrNull()
-                        val msg = "❌ ${config.url}: ${lastFailure?.message ?: "Error"}"
+                        val failMsg = "❌ ${config.url}: ${lastFailure?.message ?: "Error"}"
+                        when (config.notifyMode) {
+                            WebhookNotifyMode.ALL, WebhookNotifyMode.FAILURES_ONLY -> failMsg
+                            WebhookNotifyMode.FAILURE_AND_RECOVERY -> if (wasFailing) null else failMsg
+                        }
+                    }
+                    // Track state for every webhook, also when no provider is set.
+                    preferencesManager.setWebhookFailing(config.url, result.isFailure)
+                    if (msg != null) {
                         notifConfigs.forEach { nc ->
                             aggregatedNotifs.getOrPut(nc) { mutableListOf() }.add(msg)
                         }
@@ -325,7 +337,11 @@ class SyncManager(private val context: Context) {
                 }
 
                 aggregatedNotifs.forEach { (nc, messages) ->
-                    val title = if (messages.any { it.startsWith("❌") }) "Sync Completed with Errors" else "Sync Succeeded"
+                    val title = when {
+                        messages.any { it.startsWith("❌") } -> "Sync Completed with Errors"
+                        messages.any { it.startsWith(RECOVERED_MARK) } -> "Sync Recovered"
+                        else -> "Sync Succeeded"
+                    }
                     dispatcher.dispatch(
                         context = context,
                         config = nc,
@@ -1203,6 +1219,7 @@ class SyncManager(private val context: Context) {
         /** syncType of the webhook log entries of outbox payloads. */
         private const val OUTBOX_SYNC_TYPE = "outbox"
         private const val TAG = "SyncManager"
+        private const val RECOVERED_MARK = "🔄"
     }
 
     private data class BmiEntry(

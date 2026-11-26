@@ -495,4 +495,11 @@
     <string name="widget_sleep_value">%1$d시간 %2$d분</string>
     <string name="widget_weight_value">%1$.1f kg</string>
     <string name="widget_heart_value">%1$d bpm</string>
+    <string name="webhooks_notify_mode_label">알림 조건</string>
+    <string name="webhooks_notify_all">모든 동기화</string>
+    <string name="webhooks_notify_failures">실패만</string>
+    <string name="webhooks_notify_recovery">실패 + 복구</string>
+    <string name="webhooks_notify_all_hint">동기화할 때마다 알립니다.</string>
+    <string name="webhooks_notify_failures_hint">동기화가 실패할 때마다 알립니다.</string>
+    <string name="webhooks_notify_recovery_hint">실패하면 알립니다. 다시 정상이 되면 한 번 더 알립니다.</string>
 </resources>

@@ -495,4 +495,11 @@
     <string name="widget_sleep_value">%1$d h %2$d min</string>
     <string name="widget_weight_value">%1$.1f kg</string>
     <string name="widget_heart_value">%1$d bpm</string>
+    <string name="webhooks_notify_mode_label">Notificar</string>
+    <string name="webhooks_notify_all">Todas as sincronizações</string>
+    <string name="webhooks_notify_failures">Somente falhas</string>
+    <string name="webhooks_notify_recovery">Falha + recuperação</string>
+    <string name="webhooks_notify_all_hint">Notificar após cada sincronização.</string>
+    <string name="webhooks_notify_failures_hint">Notificar após cada sincronização com falha.</string>
+    <string name="webhooks_notify_recovery_hint">Notificar quando falhar. Notificar de novo ao recuperar.</string>
 </resources>

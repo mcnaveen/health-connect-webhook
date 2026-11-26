@@ -70,6 +70,7 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
         var editName by remember(capturedIndex) { mutableStateOf(config.name) }
         var editUrl by remember(capturedIndex) { mutableStateOf(config.url) }
         var editDeliveryFormat by remember(capturedIndex) { mutableStateOf(config.deliveryFormat) }
+        var editNotifyMode by remember(capturedIndex) { mutableStateOf(config.notifyMode) }
         var currentHeaders by remember(capturedIndex) { mutableStateOf(config.headers) }
         var manageHeaders by remember(capturedIndex) { mutableStateOf(config.headers.isNotEmpty()) }
         var newKey by remember(capturedIndex) { mutableStateOf("") }
@@ -99,11 +100,12 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
             if (orphanedIds.isNotEmpty()) showUnlinkConfirm = true
         }
 
-        val hasUnsavedChanges by remember(editName, editUrl, editDeliveryFormat, currentHeaders, filterAll, selectedTypes, selectedNotificationIds) {
+        val hasUnsavedChanges by remember(editName, editUrl, editDeliveryFormat, editNotifyMode, currentHeaders, filterAll, selectedTypes, selectedNotificationIds) {
             derivedStateOf {
                 editName.trim() != config.name ||
                 editUrl.trim() != config.url ||
                 editDeliveryFormat != config.deliveryFormat ||
+                editNotifyMode != config.notifyMode ||
                 currentHeaders != config.headers ||
                 filterAll != (config.dataTypeFilter == null) ||
                 (!filterAll && selectedTypes != (config.dataTypeFilter ?: globalEnabledTypes)) ||
@@ -552,6 +554,43 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                                 }
                             }
                         }
+                        if ((selectedNotificationIds intersect enabledNotifIds).isNotEmpty()) {
+                            Text(
+                                stringResource(R.string.webhooks_notify_mode_label),
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                FilterChip(
+                                    selected = editNotifyMode == WebhookNotifyMode.ALL,
+                                    onClick = { editNotifyMode = WebhookNotifyMode.ALL },
+                                    label = { Text(stringResource(R.string.webhooks_notify_all)) }
+                                )
+                                FilterChip(
+                                    selected = editNotifyMode == WebhookNotifyMode.FAILURES_ONLY,
+                                    onClick = { editNotifyMode = WebhookNotifyMode.FAILURES_ONLY },
+                                    label = { Text(stringResource(R.string.webhooks_notify_failures)) }
+                                )
+                                FilterChip(
+                                    selected = editNotifyMode == WebhookNotifyMode.FAILURE_AND_RECOVERY,
+                                    onClick = { editNotifyMode = WebhookNotifyMode.FAILURE_AND_RECOVERY },
+                                    label = { Text(stringResource(R.string.webhooks_notify_recovery)) }
+                                )
+                            }
+                            Text(
+                                stringResource(
+                                    when (editNotifyMode) {
+                                        WebhookNotifyMode.ALL -> R.string.webhooks_notify_all_hint
+                                        WebhookNotifyMode.FAILURES_ONLY -> R.string.webhooks_notify_failures_hint
+                                        WebhookNotifyMode.FAILURE_AND_RECOVERY -> R.string.webhooks_notify_recovery_hint
+                                    }
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
 
@@ -667,7 +706,8 @@ fun WebhooksScreen(onOpenNotificationsSettings: () -> Unit = {}) {
                                 headers = currentHeaders,
                                 dataTypeFilter = newFilter,
                                 notificationConfigIds = selectedNotificationIds,
-                                deliveryFormat = editDeliveryFormat
+                                deliveryFormat = editDeliveryFormat,
+                                notifyMode = editNotifyMode
                             )
                             webhookConfigs = list
                             sheetIndex = -1
