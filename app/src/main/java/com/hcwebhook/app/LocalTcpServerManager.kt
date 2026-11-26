@@ -190,6 +190,13 @@ object LocalHttpServerManager {
                     }
                 }
 
+                // Browser preflights carry no Authorization header, so they skip the token check.
+                if (method == "OPTIONS") {
+                    logStatus = 204
+                    writeCorsPreflightResponse(writer)
+                    return
+                }
+
                 val ctx = appContext
                 if (ctx != null) {
                     val prefs = PreferencesManager(ctx)
@@ -201,12 +208,6 @@ object LocalHttpServerManager {
                             return
                         }
                     }
-                }
-
-                if (method == "OPTIONS") {
-                    logStatus = 204
-                    writeCorsPreflightResponse(writer)
-                    return
                 }
 
                 val path = logPath
