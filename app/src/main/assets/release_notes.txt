@@ -1,3 +1,9 @@
+=== 1.9.33 2026-11-26
+- New: choose when a webhook notifies you: all syncs, failures only, or failure + recovery.
+- Failure + recovery notifies once when a webhook starts to fail, and once when it works again.
+- Exercise sessions now send their laps and segments, with distance, steps, cadence and heart rate for each lap.
+- Fixed: Local HTTP gave 401 to browser CORS preflight (OPTIONS) when the auth token was on.
+
 === 1.9.32 2026-11-04
 - Fixed: sync did not end on Android 13 with the Health Connect app. It caused rate limit errors and crashes.
 - Heart rate is read in 6-hour parts, so a big day no longer fills the memory.

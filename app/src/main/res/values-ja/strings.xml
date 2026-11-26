@@ -495,4 +495,11 @@
     <string name="widget_sleep_value">%1$d 時間 %2$d 分</string>
     <string name="widget_weight_value">%1$.1f kg</string>
     <string name="widget_heart_value">%1$d bpm</string>
+    <string name="webhooks_notify_mode_label">通知する条件</string>
+    <string name="webhooks_notify_all">すべての同期</string>
+    <string name="webhooks_notify_failures">失敗のみ</string>
+    <string name="webhooks_notify_recovery">失敗と復旧</string>
+    <string name="webhooks_notify_all_hint">同期のたびに通知します。</string>
+    <string name="webhooks_notify_failures_hint">同期が失敗するたびに通知します。</string>
+    <string name="webhooks_notify_recovery_hint">失敗したときに通知します。復旧したときにもう一度通知します。</string>
 </resources>

@@ -495,4 +495,11 @@
     <string name="widget_sleep_value">%1$d ம %2$d நி</string>
     <string name="widget_weight_value">%1$.1f கி.கி</string>
     <string name="widget_heart_value">%1$d bpm</string>
+    <string name="webhooks_notify_mode_label">அறிவிப்பு</string>
+    <string name="webhooks_notify_all">அனைத்து ஒத்திசைவுகள்</string>
+    <string name="webhooks_notify_failures">தோல்விகள் மட்டும்</string>
+    <string name="webhooks_notify_recovery">தோல்வி + மீட்பு</string>
+    <string name="webhooks_notify_all_hint">ஒவ்வொரு ஒத்திசைவுக்கும் பிறகு அறிவிக்கவும்.</string>
+    <string name="webhooks_notify_failures_hint">தோல்வியடைந்த ஒவ்வொரு ஒத்திசைவுக்கும் பிறகு அறிவிக்கவும்.</string>
+    <string name="webhooks_notify_recovery_hint">தோல்வியடைந்தால் அறிவிக்கவும். மீண்டும் வேலை செய்யும்போது மீண்டும் அறிவிக்கவும்.</string>
 </resources>

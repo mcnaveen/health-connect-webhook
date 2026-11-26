@@ -31,6 +31,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_SYNC_INTERVAL_MINUTES = "sync_interval_minutes"
         private const val KEY_WEBHOOK_URLS = "webhook_urls"
         private const val KEY_WEBHOOK_CONFIGS = "webhook_configs"
+        private const val KEY_FAILING_WEBHOOK_URLS = "failing_webhook_urls"
         private const val KEY_ENABLED_DATA_TYPES = "enabled_data_types"
         private const val KEY_WEBHOOK_LOGS = "webhook_logs"
         private const val KEY_LAST_SYNC_TIME = "last_sync_time"
@@ -121,6 +122,18 @@ class PreferencesManager(context: Context) {
         
         // Fall back to old format for backward compatibility
         return getWebhookUrls().map { WebhookConfig.fromUrl(it) }
+    }
+
+    // URLs of webhooks whose last sync failed. Not part of settings export.
+    fun getFailingWebhookUrls(): Set<String> =
+        prefs.getStringSet(KEY_FAILING_WEBHOOK_URLS, null)?.toSet().orEmpty()
+
+    fun setWebhookFailing(url: String, failing: Boolean) {
+        val current = getFailingWebhookUrls()
+        val updated = if (failing) current + url else current - url
+        if (updated != current) {
+            prefs.edit().putStringSet(KEY_FAILING_WEBHOOK_URLS, updated).apply()
+        }
     }
 
     fun setWebhookConfigs(configs: List<WebhookConfig>) {
