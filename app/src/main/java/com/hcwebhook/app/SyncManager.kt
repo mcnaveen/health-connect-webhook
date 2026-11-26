@@ -296,6 +296,7 @@ class SyncManager(private val context: Context) {
                         missed[config] = chunks
                     } else {
                         for ((index, chunk) in chunks.withIndex()) {
+                            SyncProgress.sending(index + 1, chunks.size)
                             val json = if (chunks.size == 1 && config.dataTypeFilter == null) fullPayload else null
                             result = deliver(config, chunk, json)
                             if (result.isFailure) {
