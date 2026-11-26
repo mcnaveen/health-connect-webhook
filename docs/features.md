@@ -48,7 +48,7 @@ sure the apps you use sync to Health Connect.
 ## Supported languages
 
 English (default), Tamil, French, German, Spanish, Portuguese, Chinese
-(Simplified), Japanese, Korean, Italian. Override from the **About** screen.
+(Simplified), Japanese, Korean, Italian, Arabic. Override from the **About** screen.
 
 ## Supported health data types
 

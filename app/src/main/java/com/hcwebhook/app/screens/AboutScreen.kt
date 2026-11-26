@@ -361,7 +361,8 @@ private fun LanguageRow() {
         "zh" to "中文", // Chinese
         "ja" to "日本語", // Japanese
         "ko" to "한국어", // Korean
-        "it" to "Italiano" // Italian
+        "it" to "Italiano", // Italian
+        "ar" to "العربية" // Arabic
     )
     val currentTag = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
         .get(0)?.language.orEmpty()

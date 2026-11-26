@@ -24,7 +24,7 @@ android {
         manifestPlaceholders["appLabel"] = "@string/app_name"
 
         androidResources {
-            localeFilters += listOf("en", "ta", "fr", "de", "es", "pt", "zh", "ja", "ko", "it")
+            localeFilters += listOf("en", "ta", "fr", "de", "es", "pt", "zh", "ja", "ko", "it", "ar")
         }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

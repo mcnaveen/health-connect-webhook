@@ -12,7 +12,7 @@ import com.hcwebhook.app.R
 
 /**
  * Bricolage Grotesque, for screen titles, the status card title and its numbers. Text in
- * scripts that the font does not have (Tamil, CJK, Korean) falls back to the system font.
+ * scripts that the font does not have (Tamil, Arabic, CJK, Korean) falls back to the system font.
  */
 val Display = FontFamily(
     Font(
