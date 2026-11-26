@@ -2035,7 +2035,11 @@ class HealthConnectManager(private val context: Context) {
             ?: ExerciseStats()
     }
 
-    /** The measurements are optional: a failed aggregate leaves them out, and the record is still sent. */
+    /**
+     * The measurements are optional: a failed aggregate leaves them out, and the record is still sent.
+     * A rate limit that outlasts the retries still fails the sync. Otherwise the sync would move its
+     * timestamps and the measurements would never be sent.
+     */
     private suspend fun aggregateOrNull(
         metrics: Set<AggregateMetric<*>>,
         startTime: Instant,
@@ -2044,7 +2048,8 @@ class HealthConnectManager(private val context: Context) {
         aggregateRL(AggregateRequest(metrics = metrics, timeRangeFilter = TimeRangeFilter.between(startTime, endTime)))
     } catch (e: CancellationException) {
         throw e
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        if (isRateLimitError(e)) throw e
         null
     }
 
@@ -2520,6 +2525,11 @@ class HealthConnectManager(private val context: Context) {
      * separate daily quota still needs real time to replenish, so after the last
      * attempt the original exception is rethrown for the UI to surface.
      */
+    private fun isRateLimitError(e: Exception): Boolean {
+        val msg = e.message?.lowercase().orEmpty()
+        return msg.contains("rate limit") || msg.contains("quota")
+    }
+
     private suspend fun <T> withHealthConnectRetry(
         maxAttempts: Int = RATE_LIMIT_MAX_ATTEMPTS,
         block: suspend () -> T,
@@ -2531,10 +2541,8 @@ class HealthConnectManager(private val context: Context) {
                 return block()
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
-                val msg = e.message?.lowercase().orEmpty()
-                val isRateLimit = msg.contains("rate limit") || msg.contains("quota")
                 attempt++
-                if (!isRateLimit || attempt >= maxAttempts) throw e
+                if (!isRateLimitError(e) || attempt >= maxAttempts) throw e
                 delay(delayMs)
                 delayMs = (delayMs * 2).coerceAtMost(RATE_LIMIT_MAX_DELAY_MS)
             }
