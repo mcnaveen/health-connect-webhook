@@ -9,6 +9,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.animation.core.RepeatMode
@@ -516,7 +517,9 @@ private fun ActivityBars(events: List<Pair<Long, Boolean>>, now: Long, active: B
         val w = (size.width - gap * 23) / 24
         val radius = CornerRadius(w / 2, w / 2)
         bars.forEachIndexed { index, bar ->
-            val x = index * (w + gap)
+            // The time labels below flip in right-to-left languages, so the bars flip too.
+            val start = index * (w + gap)
+            val x = if (layoutDirection == LayoutDirection.Rtl) size.width - w - start else start
             val alpha = if (active && index == bars.lastIndex) pulseAlpha else 1f
             if (bar.total == 0) {
                 drawRoundRect(ink.copy(alpha = 0.12f), Offset(x, size.height - w), Size(w, w), radius)
